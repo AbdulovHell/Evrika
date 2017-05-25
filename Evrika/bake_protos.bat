@@ -1,0 +1,2 @@
+"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.10.25017\bin\protoc" --cpp_out="C:\Users\Evrika\Documents\Visual Studio 2017\Projects\Evrika\Evrika" SaveSettings.proto
+pause

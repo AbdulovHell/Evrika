@@ -1,0 +1,76 @@
+syntax = "proto3";
+option optimize_for = LITE_RUNTIME;
+
+package EvLog;
+
+message Device{
+	uint32 unique_id = 1 ;
+	sint32 signal_lvl = 3 ;
+	uint32 signal_quality = 4 ;
+	double battery_lvl = 5 ;
+	uint32 work_mode = 6 ;
+	mode1 pmode1 = 7 ;
+	mode2 pmode2 = 8 ;
+	mode3 pmode3 = 9 ;
+	mode4 pmode4 = 10 ;
+	message mode1{
+		double lat = 1 ;
+		double lon = 2 ;
+		int32 r = 3 ;
+		uint32 Year = 4 ;
+		uint32 Month = 5 ;
+		uint32 Day = 6 ;
+		uint32 Hour = 7 ;
+		uint32 Minute = 8 ;
+		uint32 Second = 9 ;
+	}
+	message mode2{
+		uint32 channel = 1 ;
+		uint32 tPulse = 2 ;
+		uint32 tWait = 3 ;
+		uint32 nPulse = 4 ;
+	}
+	message mode3{
+		message inSleep{
+			uint32 Year = 1 ;
+			uint32 Month = 2 ;
+			uint32 Day = 3 ;
+			uint32 Hour = 4 ;
+			uint32 Minute = 5 ;
+			uint32 Second = 6 ;
+		}
+		message outSleep{
+			uint32 Year = 1 ;
+			uint32 Month = 2 ;
+			uint32 Day = 3 ;
+			uint32 Hour = 4 ;
+			uint32 Minute = 5 ;
+			uint32 Second = 6 ;
+		}
+		uint32 ModeOut = 1 ;
+		inSleep inslp = 2 ;
+		outSleep outslp = 3;
+	}
+	message mode4{
+		bool ActivationState = 1 ;
+	}
+}
+
+message TD{
+	uint32 Year = 1 ;
+	uint32 Month = 2 ;
+	uint32 Day = 3 ;
+	uint32 Hour = 4 ;
+	uint32 Minute = 5 ;
+	uint32 Second = 6 ;
+}
+
+message Event{
+	Device dev = 1 ;
+	uint32 eCode = 2 ;
+	TD td = 3 ;
+}
+
+message EventLog{
+	repeated Event Events = 1 ;
+}

@@ -1,0 +1,31 @@
+syntax = "proto3";
+option optimize_for = LITE_RUNTIME;
+
+package Evrika;
+
+message ProgSettings {
+	message BatColor {
+		int32 colorLow = 1 ;
+		int32 colorMid = 2 ;
+		int32 colorHigh = 3 ;
+		double voltLow = 4 ;
+		double voltMid = 5 ;
+		double voltHigh = 6 ;
+	}
+	message SignalLvlColor {
+		int32 colorLow = 1 ;
+		int32 colorMid = 2 ;
+		int32 colorHigh = 3 ;
+		int32 lvlLow = 4 ;
+		int32 lvlMid = 5 ;
+		int32 lvlHigh = 6 ;
+	}
+	BatColor btclr = 1 ;
+	SignalLvlColor sgnllvlclr = 2 ;
+	uint32 MapProvider = 3 ;
+	string MapPath = 4 ;
+}
+
+message SettingPack {
+	repeated ProgSettings prgstngs = 1 ;
+}
