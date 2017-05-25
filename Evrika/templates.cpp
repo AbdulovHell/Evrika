@@ -1,3 +1,6 @@
+#include <iostream>
+#include <time.h>
+#include <windows.h>
 #include "templates.h"
 
 namespace Evrika {

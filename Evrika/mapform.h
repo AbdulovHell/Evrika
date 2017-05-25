@@ -1,5 +1,4 @@
 #pragma once
-
 namespace Evrika {
 
 	using namespace System;
@@ -153,8 +152,6 @@ namespace Evrika {
 			break;
 		}
 	}
-	private: System::Void gMapControl1_OnMapDrag() {
-		mainform::my_handle->UpdateMapPos();
-	}
+	private: System::Void gMapControl1_OnMapDrag();
 };
 }

@@ -1,7 +1,3 @@
-#include <iostream>
-#include <time.h>
-#include <windows.h>
-
 namespace Evrika {
 	using namespace System;
 

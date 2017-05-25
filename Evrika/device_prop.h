@@ -1,10 +1,10 @@
 #pragma once
-#include <iostream>
 namespace Evrika {
 
 	using namespace System;
 	using namespace System::ComponentModel;
 	using namespace System::Collections;
+	using namespace System::Collections::Generic;
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
@@ -610,33 +610,7 @@ namespace Evrika {
 	private: System::Void checkBox1_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
 		auto_meas_time->Enabled = checkBox1->Checked;
 	}
-	private: System::Void recalc(System::Object^  sender, System::EventArgs^  e) {
-		try {
-			if (dynamic_cast<TextBox^>(sender) == textBox2) {
-				int m = int::Parse(textBox2->Text);
-				uint32_t c = 300000000;
-				double t = (double)m / (double)c;
-				const double cycle = 0.000000010;
-				int32_t cycles = t / cycle;
-				textBox3->TextChanged -= gcnew System::EventHandler(this, &device_prop::recalc);
-				textBox3->Text = cycles.ToString();
-				textBox3->TextChanged += gcnew System::EventHandler(this, &device_prop::recalc);
-			}
-			else if (dynamic_cast<TextBox^>(sender) == textBox3) {
-				int32_t cycles = int::Parse(textBox3->Text);
-				const double cycle = 0.000000010;
-				double t = cycles*cycle;
-				uint32_t c = 300000000;
-				double m = (double)c*t;
-				textBox2->TextChanged -= gcnew System::EventHandler(this, &device_prop::recalc);
-				textBox2->Text = m.ToString();
-				textBox2->TextChanged += gcnew System::EventHandler(this, &device_prop::recalc);
-			}
-		}
-		catch (...) {
-			MessageBoxA(0, "pzdc", "Device_prop exception", 0);
-		}
-	}
+	private: System::Void recalc(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
 		ConstructCMD(comport, curDev->unique_id ,checkBox2->Checked);
 	}

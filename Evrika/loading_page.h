@@ -82,7 +82,7 @@ namespace Evrika {
 			return ldngpg;
 		}
 		static void Suicide() {
-			Sleep(100);
+			Thread::Sleep(100);
 			ldngpg->~loading_page();
 		}
 	private:
