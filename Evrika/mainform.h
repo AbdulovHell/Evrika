@@ -832,9 +832,6 @@ namespace Evrika {
 			label2->Text = "Широта: " + map->Position.Lat.ToString();	//Latitude
 			label3->Text = "Долгота: " + map->Position.Lng.ToString();	//Longetude
 		}
-		//static Evrika::settings^ get_settings_windowP() {
-		//	return settings_window;
-		//}
 		bool CheckSum(cli::array<wchar_t>^ rbuf);
 		void update_device_list();
 		void update_event_list();

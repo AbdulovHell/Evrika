@@ -99,6 +99,10 @@ namespace Evrika {
 	private: System::Windows::Forms::CheckBox^  checkBox2;
 	private: System::Windows::Forms::TextBox^  textBox5;
 	private: System::Windows::Forms::GroupBox^  groupBox1;
+	private: System::Windows::Forms::RadioButton^  radioButton2;
+	private: System::Windows::Forms::RadioButton^  radioButton1;
+	private: System::Windows::Forms::Label^  label7;
+	private: System::Windows::Forms::TextBox^  textBox6;
 			 double meters = 0;
 	public:
 		void ProceedPoints(List<int64_t>^ cpu_cycles) {
@@ -229,6 +233,10 @@ namespace Evrika {
 				 this->checkBox2 = (gcnew System::Windows::Forms::CheckBox());
 				 this->textBox5 = (gcnew System::Windows::Forms::TextBox());
 				 this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
+				 this->radioButton2 = (gcnew System::Windows::Forms::RadioButton());
+				 this->radioButton1 = (gcnew System::Windows::Forms::RadioButton());
+				 this->label7 = (gcnew System::Windows::Forms::Label());
+				 this->textBox6 = (gcnew System::Windows::Forms::TextBox());
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->numericUpDown1))->BeginInit();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView1))->BeginInit();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->BeginInit();
@@ -237,11 +245,11 @@ namespace Evrika {
 				 // 
 				 // reset_cc
 				 // 
-				 this->reset_cc->Location = System::Drawing::Point(301, 132);
+				 this->reset_cc->Location = System::Drawing::Point(12, 162);
 				 this->reset_cc->Name = L"reset_cc";
-				 this->reset_cc->Size = System::Drawing::Size(75, 23);
+				 this->reset_cc->Size = System::Drawing::Size(121, 23);
 				 this->reset_cc->TabIndex = 0;
-				 this->reset_cc->Text = L"reset";
+				 this->reset_cc->Text = L"Сброс";
 				 this->reset_cc->UseVisualStyleBackColor = true;
 				 this->reset_cc->Click += gcnew System::EventHandler(this, &device_prop::button1_Click);
 				 // 
@@ -389,7 +397,7 @@ namespace Evrika {
 				 // 
 				 // textBox1
 				 // 
-				 this->textBox1->Location = System::Drawing::Point(12, 167);
+				 this->textBox1->Location = System::Drawing::Point(12, 201);
 				 this->textBox1->Multiline = true;
 				 this->textBox1->Name = L"textBox1";
 				 this->textBox1->Size = System::Drawing::Size(304, 131);
@@ -402,7 +410,7 @@ namespace Evrika {
 				 this->chart1->Dock = System::Windows::Forms::DockStyle::Bottom;
 				 legend1->Name = L"Legend1";
 				 this->chart1->Legends->Add(legend1);
-				 this->chart1->Location = System::Drawing::Point(0, 305);
+				 this->chart1->Location = System::Drawing::Point(0, 341);
 				 this->chart1->Name = L"chart1";
 				 series1->ChartArea = L"ChartArea1";
 				 series1->Legend = L"Legend1";
@@ -425,7 +433,7 @@ namespace Evrika {
 				 // checkBox1
 				 // 
 				 this->checkBox1->AutoSize = true;
-				 this->checkBox1->Location = System::Drawing::Point(36, 88);
+				 this->checkBox1->Location = System::Drawing::Point(6, 89);
 				 this->checkBox1->Name = L"checkBox1";
 				 this->checkBox1->Size = System::Drawing::Size(50, 17);
 				 this->checkBox1->TabIndex = 22;
@@ -435,7 +443,7 @@ namespace Evrika {
 				 // 
 				 // textBox2
 				 // 
-				 this->textBox2->Location = System::Drawing::Point(433, 126);
+				 this->textBox2->Location = System::Drawing::Point(554, 235);
 				 this->textBox2->Name = L"textBox2";
 				 this->textBox2->Size = System::Drawing::Size(100, 20);
 				 this->textBox2->TabIndex = 23;
@@ -443,7 +451,7 @@ namespace Evrika {
 				 // 
 				 // textBox3
 				 // 
-				 this->textBox3->Location = System::Drawing::Point(433, 156);
+				 this->textBox3->Location = System::Drawing::Point(554, 265);
 				 this->textBox3->Name = L"textBox3";
 				 this->textBox3->Size = System::Drawing::Size(100, 20);
 				 this->textBox3->TabIndex = 24;
@@ -451,7 +459,7 @@ namespace Evrika {
 				 // 
 				 // textBox4
 				 // 
-				 this->textBox4->Location = System::Drawing::Point(485, 93);
+				 this->textBox4->Location = System::Drawing::Point(606, 202);
 				 this->textBox4->Name = L"textBox4";
 				 this->textBox4->Size = System::Drawing::Size(100, 20);
 				 this->textBox4->TabIndex = 25;
@@ -462,7 +470,7 @@ namespace Evrika {
 				 this->label4->AutoSize = true;
 				 this->label4->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 					 static_cast<System::Byte>(204)));
-				 this->label4->Location = System::Drawing::Point(428, 93);
+				 this->label4->Location = System::Drawing::Point(549, 202);
 				 this->label4->Name = L"label4";
 				 this->label4->Size = System::Drawing::Size(62, 17);
 				 this->label4->TabIndex = 26;
@@ -473,7 +481,7 @@ namespace Evrika {
 				 this->label5->AutoSize = true;
 				 this->label5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 10, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 					 static_cast<System::Byte>(204)));
-				 this->label5->Location = System::Drawing::Point(430, 59);
+				 this->label5->Location = System::Drawing::Point(551, 168);
 				 this->label5->Name = L"label5";
 				 this->label5->Size = System::Drawing::Size(46, 17);
 				 this->label5->TabIndex = 30;
@@ -492,7 +500,7 @@ namespace Evrika {
 				 // 
 				 // button2
 				 // 
-				 this->button2->Location = System::Drawing::Point(278, 56);
+				 this->button2->Location = System::Drawing::Point(488, 62);
 				 this->button2->Name = L"button2";
 				 this->button2->Size = System::Drawing::Size(123, 23);
 				 this->button2->TabIndex = 33;
@@ -503,7 +511,7 @@ namespace Evrika {
 				 // checkBox2
 				 // 
 				 this->checkBox2->AutoSize = true;
-				 this->checkBox2->Location = System::Drawing::Point(301, 83);
+				 this->checkBox2->Location = System::Drawing::Point(511, 89);
 				 this->checkBox2->Name = L"checkBox2";
 				 this->checkBox2->Size = System::Drawing::Size(83, 17);
 				 this->checkBox2->TabIndex = 34;
@@ -520,22 +528,65 @@ namespace Evrika {
 				 // 
 				 // groupBox1
 				 // 
+				 this->groupBox1->Controls->Add(this->radioButton2);
+				 this->groupBox1->Controls->Add(this->radioButton1);
+				 this->groupBox1->Controls->Add(this->label7);
+				 this->groupBox1->Controls->Add(this->textBox6);
 				 this->groupBox1->Controls->Add(this->MeasTime);
 				 this->groupBox1->Controls->Add(this->numericUpDown1);
 				 this->groupBox1->Controls->Add(this->label2);
 				 this->groupBox1->Controls->Add(this->checkBox1);
 				 this->groupBox1->Location = System::Drawing::Point(139, 50);
 				 this->groupBox1->Name = L"groupBox1";
-				 this->groupBox1->Size = System::Drawing::Size(127, 111);
+				 this->groupBox1->Size = System::Drawing::Size(272, 135);
 				 this->groupBox1->TabIndex = 36;
 				 this->groupBox1->TabStop = false;
-				 this->groupBox1->Text = L"Измерение времени";
+				 this->groupBox1->Text = L"Измерение расстояния";
+				 // 
+				 // radioButton2
+				 // 
+				 this->radioButton2->AutoSize = true;
+				 this->radioButton2->Location = System::Drawing::Point(143, 38);
+				 this->radioButton2->Name = L"radioButton2";
+				 this->radioButton2->Size = System::Drawing::Size(116, 17);
+				 this->radioButton2->TabIndex = 26;
+				 this->radioButton2->TabStop = true;
+				 this->radioButton2->Text = L"Временной метод";
+				 this->radioButton2->UseVisualStyleBackColor = true;
+				 // 
+				 // radioButton1
+				 // 
+				 this->radioButton1->AutoSize = true;
+				 this->radioButton1->Location = System::Drawing::Point(143, 15);
+				 this->radioButton1->Name = L"radioButton1";
+				 this->radioButton1->Size = System::Drawing::Size(123, 17);
+				 this->radioButton1->TabIndex = 25;
+				 this->radioButton1->TabStop = true;
+				 this->radioButton1->Text = L"По уровню сигнала";
+				 this->radioButton1->UseVisualStyleBackColor = true;
+				 // 
+				 // label7
+				 // 
+				 this->label7->AutoSize = true;
+				 this->label7->Location = System::Drawing::Point(148, 90);
+				 this->label7->Name = L"label7";
+				 this->label7->Size = System::Drawing::Size(55, 13);
+				 this->label7->TabIndex = 24;
+				 this->label7->Text = L"период, с";
+				 // 
+				 // textBox6
+				 // 
+				 this->textBox6->Location = System::Drawing::Point(62, 85);
+				 this->textBox6->Name = L"textBox6";
+				 this->textBox6->Size = System::Drawing::Size(80, 20);
+				 this->textBox6->TabIndex = 23;
+				 this->textBox6->Text = L"10";
 				 // 
 				 // device_prop
 				 // 
 				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 				 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-				 this->ClientSize = System::Drawing::Size(719, 473);
+				 this->ClientSize = System::Drawing::Size(719, 509);
 				 this->Controls->Add(this->groupBox1);
 				 this->Controls->Add(this->textBox5);
 				 this->Controls->Add(this->checkBox2);

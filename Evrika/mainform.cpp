@@ -159,6 +159,8 @@ Evrika::mainform::mainform(void)
 	myPos = gcnew MyPosition();
 	this->Width = 512;
 	this->Height = 570;
+	UpdateMapPos();
+	groupBox1->Text = "“очек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 
 	//proglog->Clear();
 
@@ -533,7 +535,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			}
 		}
 		break;
-		case 0x03:
+		case 0x03:	//изменение параметров метки (полоса, мощность)
 		{
 			if (rbuf[6]) {
 				WriteLog("ѕараметры изменены");
@@ -543,9 +545,26 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			}
 		}
 		break;
-		case 0x04:
+		case 0x04:	//смена режима измерени€ рассто€ни€ на временной метод
 		{
 			WriteLog("–ежим измерени€ задержки");
+		}
+		break;
+		case 0x05:	//базова€ информаци€ о метке
+		{
+			Device^ tempdev;
+			//парсинг буфера в список у-в
+			int addr = rbuf[6] + (rbuf[7] << 8) + (rbuf[8] << 16) + (rbuf[9] << 24);
+			int raw_v = rbuf[12];
+			double volt = raw_v >> 4;
+			volt += ((double)(raw_v & 0xF)) / 10.0;
+			tempdev = gcnew Device(addr, (char)rbuf[10], rbuf[11], volt, rbuf[13], NULL);
+			//сравнение и обновление у-в, которые уже были в пам€ти
+			for (int i = 0; i < Devices->Count; i++)
+				if (Devices[i]->unique_id == tempdev->unique_id)
+					Devices[i]->copy(tempdev);
+			//обновление списка у-в
+			update_device_list();
 		}
 		break;
 		default:
