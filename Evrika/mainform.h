@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdint.h>
 namespace Evrika {
 
 	using namespace System;
@@ -15,8 +15,13 @@ namespace Evrika {
 	using namespace std;
 	using namespace System::Threading;
 
-	//ref class Device;
-	//ref class Event;
+	ref class mapform;
+	ref class settings;
+	ref class loading_page;
+	ref class KalmanFilter;
+	ref class geoPoint;
+	ref class Device;
+	ref class Event;
 	/// <summary>
 	/// Сводка для mainform
 	/// </summary>
@@ -348,41 +353,12 @@ namespace Evrika {
 			 public:
 				 bool bFirstRead;
 
-				 MyPosition() {
-					 lat = gcnew KalmanFilter();
-					 lng = gcnew KalmanFilter();
-					 HDOP = gcnew KalmanFilter();
-					 Height = gcnew KalmanFilter();
-					 bFirstRead = true;
-				 }
-				 ~MyPosition() {
-					 delete lat;
-					 delete lng;
-					 delete HDOP;
-					 delete Height;
-				 }
-				 void SetState(double _lat, double _lng, double _HDOP, double _Height) {
-					 lat->SetState(_lat, 0.1);
-					 lng->SetState(_lng, 0.1);
-					 HDOP->SetState(_HDOP, 0.1);
-					 Height->SetState(_Height, 0.1);
-				 }
-				 void Correct(double _lat, double _lng, double _HDOP, double _Height) {
-					 lat->Correct(_lat);
-					 lng->Correct(_lng);
-					 HDOP->Correct(_HDOP);
-					 Height->Correct(_Height);
-				 }
-				 void GetState(double* _lat, double* _lng, double* _HDOP, double* _Height) {
-					 *_lat = lat->State;
-					 *_lng = lng->State;
-					 *_HDOP = HDOP->State;
-					 *_Height = Height->State;
-				 }
-				 void GetPos(double* _lat, double* _lng) {
-					 *_lat = lat->State;
-					 *_lng = lng->State;
-				 }
+				 MyPosition();
+				 ~MyPosition();
+				 void SetState(double _lat, double _lng, double _HDOP, double _Height);
+				 void Correct(double _lat, double _lng, double _HDOP, double _Height);
+				 void GetState(double* _lat, double* _lng, double* _HDOP, double* _Height);
+				 void GetPos(double* _lat, double* _lng);
 			 };
 			 void Triangulate(geoPoint^ circle1, geoPoint^ circle2) {	//return points and array size
 				 double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;

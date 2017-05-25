@@ -17,6 +17,8 @@ using namespace System::Threading;
 using namespace System::Runtime::InteropServices;
 using namespace Evrika;
 
+
+
 ref class Worker {
 	static loading_page^ ldwnd;
 	static Thread^ loadthrd;
@@ -839,4 +841,51 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 		}
 	}
 	sys_task_counter++;
+}
+
+Evrika::mainform::MyPosition::MyPosition()
+{
+	lat = gcnew KalmanFilter();
+	lng = gcnew KalmanFilter();
+	HDOP = gcnew KalmanFilter();
+	Height = gcnew KalmanFilter();
+	bFirstRead = true;
+}
+
+Evrika::mainform::MyPosition::~MyPosition()
+{
+	delete lat;
+	delete lng;
+	delete HDOP;
+	delete Height;
+}
+
+void Evrika::mainform::MyPosition::SetState(double _lat, double _lng, double _HDOP, double _Height)
+{
+	lat->SetState(_lat, 0.1);
+	lng->SetState(_lng, 0.1);
+	HDOP->SetState(_HDOP, 0.1);
+	Height->SetState(_Height, 0.1);
+}
+
+void Evrika::mainform::MyPosition::Correct(double _lat, double _lng, double _HDOP, double _Height)
+{
+	lat->Correct(_lat);
+	lng->Correct(_lng);
+	HDOP->Correct(_HDOP);
+	Height->Correct(_Height);
+}
+
+void Evrika::mainform::MyPosition::GetState(double * _lat, double * _lng, double * _HDOP, double * _Height)
+{
+	*_lat = lat->State;
+	*_lng = lng->State;
+	*_HDOP = HDOP->State;
+	*_Height = Height->State;
+}
+
+void Evrika::mainform::MyPosition::GetPos(double * _lat, double * _lng)
+{
+	*_lat = lat->State;
+	*_lng = lng->State;
 }
