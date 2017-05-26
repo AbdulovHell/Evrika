@@ -828,6 +828,7 @@ namespace Evrika {
 			 }
 			 void update_prop_windows();
 	public:
+		void AddNewPoint(float m);
 		void UpdateMapPos() {
 			//обновление картой при изменении
 			label2->Text = "Ўирота: " + map->Position.Lat.ToString();	//Latitude

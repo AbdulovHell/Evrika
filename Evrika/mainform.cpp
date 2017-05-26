@@ -294,6 +294,32 @@ void Evrika::mainform::update_prop_windows()
 	}
 }
 
+void Evrika::mainform::AddNewPoint(float m)
+{
+		if (!my_pos_accepted) return;
+		double lat = 0, lng = 0, r_m = m;
+		myPos->GetPos(&lat, &lng);
+		label10->Text = r_m.ToString();
+		MyCoords->Add(gcnew geoPoint(lat, lng, r_m));
+		if (MyCoords->Count > 8)
+			MyCoords->RemoveAt(0);
+		groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
+		if (MyCoords->Count > 3) {
+			areaOvrl->Clear();
+			mrkrOvrl->Clear();
+			//metod_5();
+			for (int i = 0; i < MyCoords->Count; i++) {
+				GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
+				mrkrOvrl->Markers->Add(marker);
+
+				GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
+				circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
+				circ->Stroke = gcnew Pen(Color::Blue, 1);
+				areaOvrl->Polygons->Add(circ);
+			}
+		}
+}
+
 bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 {
 	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//базовая проверка
@@ -854,33 +880,6 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 				proglog->AppendText("\r\n" + ioexception->Message);
 			}
 			//sPointReciver->WaitOne(4000);
-		}
-		if (/*my_pos_accepted&&device_get*/false) {
-			double lat = 0, lng = 0, r_m = 0;
-			myPos->GetPos(&lat, &lng);
-			int RSSI = Devices[0]->signal_lvl;
-			double powers[] = { 0,3,6,9,12,15,20,27 };
-			//r_m = ConvertToMeters(RSSI, double::Parse(n_text->Text), double::Parse(A_text->Text));
-			r_m = SignalLvlToMeters(RSSI, powers[3])*1.4;
-			label10->Text = r_m.ToString();
-			MyCoords->Add(gcnew geoPoint(lat, lng, r_m));
-			if (MyCoords->Count > 8)
-				MyCoords->RemoveAt(0);
-			groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
-			if (MyCoords->Count > 3) {
-				areaOvrl->Clear();
-				mrkrOvrl->Clear();
-				//metod_5();
-				for (int i = 0; i < MyCoords->Count; i++) {
-					GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
-					mrkrOvrl->Markers->Add(marker);
-
-					GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
-					circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
-					circ->Stroke = gcnew Pen(Color::Blue, 1);
-					areaOvrl->Polygons->Add(circ);
-				}
-			}
 		}
 	}
 	//T=1c

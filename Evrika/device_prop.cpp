@@ -35,7 +35,7 @@ void Evrika::device_prop::MeasDist()
 			double powers[] = { 0,3,6,9,12,15,20,27 };
 			float dist_m = (float)(SignalLvlToMeters(mid, 9.0)*1.4);
 			this->Invoke(gcnew Action<float>(this, &device_prop::print_meters), dist_m);
-			
+			this->Invoke(gcnew Action<float>(mainform::my_handle, &mainform::AddNewPoint), dist_m);
 		}
 		else if (radioButton2->Checked) {
 
