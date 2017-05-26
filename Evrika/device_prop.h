@@ -8,6 +8,7 @@ namespace Evrika {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace System::Threading;
 
 	/// <summary>
 	/// Сводка для device_prop
@@ -38,14 +39,14 @@ namespace Evrika {
 			dataGridView1->Rows[0]->Cells[2]->Value = curDev->signal_quality;	//quality
 			dataGridView1->Rows[0]->Cells[3]->Value = curDev->battery_lvl;	//batt lvl
 			dataGridView1->Rows[0]->Cells[4]->Value = curDev->work_mode;	//mode
+			sMeasDist = gcnew Semaphore(0, 3);
 			chart = chart1;
-			g_auto_meas_time = auto_meas_time;
 			chkbox = checkBox1;
-			PowerIndex=comboBox2;
+			PowerIndex = comboBox2;
 			SignLvlDistLabel = label6;
 			hDevice_prop = this;
 			kTextBox = textBox5;
-			my_log=textBox1;
+			my_log = textBox1;
 			my_log->Clear();
 		}
 
@@ -79,7 +80,7 @@ namespace Evrika {
 		/// <summary>
 		/// Обязательная переменная конструктора.
 		/// </summary>
-		Device^ curDev;
+	public: Device^ curDev;
 	private: System::Windows::Forms::TextBox^  textBox2;
 	private: System::Windows::Forms::TextBox^  textBox3;
 	private: System::Windows::Forms::TextBox^  textBox4;
@@ -93,6 +94,7 @@ namespace Evrika {
 			 KalmanFilter^ cycles_filt = gcnew KalmanFilter(1, 1, 2000, 60);
 			 bool ststate = true;
 			 int probes = 0;
+			 int MeasCycles = 0;
 	private: System::Windows::Forms::Label^  label6;
 
 	private: System::Windows::Forms::Button^  button2;
@@ -104,88 +106,28 @@ namespace Evrika {
 	private: System::Windows::Forms::Label^  label7;
 	private: System::Windows::Forms::TextBox^  textBox6;
 			 double meters = 0;
+			 void MeasDist();
+			 void print_meters(float m);
 	public:
-		void ProceedPoints(List<int64_t>^ cpu_cycles) {
-			/*int64_t mid = 0, min = -1;
-			for (int i = 0; i < cpu_cycles->Count; i++)
-			{
-				cpu_cycles[i] -= int::Parse(textBox4->Text);//226824
-				if (cpu_cycles[i] < min) min = cpu_cycles[i];
-				mid += cpu_cycles[i];
-			}
-			mid /= cpu_cycles->Count;
-			KalmanFilter^ mid_cycles = gcnew KalmanFilter(1, 1, int::Parse(textBox5->Text), int::Parse(textBox6->Text));
-			device_prop::chart->Series[0]->Points->Clear();
-			device_prop::chart->Series[1]->Points->Clear();
-			int32_t kMid = 0;
-			for (int i = 0; i < cpu_cycles->Count; i++)
-			{
-				if (cpu_cycles[i] > (mid * 5))
-					cpu_cycles[i] = mid;
-				if (i == 0) mid_cycles->SetState(cpu_cycles[i], double::Parse(textBox7->Text));
-				mid_cycles->Correct(cpu_cycles[i]);
-				kMid += mid_cycles->State;
-				device_prop::chart->Series[0]->Points->Add(gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(i + 1, cpu_cycles[i]));
-				device_prop::chart->Series[1]->Points->Add(gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(i + 1, mid_cycles->State));
-			}
-			kMid /= cpu_cycles->Count;
-			device_prop::chart->Series[0]->Name = "Raw: " + mid.ToString();
-			device_prop::chart->Series[1]->Name = "Filt: " + kMid.ToString();
-			label5->Text = CyclesToMeters(kMid).ToString()+" m.";
-			*/
-			int64_t kMid = 0, mid = 0;
-			device_prop::chart->Series[0]->Points->Clear();
-			device_prop::chart->Series[1]->Points->Clear();
-			for (int i = 0; i < cpu_cycles->Count; i++) {
-				cpu_cycles[i] /= 2;
-				mid += cpu_cycles[i];
-			}
-			mid /= cpu_cycles->Count;
-			for (int i = 0; i < cpu_cycles->Count; i++)
-			{
-				if ((cpu_cycles[i] > (mid + 300)) || (cpu_cycles[i] < (-800 - mid)))
-					cpu_cycles[i] = mid;
-				if (i == 0 && ststate) {
-					cycles_filt->SetState(cpu_cycles[i], 0.1);
-					ststate = false;
-				}
-				cycles_filt->Correct(cpu_cycles[i]);
-				kMid += cycles_filt->State;
-				device_prop::chart->Series[0]->Points->Add(gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(i + 1, cpu_cycles[i] - int::Parse(textBox4->Text)));
-				device_prop::chart->Series[1]->Points->Add(gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(i + 1, cycles_filt->State - int::Parse(textBox4->Text)));
-			}
-			kMid /= cpu_cycles->Count;
-			device_prop::chart->Series[0]->Name = "1: " + (kMid - int::Parse(textBox4->Text)).ToString();
-			device_prop::chart->Series[1]->Name = "2: " + kMid.ToString();
-			meters += kMid - int::Parse(textBox4->Text);
-			probes++;
-			if (probes == 10) {
-				meters /= 10.0;
-				label5->Text = CyclesToMeters(meters).ToString() + " m.";
-				meters = 0;
-				probes = 0;
-			}
-			if (device_prop::chkbox->Checked)
-				device_prop::g_auto_meas_time->Enabled = true;
-		}
+		static System::Threading::Semaphore^ sMeasDist;
+		void ProceedPoints(List<int64_t>^ cpu_cycles);
 		static device_prop^ hDevice_prop;
 		static System::Windows::Forms::CheckBox^ chkbox;
 		static System::Windows::Forms::TextBox^ kTextBox;
 		static System::Windows::Forms::TextBox^ my_log;
 		static System::Windows::Forms::ComboBox^ PowerIndex;
 		static System::Windows::Forms::Label^ SignLvlDistLabel;
-		static System::Windows::Forms::Timer^ g_auto_meas_time;
 		static  System::Windows::Forms::DataVisualization::Charting::Chart^  chart;
-	private: System::Windows::Forms::DataGridView^  dataGridView1;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  UniqueID;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  SignalLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  WorkMode;
+	public: System::Windows::Forms::DataGridView^  dataGridView1;
+			System::Windows::Forms::DataGridViewTextBoxColumn^  UniqueID;
+			System::Windows::Forms::DataGridViewTextBoxColumn^  SignalLVL;
+			System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
+			System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
+			System::Windows::Forms::DataGridViewTextBoxColumn^  WorkMode;
 	private: System::Windows::Forms::Button^  ChangeParam;
 	private: System::Windows::Forms::TextBox^  textBox1;
 	private: System::Windows::Forms::DataVisualization::Charting::Chart^  chart1;
-	private: System::Windows::Forms::Timer^  auto_meas_time;
+
 	private: System::Windows::Forms::CheckBox^  checkBox1;
 	private: System::ComponentModel::IContainer^  components;
 
@@ -197,7 +139,6 @@ namespace Evrika {
 			 /// </summary>
 			 void InitializeComponent(void)
 			 {
-				 this->components = (gcnew System::ComponentModel::Container());
 				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 				 System::Windows::Forms::DataVisualization::Charting::ChartArea^  chartArea1 = (gcnew System::Windows::Forms::DataVisualization::Charting::ChartArea());
@@ -221,7 +162,6 @@ namespace Evrika {
 				 this->ChangeParam = (gcnew System::Windows::Forms::Button());
 				 this->textBox1 = (gcnew System::Windows::Forms::TextBox());
 				 this->chart1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Chart());
-				 this->auto_meas_time = (gcnew System::Windows::Forms::Timer(this->components));
 				 this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
 				 this->textBox2 = (gcnew System::Windows::Forms::TextBox());
 				 this->textBox3 = (gcnew System::Windows::Forms::TextBox());
@@ -425,11 +365,6 @@ namespace Evrika {
 				 this->chart1->TabIndex = 21;
 				 this->chart1->Text = L"chart1";
 				 // 
-				 // auto_meas_time
-				 // 
-				 this->auto_meas_time->Interval = 200;
-				 this->auto_meas_time->Tick += gcnew System::EventHandler(this, &device_prop::auto_meas_time_Tick);
-				 // 
 				 // checkBox1
 				 // 
 				 this->checkBox1->AutoSize = true;
@@ -553,6 +488,7 @@ namespace Evrika {
 				 this->radioButton2->TabStop = true;
 				 this->radioButton2->Text = L"Временной метод";
 				 this->radioButton2->UseVisualStyleBackColor = true;
+				 this->radioButton2->CheckedChanged += gcnew System::EventHandler(this, &device_prop::change_dist_meas_method);
 				 // 
 				 // radioButton1
 				 // 
@@ -564,6 +500,7 @@ namespace Evrika {
 				 this->radioButton1->TabStop = true;
 				 this->radioButton1->Text = L"По уровню сигнала";
 				 this->radioButton1->UseVisualStyleBackColor = true;
+				 this->radioButton1->CheckedChanged += gcnew System::EventHandler(this, &device_prop::change_dist_meas_method);
 				 // 
 				 // label7
 				 // 
@@ -635,14 +572,9 @@ namespace Evrika {
 	private: System::Void device_prop_Load(System::Object^  sender, System::EventArgs^  e) {
 	}
 	private: System::Void MeasTime_Click(System::Object^  sender, System::EventArgs^  e) {
-		try {
-			if (!comport->IsOpen)
-				comport->Open();
-			ConstructCMD(comport, curDev->unique_id, (uint8_t)Decimal::ToInt16(numericUpDown1->Value));
-		}
-		catch (IO::IOException ^ioexception) {
-			textBox1->AppendText("\r\n" + ioexception->Message);
-		}
+		MeasCycles = Decimal::ToInt32(numericUpDown1->Value);
+		Thread^ tMeasDist = gcnew Thread(gcnew ThreadStart(this, &device_prop::MeasDist));
+		tMeasDist->Start();
 	}
 	private: System::Void ChangeParam_Click(System::Object^  sender, System::EventArgs^  e) {
 		try {
@@ -654,16 +586,25 @@ namespace Evrika {
 			textBox1->AppendText("\r\n" + ioexception->Message);
 		}
 	}
-	private: System::Void auto_meas_time_Tick(System::Object^  sender, System::EventArgs^  e) {
-		MeasTime_Click(sender, e);
-		auto_meas_time->Enabled = false;
-	}
 	private: System::Void checkBox1_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-		auto_meas_time->Enabled = checkBox1->Checked;
+		if (checkBox1->Checked) {
+			MeasTime->Text = "Пуск";
+		}
+		else {
+			MeasTime->Text = "Однократное";
+		}
 	}
 	private: System::Void recalc(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
-		ConstructCMD(comport, curDev->unique_id ,checkBox2->Checked);
+		ConstructCMD(comport, curDev->unique_id, checkBox2->Checked);
 	}
-};
+	private: System::Void change_dist_meas_method(System::Object^  sender, System::EventArgs^  e) {
+		if (radioButton1->Checked) {	//RSSI
+			numericUpDown1->Value = 10;
+		}
+		else if (radioButton2->Checked) {	//Time
+			numericUpDown1->Value = 50;
+		}
+	}
+	};
 }

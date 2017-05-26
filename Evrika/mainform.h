@@ -22,6 +22,7 @@ namespace Evrika {
 	ref class geoPoint;
 	ref class Device;
 	ref class Event;
+	ref class device_prop;
 	/// <summary>
 	/// Сводка для mainform
 	/// </summary>
@@ -345,7 +346,7 @@ namespace Evrika {
 					 return C;
 				 }
 			 };
-			 ref class MyPosition {
+	public:	 ref class MyPosition {
 				 KalmanFilter^ lat;
 				 KalmanFilter^ lng;
 				 KalmanFilter^ HDOP;
@@ -360,7 +361,7 @@ namespace Evrika {
 				 void GetState(double* _lat, double* _lng, double* _HDOP, double* _Height);
 				 void GetPos(double* _lat, double* _lng);
 			 };
-			 void Triangulate(geoPoint^ circle1, geoPoint^ circle2) {	//return points and array size
+	private: void Triangulate(geoPoint^ circle1, geoPoint^ circle2) {	//return points and array size
 				 double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
 				 System::Collections::Generic::List<GMap::NET::PointLatLng> ^Points = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
 				 System::Collections::Generic::List<GMap::NET::PointLatLng> ^cPoints = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
@@ -825,7 +826,7 @@ namespace Evrika {
 				 int temp = int(num * 100);
 				 return temp / 100.0;
 			 }
-
+			 void update_prop_windows();
 	public:
 		void UpdateMapPos() {
 			//обновление картой при изменении
@@ -836,7 +837,7 @@ namespace Evrika {
 		void update_device_list();
 		void update_event_list();
 		void ParseDeviceBuffer(cli::array<wchar_t>^ rbuf);
-		
+
 	private:
 		String^ ourPort;
 		bool eGPS;
@@ -865,6 +866,7 @@ namespace Evrika {
 		bool my_pos_accepted = false;
 		bool device_get = false;
 		List<TextBox^>^ logs;
+		List<device_prop^>^ PropWindows;
 		uint64_t sys_task_counter = 0;
 	private: System::ComponentModel::IContainer^  components;
 			 /// </summary>

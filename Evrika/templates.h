@@ -203,7 +203,7 @@ namespace Evrika {
 	double CyclesToMeters(int);
 	double dBToW(double lvl, double offset);
 	double SignalLvlToMeters(double lvl, double tdB);
-	double ConvertToMeters(int RSSI,double n,double A);
+	double ConvertToMeters(double RSSI,double n,double A);
 	//CK_A[size-2],CK_B[size-1]
 	void CalcSum(cli::array<unsigned char>^, size_t);
 	void PasteInBuffer(cli::array<unsigned char>^, size_t, uint32_t);

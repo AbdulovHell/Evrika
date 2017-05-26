@@ -283,7 +283,7 @@ namespace Evrika {
 		m = pow(m, 0.25);
 		return m;
 	}
-	double ConvertToMeters(int RSSI, double n, double A) {
+	double ConvertToMeters(double RSSI, double n, double A) {
 		double m = 0;
 		m = (-RSSI - A) / (10 * n);
 		m = pow(10, m);
@@ -309,7 +309,7 @@ namespace Evrika {
 	{
 		uint8_t temp[8];
 		for (int i = 0; i < 8; i++)
-			temp[i] = buf[i + offset];
+			temp[i] = (uint8_t)buf[i + offset];
 		double num = 0;
 		memcpy(&num, temp, 8);
 		return num;
@@ -319,7 +319,7 @@ namespace Evrika {
 	{
 		uint8_t temp[4];
 		for (int i = 0; i < 4; i++)
-			temp[i] = buf[i + offset];
+			temp[i] = (uint8_t)buf[i + offset];
 		float num = 0;
 		memcpy(&num, temp, 4);
 		return num;

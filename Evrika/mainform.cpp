@@ -145,6 +145,7 @@ Evrika::mainform::mainform(void)
 	Devices = gcnew List<Device^>(20);
 	Events = gcnew List<Event^>(50);
 	logs = gcnew List<TextBox^>;
+	PropWindows = gcnew List<device_prop^>;
 	logs->Add(proglog);
 	//cDevices = 0;
 	markers = gcnew cli::array< GMarkerGoogle^ >(50);
@@ -222,7 +223,7 @@ void Evrika::mainform::EnumCOMs()
 		if (serialPort1->IsOpen)
 			serialPort1->Close();
 		if (coms_count > 0) {
-			for (int i = 0; i < coms_count; i++) {
+			for (size_t i = 0; i < coms_count; i++) {
 				if (serialPort1->IsOpen)
 					serialPort1->Close();
 				serialPort1->PortName = coms[i];
@@ -263,6 +264,36 @@ void Evrika::mainform::EnumCOMs()
 	LastStateIsOpen = false;
 }
 
+void Evrika::mainform::update_prop_windows()
+{
+	for (int i = 0; i < PropWindows->Count; i++) {
+		try {
+			int dev_id = PropWindows[i]->curDev->unique_id;	//тут вылет, если окна уже нет
+			bool finded = false;
+			for (int j = 0; j < Devices->Count; j++) {
+				if (Devices[j]->unique_id == dev_id) {
+					finded = true;
+					PropWindows[i]->curDev->copy(Devices[j]);
+
+					if (PropWindows[i]->curDev->missing_counter == 0)
+						PropWindows[i]->dataGridView1->Rows[0]->Cells[0]->Value = PropWindows[i]->curDev->IdInHex();	//id
+					else
+						PropWindows[i]->dataGridView1->Rows[0]->Cells[0]->Value = PropWindows[i]->curDev->IdInHex() + " (!)";	//id
+					PropWindows[i]->dataGridView1->Rows[0]->Cells[1]->Value = PropWindows[i]->curDev->signal_lvl;	//sgnl lvl
+					PropWindows[i]->dataGridView1->Rows[0]->Cells[2]->Value = PropWindows[i]->curDev->signal_quality;	//quality
+					PropWindows[i]->dataGridView1->Rows[0]->Cells[3]->Value = PropWindows[i]->curDev->battery_lvl;	//batt lvl
+					PropWindows[i]->dataGridView1->Rows[0]->Cells[4]->Value = PropWindows[i]->curDev->work_mode;	//mode
+				}
+			}
+			if (!finded) PropWindows[i]->Text = "Сигнал потерян";
+		}
+		catch (...) {
+			PropWindows->RemoveAt(i);
+			i--;
+		}
+	}
+}
+
 bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 {
 	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//базовая проверка
@@ -280,7 +311,7 @@ bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 }
 
 void Evrika::mainform::update_device_list()
-{
+{	//TODO: Доработать до многооконного аля writelog
 	dataGridView1->Rows->Clear();
 	for (int i = 0; i < Devices->Count; i++) {
 		dataGridView1->Rows->Add(1);
@@ -503,6 +534,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				device_get = false;
 			//обновление списка у-в
 			update_device_list();
+			//обновление окон св-в
+			update_prop_windows();
 		}
 		break;
 		case 0x02:	//резутат измерения времени
@@ -563,6 +596,10 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			for (int i = 0; i < Devices->Count; i++)
 				if (Devices[i]->unique_id == tempdev->unique_id)
 					Devices[i]->copy(tempdev);
+			//обновление окон св-в
+			update_prop_windows();
+			//маякнуть окну св-в об изменении статов
+			device_prop::sMeasDist->Release();
 			//обновление списка у-в
 			update_device_list();
 		}
@@ -658,6 +695,7 @@ System::Void Evrika::mainform::open_device(System::Object ^ sender, System::Wind
 	device_prop^ prop = gcnew device_prop(Devices[row], serialPort1);
 	prop->Show();
 	logs->Add(prop->my_log);
+	PropWindows->Add(prop);
 }
 
 System::Void Evrika::mainform::save_events(System::Object ^ sender, System::EventArgs ^ e)
