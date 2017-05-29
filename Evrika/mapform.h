@@ -78,9 +78,6 @@ namespace Evrika {
 		{
 			this->gMapControl1 = (gcnew GMap::NET::WindowsForms::GMapControl());
 			this->SuspendLayout();
-			// 
-			// gMapControl1
-			// 
 			this->gMapControl1->Bearing = 0;
 			this->gMapControl1->CanDragMap = true;
 			this->gMapControl1->CausesValidation = false;
@@ -108,9 +105,6 @@ namespace Evrika {
 			this->gMapControl1->Zoom = 12;
 			this->gMapControl1->OnMapDrag += gcnew GMap::NET::MapDrag(this, &mapform::gMapControl1_OnMapDrag);
 			this->gMapControl1->KeyPress += gcnew System::Windows::Forms::KeyPressEventHandler(this, &mapform::gMapControl1_KeyPress);
-			// 
-			// mapform
-			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->AutoValidate = System::Windows::Forms::AutoValidate::EnablePreventFocusChange;

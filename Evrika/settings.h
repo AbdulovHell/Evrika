@@ -152,9 +152,6 @@ namespace Evrika {
 			this->groupBox4->SuspendLayout();
 			this->groupBox5->SuspendLayout();
 			this->SuspendLayout();
-			// 
-			// SaveSettings
-			// 
 			this->SaveSettings->Location = System::Drawing::Point(12, 250);
 			this->SaveSettings->Name = L"SaveSettings";
 			this->SaveSettings->Size = System::Drawing::Size(75, 23);
@@ -162,9 +159,6 @@ namespace Evrika {
 			this->SaveSettings->Text = L"Сохранить";
 			this->SaveSettings->UseVisualStyleBackColor = true;
 			this->SaveSettings->Click += gcnew System::EventHandler(this, &settings::SaveSettings_Click);
-			// 
-			// btClrHi
-			// 
 			this->btClrHi->BackColor = System::Drawing::Color::LimeGreen;
 			this->btClrHi->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->btClrHi->Location = System::Drawing::Point(11, 20);
@@ -172,9 +166,6 @@ namespace Evrika {
 			this->btClrHi->Size = System::Drawing::Size(20, 20);
 			this->btClrHi->TabIndex = 1;
 			this->btClrHi->Click += gcnew System::EventHandler(this, &settings::panel1_Click);
-			// 
-			// groupBox1
-			// 
 			this->groupBox1->Controls->Add(this->label3);
 			this->groupBox1->Controls->Add(this->label2);
 			this->groupBox1->Controls->Add(this->label1);
@@ -190,52 +181,34 @@ namespace Evrika {
 			this->groupBox1->TabIndex = 3;
 			this->groupBox1->TabStop = false;
 			this->groupBox1->Text = L"Уровень заряда батареи";
-			// 
-			// label3
-			// 
 			this->label3->AutoSize = true;
 			this->label3->Location = System::Drawing::Point(93, 75);
 			this->label3->Name = L"label3";
 			this->label3->Size = System::Drawing::Size(14, 13);
 			this->label3->TabIndex = 7;
 			this->label3->Text = L"В";
-			// 
-			// label2
-			// 
 			this->label2->AutoSize = true;
 			this->label2->Location = System::Drawing::Point(93, 49);
 			this->label2->Name = L"label2";
 			this->label2->Size = System::Drawing::Size(14, 13);
 			this->label2->TabIndex = 6;
 			this->label2->Text = L"В";
-			// 
-			// label1
-			// 
 			this->label1->AutoSize = true;
 			this->label1->Location = System::Drawing::Point(93, 23);
 			this->label1->Name = L"label1";
 			this->label1->Size = System::Drawing::Size(14, 13);
 			this->label1->TabIndex = 5;
 			this->label1->Text = L"В";
-			// 
-			// btLvlLow
-			// 
 			this->btLvlLow->Location = System::Drawing::Point(37, 72);
 			this->btLvlLow->Name = L"btLvlLow";
 			this->btLvlLow->Size = System::Drawing::Size(56, 20);
 			this->btLvlLow->TabIndex = 4;
 			this->btLvlLow->Text = L"3,0";
-			// 
-			// btLvlMid
-			// 
 			this->btLvlMid->Location = System::Drawing::Point(37, 46);
 			this->btLvlMid->Name = L"btLvlMid";
 			this->btLvlMid->Size = System::Drawing::Size(56, 20);
 			this->btLvlMid->TabIndex = 4;
 			this->btLvlMid->Text = L"3,5";
-			// 
-			// btClrLow
-			// 
 			this->btClrLow->BackColor = System::Drawing::Color::Red;
 			this->btClrLow->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->btClrLow->Location = System::Drawing::Point(11, 72);
@@ -243,17 +216,11 @@ namespace Evrika {
 			this->btClrLow->Size = System::Drawing::Size(20, 20);
 			this->btClrLow->TabIndex = 3;
 			this->btClrLow->Click += gcnew System::EventHandler(this, &settings::panel1_Click);
-			// 
-			// btLvlHi
-			// 
 			this->btLvlHi->Location = System::Drawing::Point(37, 20);
 			this->btLvlHi->Name = L"btLvlHi";
 			this->btLvlHi->Size = System::Drawing::Size(56, 20);
 			this->btLvlHi->TabIndex = 2;
 			this->btLvlHi->Text = L"4,0";
-			// 
-			// btClrMid
-			// 
 			this->btClrMid->BackColor = System::Drawing::Color::Orange;
 			this->btClrMid->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->btClrMid->Location = System::Drawing::Point(11, 46);
@@ -261,9 +228,6 @@ namespace Evrika {
 			this->btClrMid->Size = System::Drawing::Size(20, 20);
 			this->btClrMid->TabIndex = 3;
 			this->btClrMid->Click += gcnew System::EventHandler(this, &settings::panel1_Click);
-			// 
-			// Cancel_bttn
-			// 
 			this->Cancel_bttn->Location = System::Drawing::Point(262, 250);
 			this->Cancel_bttn->Name = L"Cancel_bttn";
 			this->Cancel_bttn->Size = System::Drawing::Size(75, 23);
@@ -271,9 +235,6 @@ namespace Evrika {
 			this->Cancel_bttn->Text = L"Отмена";
 			this->Cancel_bttn->UseVisualStyleBackColor = true;
 			this->Cancel_bttn->Click += gcnew System::EventHandler(this, &settings::Cancel_bttn_Click);
-			// 
-			// groupBox2
-			// 
 			this->groupBox2->Controls->Add(this->label4);
 			this->groupBox2->Controls->Add(this->label5);
 			this->groupBox2->Controls->Add(this->label6);
@@ -289,52 +250,34 @@ namespace Evrika {
 			this->groupBox2->TabIndex = 8;
 			this->groupBox2->TabStop = false;
 			this->groupBox2->Text = L"Уровень сигнала";
-			// 
-			// label4
-			// 
 			this->label4->AutoSize = true;
 			this->label4->Location = System::Drawing::Point(93, 75);
 			this->label4->Name = L"label4";
 			this->label4->Size = System::Drawing::Size(20, 13);
 			this->label4->TabIndex = 7;
 			this->label4->Text = L"дБ";
-			// 
-			// label5
-			// 
 			this->label5->AutoSize = true;
 			this->label5->Location = System::Drawing::Point(93, 49);
 			this->label5->Name = L"label5";
 			this->label5->Size = System::Drawing::Size(20, 13);
 			this->label5->TabIndex = 6;
 			this->label5->Text = L"дБ";
-			// 
-			// label6
-			// 
 			this->label6->AutoSize = true;
 			this->label6->Location = System::Drawing::Point(93, 23);
 			this->label6->Name = L"label6";
 			this->label6->Size = System::Drawing::Size(20, 13);
 			this->label6->TabIndex = 5;
 			this->label6->Text = L"дБ";
-			// 
-			// sgLvlLow
-			// 
 			this->sgLvlLow->Location = System::Drawing::Point(37, 72);
 			this->sgLvlLow->Name = L"sgLvlLow";
 			this->sgLvlLow->Size = System::Drawing::Size(56, 20);
 			this->sgLvlLow->TabIndex = 4;
 			this->sgLvlLow->Text = L"3,0";
-			// 
-			// sgLvlMid
-			// 
 			this->sgLvlMid->Location = System::Drawing::Point(37, 46);
 			this->sgLvlMid->Name = L"sgLvlMid";
 			this->sgLvlMid->Size = System::Drawing::Size(56, 20);
 			this->sgLvlMid->TabIndex = 4;
 			this->sgLvlMid->Text = L"3,5";
-			// 
-			// sgClrLow
-			// 
 			this->sgClrLow->BackColor = System::Drawing::Color::Red;
 			this->sgClrLow->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->sgClrLow->Location = System::Drawing::Point(11, 72);
@@ -342,17 +285,11 @@ namespace Evrika {
 			this->sgClrLow->Size = System::Drawing::Size(20, 20);
 			this->sgClrLow->TabIndex = 3;
 			this->sgClrLow->Click += gcnew System::EventHandler(this, &settings::panel1_Click);
-			// 
-			// sgLvlHi
-			// 
 			this->sgLvlHi->Location = System::Drawing::Point(37, 20);
 			this->sgLvlHi->Name = L"sgLvlHi";
 			this->sgLvlHi->Size = System::Drawing::Size(56, 20);
 			this->sgLvlHi->TabIndex = 2;
 			this->sgLvlHi->Text = L"4,0";
-			// 
-			// sgClrMid
-			// 
 			this->sgClrMid->BackColor = System::Drawing::Color::Orange;
 			this->sgClrMid->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->sgClrMid->Location = System::Drawing::Point(11, 46);
@@ -360,9 +297,6 @@ namespace Evrika {
 			this->sgClrMid->Size = System::Drawing::Size(20, 20);
 			this->sgClrMid->TabIndex = 3;
 			this->sgClrMid->Click += gcnew System::EventHandler(this, &settings::panel1_Click);
-			// 
-			// sgClrHi
-			// 
 			this->sgClrHi->BackColor = System::Drawing::Color::LimeGreen;
 			this->sgClrHi->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->sgClrHi->Location = System::Drawing::Point(11, 20);
@@ -370,9 +304,6 @@ namespace Evrika {
 			this->sgClrHi->Size = System::Drawing::Size(20, 20);
 			this->sgClrHi->TabIndex = 1;
 			this->sgClrHi->Click += gcnew System::EventHandler(this, &settings::panel1_Click);
-			// 
-			// groupBox3
-			// 
 			this->groupBox3->Controls->Add(this->groupBox2);
 			this->groupBox3->Controls->Add(this->groupBox1);
 			this->groupBox3->Location = System::Drawing::Point(12, 12);
@@ -381,9 +312,6 @@ namespace Evrika {
 			this->groupBox3->TabIndex = 9;
 			this->groupBox3->TabStop = false;
 			this->groupBox3->Text = L"Цвета на вкладке устройств";
-			// 
-			// groupBox4
-			// 
 			this->groupBox4->Controls->Add(this->button2);
 			this->groupBox4->Controls->Add(this->textBox1);
 			this->groupBox4->Location = System::Drawing::Point(12, 145);
@@ -392,9 +320,6 @@ namespace Evrika {
 			this->groupBox4->TabIndex = 10;
 			this->groupBox4->TabStop = false;
 			this->groupBox4->Text = L"Местоположение кэша:";
-			// 
-			// button2
-			// 
 			this->button2->Location = System::Drawing::Point(291, 18);
 			this->button2->Name = L"button2";
 			this->button2->Size = System::Drawing::Size(28, 20);
@@ -402,16 +327,10 @@ namespace Evrika {
 			this->button2->Text = L"...";
 			this->button2->UseVisualStyleBackColor = true;
 			this->button2->Click += gcnew System::EventHandler(this, &settings::button2_Click);
-			// 
-			// textBox1
-			// 
 			this->textBox1->Location = System::Drawing::Point(6, 19);
 			this->textBox1->Name = L"textBox1";
 			this->textBox1->Size = System::Drawing::Size(279, 20);
 			this->textBox1->TabIndex = 0;
-			// 
-			// groupBox5
-			// 
 			this->groupBox5->Controls->Add(this->comboBox1);
 			this->groupBox5->Location = System::Drawing::Point(12, 197);
 			this->groupBox5->Name = L"groupBox5";
@@ -419,23 +338,14 @@ namespace Evrika {
 			this->groupBox5->TabIndex = 11;
 			this->groupBox5->TabStop = false;
 			this->groupBox5->Text = L"Поставщик карт:";
-			// 
-			// comboBox1
-			// 
 			this->comboBox1->FormattingEnabled = true;
 			this->comboBox1->Location = System::Drawing::Point(6, 19);
 			this->comboBox1->Name = L"comboBox1";
 			this->comboBox1->Size = System::Drawing::Size(313, 21);
 			this->comboBox1->TabIndex = 0;
 			this->comboBox1->SelectedIndexChanged += gcnew System::EventHandler(this, &settings::SetMapProvider);
-			// 
-			// folderBrowserDialog1
-			// 
 			this->folderBrowserDialog1->Description = L"Выберите место хранения кэша";
 			this->folderBrowserDialog1->RootFolder = System::Environment::SpecialFolder::MyComputer;
-			// 
-			// settings
-			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(347, 281);

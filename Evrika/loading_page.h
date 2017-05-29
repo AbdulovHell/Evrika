@@ -98,9 +98,6 @@ namespace Evrika {
 			this->pictureBox1 = (gcnew System::Windows::Forms::PictureBox());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox1))->BeginInit();
 			this->SuspendLayout();
-			// 
-			// progressBar1
-			// 
 			this->progressBar1->Dock = System::Windows::Forms::DockStyle::Bottom;
 			this->progressBar1->Location = System::Drawing::Point(0, 213);
 			this->progressBar1->Maximum = 8;
@@ -109,11 +106,8 @@ namespace Evrika {
 			this->progressBar1->Step = 1;
 			this->progressBar1->Style = System::Windows::Forms::ProgressBarStyle::Continuous;
 			this->progressBar1->TabIndex = 0;
-			// 
-			// label1
-			// 
 			this->label1->AutoSize = true;
-			this->label1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+			this->label1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(204)));
 			this->label1->Location = System::Drawing::Point(2, 191);
 			this->label1->Name = L"label1";
@@ -121,18 +115,12 @@ namespace Evrika {
 			this->label1->TabIndex = 1;
 			this->label1->Text = L"label1";
 			this->label1->Click += gcnew System::EventHandler(this, &loading_page::label1_Click);
-			// 
-			// pictureBox1
-			// 
 			this->pictureBox1->Location = System::Drawing::Point(0, 0);
 			this->pictureBox1->Name = L"pictureBox1";
 			this->pictureBox1->Size = System::Drawing::Size(250, 188);
 			this->pictureBox1->SizeMode = System::Windows::Forms::PictureBoxSizeMode::AutoSize;
 			this->pictureBox1->TabIndex = 2;
 			this->pictureBox1->TabStop = false;
-			// 
-			// loading_page
-			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->ClientSize = System::Drawing::Size(250, 236);

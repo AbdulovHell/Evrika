@@ -27,20 +27,41 @@ void Evrika::device_prop::MeasDist()
 				catch (IO::IOException ^ioexception) {
 					textBox1->AppendText("\r\n" + ioexception->Message);
 				}
-				sMeasDist->WaitOne(1000);
+				if (!sMeasDist->WaitOne(1000)) {
+					try {
+						this->Invoke(gcnew Action<System::String^>(mainform::my_handle, &mainform::WriteLog), "Нету данных об измерении");
+						return;
+					}
+					catch (...) {}
+				}
 				RSSIs->Add(curDev->signal_lvl);
 				mid += curDev->signal_lvl;
 			}
 			mid /= RSSIs->Count;
 			double powers[] = { 0,3,6,9,12,15,20,27 };
-			float dist_m = (float)(SignalLvlToMeters(mid, 9.0)*1.4);
+			float dist_m = (float)(SignalLvlToMeters(mid, 9.0)*1.45);
 			this->Invoke(gcnew Action<float>(this, &device_prop::print_meters), dist_m);
 			this->Invoke(gcnew Action<float>(mainform::my_handle, &mainform::AddNewPoint), dist_m);
 		}
-		else if (radioButton2->Checked) {
-
+		else if (radioButton2->Checked) {	//Time
+			try {
+				if (comport->IsOpen) {
+					ConstructCMD(comport, curDev->unique_id, (uint8_t)MeasCycles);
+				}
+				else {
+					//закрыт, ошибк
+					throw(gcnew IO::IOException("COM-порт закрыт"));
+				}
+			}
+			catch (IO::IOException ^ioexception) {
+				textBox1->AppendText("\r\n" + ioexception->Message);
+			}
+			sMeasDist->WaitOne(10000);
+			float dist_m = (float)ProceedPoints(global_cpu_cycles);
+			this->Invoke(gcnew Action<float>(this, &device_prop::print_meters), dist_m);
+			this->Invoke(gcnew Action<float>(mainform::my_handle, &mainform::AddNewPoint), dist_m);
 		}
-
+		this->Invoke(gcnew Action<System::String^>(mainform::my_handle, &mainform::WriteLog), "Точка добавлена");
 		uint32_t sleep = 0;
 		try {
 			sleep = uint32_t::Parse(textBox6->Text);
@@ -48,7 +69,7 @@ void Evrika::device_prop::MeasDist()
 		catch (...) {
 			//ошибка ввода
 		}
-		Sleep(sleep * 1000);
+		if(checkBox1->Checked) Sleep(sleep * 1000);
 	} while (checkBox1->Checked);
 }
 
@@ -57,11 +78,14 @@ void Evrika::device_prop::print_meters(float m)
 	label6->Text = m.ToString();
 }
 
-void Evrika::device_prop::ProceedPoints(List<int64_t>^ cpu_cycles)
+void Evrika::device_prop::SaveCycles(List<int64_t>^ cpu_cycles)
+{
+	global_cpu_cycles = cpu_cycles;
+}
+
+double Evrika::device_prop::ProceedPoints(List<int64_t>^ cpu_cycles)
 {
 	int64_t kMid = 0, mid = 0;
-	device_prop::chart->Series[0]->Points->Clear();
-	device_prop::chart->Series[1]->Points->Clear();
 	for (int i = 0; i < cpu_cycles->Count; i++) {
 		cpu_cycles[i] /= 2;
 		mid += cpu_cycles[i];
@@ -77,20 +101,13 @@ void Evrika::device_prop::ProceedPoints(List<int64_t>^ cpu_cycles)
 		}
 		cycles_filt->Correct((double)cpu_cycles[i]);
 		kMid += (int64_t)cycles_filt->State;
-		device_prop::chart->Series[0]->Points->Add(gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(i + 1, (double)(cpu_cycles[i] - int::Parse(textBox4->Text))));
-		device_prop::chart->Series[1]->Points->Add(gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(i + 1, cycles_filt->State - int::Parse(textBox4->Text)));
 	}
 	kMid /= cpu_cycles->Count;
-	device_prop::chart->Series[0]->Name = "1: " + (kMid - int::Parse(textBox4->Text)).ToString();
-	device_prop::chart->Series[1]->Name = "2: " + kMid.ToString();
-	meters += kMid - int::Parse(textBox4->Text);
-	probes++;
-	if (probes == 10) {
-		meters /= 10.0;
-		label5->Text = CyclesToMeters((int)meters).ToString() + " m.";
-		meters = 0;
-		probes = 0;
-	}
+	//113405 - 100k
+	//1110995 - ?
+	//1074215
+	int m_c = kMid - 113405;
+	return CyclesToMeters(m_c);
 }
 
 System::Void Evrika::device_prop::recalc(System::Object ^ sender, System::EventArgs ^ e)
@@ -119,5 +136,17 @@ System::Void Evrika::device_prop::recalc(System::Object ^ sender, System::EventA
 	}
 	catch (...) {
 		MessageBoxA(0, "pzdc", "Device_prop exception", 0);
+	}
+}
+
+System::Void Evrika::device_prop::change_dist_meas_method(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (radioButton1->Checked) {	//RSSI
+		numericUpDown1->Value = 10;
+		ConstructCMD(comport, curDev->unique_id, false);
+	}
+	else if (radioButton2->Checked) {	//Time
+		numericUpDown1->Value = 50;
+		ConstructCMD(comport, curDev->unique_id, true);
 	}
 }
