@@ -10,9 +10,10 @@ using namespace System::Collections::Generic;
 void Evrika::device_prop::MeasDist()
 {
 	do {
+		this->Invoke(gcnew Action<bool>(mainform::my_handle,&mainform::SetTimer),false);
 		if (radioButton1->Checked) {	//RSSI
 			List<int>^ RSSIs = gcnew List<int>;
-			int64_t mid = 0;
+			double mid = 0;
 			for (int i = 0; i < MeasCycles; i++) {
 				try {
 					if (comport->IsOpen) {
@@ -30,6 +31,7 @@ void Evrika::device_prop::MeasDist()
 				if (!sMeasDist->WaitOne(1000)) {
 					try {
 						this->Invoke(gcnew Action<System::String^>(mainform::my_handle, &mainform::WriteLog), "Нету данных об измерении");
+						this->Invoke(gcnew Action<bool>(mainform::my_handle, &mainform::SetTimer), true);
 						return;
 					}
 					catch (...) {}
@@ -38,8 +40,9 @@ void Evrika::device_prop::MeasDist()
 				mid += curDev->signal_lvl;
 			}
 			mid /= RSSIs->Count;
+			this->Invoke(gcnew Action<double>(this, &device_prop::DrawPoint),mid);
 			double powers[] = { 0,3,6,9,12,15,20,27 };
-			float dist_m = (float)(SignalLvlToMeters(mid, 9.0)*1.45);
+			float dist_m = (float)(SignalLvlToMeters(mid, powers[power_index])*1.4);
 			this->Invoke(gcnew Action<float>(this, &device_prop::print_meters), dist_m);
 			this->Invoke(gcnew Action<float>(mainform::my_handle, &mainform::AddNewPoint), dist_m);
 		}
@@ -69,13 +72,19 @@ void Evrika::device_prop::MeasDist()
 		catch (...) {
 			//ошибка ввода
 		}
-		if(checkBox1->Checked) Sleep(sleep * 1000);
+		this->Invoke(gcnew Action<bool>(mainform::my_handle, &mainform::SetTimer), true);
+		if (checkBox1->Checked) Sleep(sleep * 1000);
 	} while (checkBox1->Checked);
 }
 
 void Evrika::device_prop::print_meters(float m)
 {
 	label6->Text = m.ToString();
+}
+
+void Evrika::device_prop::DrawPoint(double p)
+{
+	chart1->Series[0]->Points->Add(p);
 }
 
 void Evrika::device_prop::SaveCycles(List<int64_t>^ cpu_cycles)
@@ -106,7 +115,8 @@ double Evrika::device_prop::ProceedPoints(List<int64_t>^ cpu_cycles)
 	//113405 - 100k
 	//1110995 - ?
 	//1074215
-	int m_c = kMid - 113405;
+	last_num = kMid;
+	int m_c = kMid - offset;
 	return CyclesToMeters(m_c);
 }
 

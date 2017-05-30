@@ -276,7 +276,7 @@ namespace Evrika {
 		return w;
 	}
 	double SignalLvlToMeters(double lvl,double tdB) {
-		double m = 0,Kptx=1,Kprx=1,htx=0.5,hrx=1.5;
+		double m = 0,Kptx=1,Kprx=1,htx=0.1,hrx=1.5;
 		double Ptx = dBToW(tdB,30);
 		double Prx = dBToW(lvl,30);
 		m = (Ptx*Kptx*Kprx*htx*hrx) / Prx;

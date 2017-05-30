@@ -819,6 +819,9 @@ private: System::Windows::Forms::Button^  button10;
 			 }
 			 void update_prop_windows();
 	public:
+		void SetTimer(bool en) {
+			sys_task->Enabled = en;
+		}
 		void WriteLog(String^ message) {
 			for (int i = 0; i < logs->Count; i++) {
 				try {
