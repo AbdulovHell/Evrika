@@ -296,29 +296,29 @@ void Evrika::mainform::update_prop_windows()
 
 void Evrika::mainform::AddNewPoint(float m)
 {
-		if (!my_pos_accepted) return;
-		double lat = 0, lng = 0, r_m = m;
-		myPos->GetPos(&lat, &lng);
-		label10->Text = r_m.ToString();
-		MyCoords->Add(gcnew geoPoint(lat, lng, r_m));
-		if (MyCoords->Count > 8)
-			MyCoords->RemoveAt(0);
-		groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
-		WriteLog("Точка добавлена");
-		if (MyCoords->Count > 3) {
-			areaOvrl->Clear();
-			mrkrOvrl->Clear();
-			metod_5();
-			for (int i = 0; i < MyCoords->Count; i++) {
-				GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
-				mrkrOvrl->Markers->Add(marker);
+	if (!my_pos_accepted) return;
+	double lat = 0, lng = 0, r_m = m;
+	myPos->GetPos(&lat, &lng);
+	label10->Text = r_m.ToString();
+	MyCoords->Add(gcnew geoPoint(lat, lng, r_m));
+	if (MyCoords->Count > 8)
+		MyCoords->RemoveAt(0);
+	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
+	WriteLog("Точка добавлена");
+	if (MyCoords->Count > 3) {
+		areaOvrl->Clear();
+		mrkrOvrl->Clear();
+		metod_5();
+		for (int i = 0; i < MyCoords->Count; i++) {
+			GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
+			mrkrOvrl->Markers->Add(marker);
 
-				GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
-				circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
-				circ->Stroke = gcnew Pen(Color::Blue, 1);
-				areaOvrl->Polygons->Add(circ);
-			}
+			GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
+			circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
+			circ->Stroke = gcnew Pen(Color::Blue, 1);
+			areaOvrl->Polygons->Add(circ);
 		}
+	}
 }
 
 bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
@@ -570,26 +570,19 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			//invoke в device_prop
 			int size = (rbuf[4] << 8) + rbuf[5];
 			int count = size / 5;
-			//List<int>^ sign_lvls = gcnew List<int>;
+			List<int>^ sign_lvls = gcnew List<int>;
 			List<int64_t>^ cycles = gcnew List<int64_t>;
-			//unsigned int min = -1;
+			int midRSSI = 0;
 			for (int i = 0; i < count; i++) {
-				//sign_lvls->Add((char)(rbuf[6 + 5 * i]));
+				sign_lvls->Add((char)(rbuf[6 + 5 * i]));
 				cycles->Add(rbuf[7 + 5 * i] + (rbuf[8 + 5 * i] << 8) + (rbuf[9 + 5 * i] << 16) + (rbuf[10 + 5 * i] << 24));
-				//if (cycles[i] < min) min = cycles[i];
+				midRSSI += (char)(rbuf[6 + 5 * i]);
 			}
+			midRSSI /= sign_lvls->Count;
 			if (cycles->Count == 0) return;
 			try {
-				device_prop::hDevice_prop->Invoke(gcnew Action< List<int64_t>^ >(device_prop::hDevice_prop, &device_prop::SaveCycles), cycles);
-				device_prop::sMeasDist->Release();
-				//double mid = 0;
-				//for (int i = 0; i < sign_lvls->Count; i++)
-				//	mid += sign_lvls[i];
-				//mid /= sign_lvls->Count;
-				//double powers[] = { 0,3,6,9,12,15,20,27 };
-				//float temp = (float)(SignalLvlToMeters(mid, powers[device_prop::PowerIndex->SelectedIndex])*double::Parse(device_prop::kTextBox->Text));
-				//float temp2 = (float)(ConvertToMeters(mid, double::Parse(n_text->Text), double::Parse(A_text->Text)));
-				//device_prop::SignLvlDistLabel->Text = "v1: " + temp.ToString() + " m; v2: " + temp2.ToString() + " m.";
+				//device_prop::hDevice_prop->Invoke(gcnew Action< List<int64_t>^ >(device_prop::hDevice_prop, &device_prop::SaveCycles), cycles);
+				device_prop::hDevice_prop->SaveCycles(cycles,midRSSI);
 			}
 			catch (...) {
 
@@ -599,15 +592,18 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x03:	//изменение параметров метки (полоса, мощность)
 		{
 			if (rbuf[6]) {
+				device_prop::sMeasDist->Release();
 				WriteLog("Параметры изменены");
 			}
 			else {
+				device_prop::sMeasDist->Release();
 				WriteLog("Ошибка при изменении параметров");
 			}
 		}
 		break;
 		case 0x04:	//смена режима измерения расстояния на временной метод
 		{
+			device_prop::sMeasDist->Release();
 			WriteLog("Режим измерения задержки");
 		}
 		break;

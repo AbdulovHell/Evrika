@@ -79,40 +79,36 @@ namespace Evrika {
 		/// <summary>
 		/// Обязательная переменная конструктора.
 		/// </summary>
-	public: Device^ curDev;
 	private: System::Windows::Forms::TextBox^  textBox2;
 	private: System::Windows::Forms::TextBox^  textBox3;
-
-
-
-
-
-
-
-			 System::IO::Ports::SerialPort^ comport;
-			 KalmanFilter^ cycles_filt = gcnew KalmanFilter(1, 1, 2000, 60);
-			 bool ststate = true;
-			 int MeasCycles = 0;
 	private: System::Windows::Forms::Label^  label6;
-
-
-
-
 	private: System::Windows::Forms::GroupBox^  groupBox1;
 	private: System::Windows::Forms::RadioButton^  radioButton2;
 	private: System::Windows::Forms::RadioButton^  radioButton1;
 	private: System::Windows::Forms::Label^  label7;
 	private: System::Windows::Forms::TextBox^  textBox6;
 	private: System::Windows::Forms::Button^  button1;
+			 System::IO::Ports::SerialPort^ comport;
+			 KalmanFilter^ cycles_filt = gcnew KalmanFilter(1, 1, 2000, 60);
+			 bool ststate = true;
+			 int MeasCycles = 0;
+			 bool MeasModeIsTime = false;
 			 List<int64_t>^ global_cpu_cycles;
 			 void MeasDist();
 			 void print_meters(float m);
 			 int power_index = 3;
 			 void DrawPoint(double);
 			 int64_t offset = 113405;
-			 int64_t last_num=0;
+			 int64_t last_num = 0;
+			 List<int> Last10RSSI;
+			 int LastRSSI;
+			 void ChangeParam();
+			 void CheckRadioBtn(RadioButton^ rbtn);
+			 void ChangeBWMode(int ind);
 	public:
-		void SaveCycles(List<int64_t>^ cpu_cycles);
+		Device^ curDev;
+		
+		void SaveCycles(List<int64_t>^ cpu_cycles,int RSSI);
 		static System::Threading::Semaphore^ sMeasDist;
 		double ProceedPoints(List<int64_t>^ cpu_cycles);
 		static device_prop^ hDevice_prop;
@@ -128,7 +124,9 @@ namespace Evrika {
 			System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
 			System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
 			System::Windows::Forms::DataGridViewTextBoxColumn^  WorkMode;
-	private: System::Windows::Forms::Button^  ChangeParam;
+private: System::Windows::Forms::Button^  ChangeParamBtn;
+public:
+
 	private: System::Windows::Forms::TextBox^  textBox1;
 	private: System::Windows::Forms::DataVisualization::Charting::Chart^  chart1;
 
@@ -143,11 +141,11 @@ namespace Evrika {
 			 /// </summary>
 			 void InitializeComponent(void)
 			 {
-				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle3 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle4 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-				 System::Windows::Forms::DataVisualization::Charting::ChartArea^  chartArea2 = (gcnew System::Windows::Forms::DataVisualization::Charting::ChartArea());
-				 System::Windows::Forms::DataVisualization::Charting::Legend^  legend2 = (gcnew System::Windows::Forms::DataVisualization::Charting::Legend());
-				 System::Windows::Forms::DataVisualization::Charting::Series^  series2 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
+				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+				 System::Windows::Forms::DataVisualization::Charting::ChartArea^  chartArea1 = (gcnew System::Windows::Forms::DataVisualization::Charting::ChartArea());
+				 System::Windows::Forms::DataVisualization::Charting::Legend^  legend1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Legend());
+				 System::Windows::Forms::DataVisualization::Charting::Series^  series1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
 				 this->reset_cc = (gcnew System::Windows::Forms::Button());
 				 this->comboBox1 = (gcnew System::Windows::Forms::ComboBox());
 				 this->numericUpDown1 = (gcnew System::Windows::Forms::NumericUpDown());
@@ -162,7 +160,7 @@ namespace Evrika {
 				 this->QualityLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->BatteryLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->WorkMode = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->ChangeParam = (gcnew System::Windows::Forms::Button());
+				 this->ChangeParamBtn = (gcnew System::Windows::Forms::Button());
 				 this->textBox1 = (gcnew System::Windows::Forms::TextBox());
 				 this->chart1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Chart());
 				 this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
@@ -287,8 +285,8 @@ namespace Evrika {
 				 // 
 				 // UniqueID
 				 // 
-				 dataGridViewCellStyle3->BackColor = System::Drawing::Color::White;
-				 this->UniqueID->DefaultCellStyle = dataGridViewCellStyle3;
+				 dataGridViewCellStyle1->BackColor = System::Drawing::Color::White;
+				 this->UniqueID->DefaultCellStyle = dataGridViewCellStyle1;
 				 this->UniqueID->HeaderText = L"Уникальный  ID";
 				 this->UniqueID->Name = L"UniqueID";
 				 this->UniqueID->ReadOnly = true;
@@ -303,8 +301,8 @@ namespace Evrika {
 				 // 
 				 // QualityLVL
 				 // 
-				 dataGridViewCellStyle4->ForeColor = System::Drawing::Color::Green;
-				 this->QualityLVL->DefaultCellStyle = dataGridViewCellStyle4;
+				 dataGridViewCellStyle2->ForeColor = System::Drawing::Color::Green;
+				 this->QualityLVL->DefaultCellStyle = dataGridViewCellStyle2;
 				 this->QualityLVL->HeaderText = L"Качество приема сигнала";
 				 this->QualityLVL->Name = L"QualityLVL";
 				 this->QualityLVL->ReadOnly = true;
@@ -324,15 +322,15 @@ namespace Evrika {
 				 this->WorkMode->ReadOnly = true;
 				 this->WorkMode->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
 				 // 
-				 // ChangeParam
+				 // ChangeParamBtn
 				 // 
-				 this->ChangeParam->Location = System::Drawing::Point(9, 152);
-				 this->ChangeParam->Name = L"ChangeParam";
-				 this->ChangeParam->Size = System::Drawing::Size(121, 23);
-				 this->ChangeParam->TabIndex = 19;
-				 this->ChangeParam->Text = L"Смена параметров";
-				 this->ChangeParam->UseVisualStyleBackColor = true;
-				 this->ChangeParam->Click += gcnew System::EventHandler(this, &device_prop::ChangeParam_Click);
+				 this->ChangeParamBtn->Location = System::Drawing::Point(9, 152);
+				 this->ChangeParamBtn->Name = L"ChangeParamBtn";
+				 this->ChangeParamBtn->Size = System::Drawing::Size(121, 23);
+				 this->ChangeParamBtn->TabIndex = 19;
+				 this->ChangeParamBtn->Text = L"Смена параметров";
+				 this->ChangeParamBtn->UseVisualStyleBackColor = true;
+				 this->ChangeParamBtn->Click += gcnew System::EventHandler(this, &device_prop::ChangeParam_Click);
 				 // 
 				 // textBox1
 				 // 
@@ -344,19 +342,19 @@ namespace Evrika {
 				 // 
 				 // chart1
 				 // 
-				 chartArea2->Name = L"ChartArea1";
-				 this->chart1->ChartAreas->Add(chartArea2);
+				 chartArea1->Name = L"ChartArea1";
+				 this->chart1->ChartAreas->Add(chartArea1);
 				 this->chart1->Dock = System::Windows::Forms::DockStyle::Bottom;
-				 legend2->Name = L"Legend1";
-				 this->chart1->Legends->Add(legend2);
+				 legend1->Name = L"Legend1";
+				 this->chart1->Legends->Add(legend1);
 				 this->chart1->Location = System::Drawing::Point(0, 357);
 				 this->chart1->Name = L"chart1";
-				 series2->ChartArea = L"ChartArea1";
-				 series2->ChartType = System::Windows::Forms::DataVisualization::Charting::SeriesChartType::Area;
-				 series2->Legend = L"Legend1";
-				 series2->Name = L"RSSI";
-				 series2->YValuesPerPoint = 2;
-				 this->chart1->Series->Add(series2);
+				 series1->ChartArea = L"ChartArea1";
+				 series1->ChartType = System::Windows::Forms::DataVisualization::Charting::SeriesChartType::Area;
+				 series1->Legend = L"Legend1";
+				 series1->Name = L"RSSI";
+				 series1->YValuesPerPoint = 2;
+				 this->chart1->Series->Add(series1);
 				 this->chart1->Size = System::Drawing::Size(525, 151);
 				 this->chart1->TabIndex = 21;
 				 this->chart1->Text = L"chart1";
@@ -478,7 +476,7 @@ namespace Evrika {
 				 this->Controls->Add(this->textBox2);
 				 this->Controls->Add(this->chart1);
 				 this->Controls->Add(this->textBox1);
-				 this->Controls->Add(this->ChangeParam);
+				 this->Controls->Add(this->ChangeParamBtn);
 				 this->Controls->Add(this->dataGridView1);
 				 this->Controls->Add(this->comboBox2);
 				 this->Controls->Add(this->label3);
@@ -519,14 +517,7 @@ namespace Evrika {
 		tMeasDist->Start();
 	}
 	private: System::Void ChangeParam_Click(System::Object^  sender, System::EventArgs^  e) {
-		try {
-			if (!comport->IsOpen)
-				comport->Open();
-			ConstructCMD(comport, curDev->unique_id, comboBox1->SelectedIndex, 900000000, comboBox2->SelectedIndex, NULL, NULL);
-		}
-		catch (IO::IOException ^ioexception) {
-			textBox1->AppendText("\r\n" + ioexception->Message);
-		}
+		ChangeParam();
 	}
 	private: System::Void checkBox1_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
 		if (checkBox1->Checked) {
@@ -544,5 +535,5 @@ namespace Evrika {
 	private: System::Void button1_Click_1(System::Object^  sender, System::EventArgs^  e) {
 		offset = last_num;
 	}
-};
+	};
 }
