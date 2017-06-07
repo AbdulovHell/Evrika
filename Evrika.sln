@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Evrika", "Evrika\Evrika.vcxproj", "{A1561440-3A05-4559-A371-017CCB1A23D0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CmdTest", "CmdTest\CmdTest.vcxproj", "{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{A1561440-3A05-4559-A371-017CCB1A23D0}.Release|x64.Build.0 = Release|x64
 		{A1561440-3A05-4559-A371-017CCB1A23D0}.Release|x86.ActiveCfg = Release|Win32
 		{A1561440-3A05-4559-A371-017CCB1A23D0}.Release|x86.Build.0 = Release|Win32
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Debug|x64.ActiveCfg = Debug|x64
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Debug|x64.Build.0 = Debug|x64
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Debug|x86.ActiveCfg = Debug|Win32
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Debug|x86.Build.0 = Debug|Win32
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Release|x64.ActiveCfg = Release|x64
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Release|x64.Build.0 = Release|x64
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Release|x86.ActiveCfg = Release|Win32
+		{BBCBC755-4EF6-4B25-8D96-2817B94F3B07}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
