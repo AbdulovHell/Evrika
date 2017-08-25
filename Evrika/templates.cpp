@@ -89,179 +89,6 @@ namespace Evrika {
 		seconds = _td->seconds;
 	}
 
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, uint32_t wait_ms) {
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(14);//+6+len+CKA+CKB+CR+LF
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		rbuf[2] = 0x0C;
-		rbuf[3] = 0x01;
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x04;
-
-		PasteInBuffer(rbuf, 6, wait_ms);//6,7,8,9
-
-		CalcSum(rbuf, 12);	//10,11
-
-		rbuf[12] = '\r';	//CR
-		rbuf[13] = '\n';	//LF
-
-		port->Write(rbuf, 0, 14);
-
-		return true;
-	}
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, uint32_t addr, uint16_t dummy)
-	{
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(14);//+6+len+CKA+CKB+CR+LF
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		rbuf[2] = 0x0C;
-		rbuf[3] = 0x05;
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x04;
-
-		PasteInBuffer(rbuf, 6, addr);//6,7,8,9
-
-		CalcSum(rbuf, 12);	//10,11
-
-		rbuf[12] = '\r';	//CR
-		rbuf[13] = '\n';	//LF
-
-		port->Write(rbuf, 0, 14);
-
-		return true;
-	}
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, CMDtype cmd) {
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(10);
-		//ev
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		//message class & ID
-		switch (cmd)
-		{
-		case Evrika::CMDtype::CHECK_COM:
-			rbuf[2] = 0x0A;
-			rbuf[3] = 0x01;
-			break;
-		case Evrika::CMDtype::RESET:
-			rbuf[2] = 0x0A;
-			rbuf[3] = 0x02;
-			break;
-		case Evrika::CMDtype::GETGPS:
-			rbuf[2] = 0x0B;
-			rbuf[3] = 0x02;
-			break;
-		case Evrika::CMDtype::GPSSTAT:
-			rbuf[2] = 0x0B;
-			rbuf[3] = 0x03;
-			break;
-		default:
-			break;
-		}
-		//len
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x00;
-
-		CalcSum(rbuf, 8);//6,7
-
-		rbuf[8] = '\r';
-		rbuf[9] = '\n';
-
-		port->Write(rbuf, 0, 10);
-
-		return true;
-	}
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, uint32_t addr, uint8_t mode, uint32_t freq, uint8_t power, uint8_t att, uint8_t reserved) {
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(22);
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		rbuf[2] = 0x0C;
-		rbuf[3] = 0x03;
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x0C;
-
-		PasteInBuffer(rbuf, 6, addr);
-		rbuf[10] = mode;
-		PasteInBuffer(rbuf, 11, freq);
-		rbuf[15] = power;
-		rbuf[16] = att;
-		rbuf[17] = reserved;
-
-		CalcSum(rbuf, 20);
-
-		rbuf[20] = '\r';
-		rbuf[21] = '\n';
-
-		port->Write(rbuf, 0, 22);
-
-		return true;
-	}
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, uint32_t addr, uint8_t cycles) {
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(15);
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		rbuf[2] = 0x0C;
-		rbuf[3] = 0x02;
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x05;
-
-		PasteInBuffer(rbuf, 6, addr);
-		rbuf[10] = cycles;
-
-		CalcSum(rbuf, 13);
-
-		rbuf[13] = '\r';
-		rbuf[14] = '\n';
-
-		port->Write(rbuf, 0, 15);
-
-		return true;
-	}
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, bool enable) {
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(11);
-		//ev
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		//message class & ID
-		rbuf[2] = 0x0B;
-		rbuf[3] = 0x01;
-		//len
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x01;
-
-		rbuf[6] = enable;
-		CalcSum(rbuf, 9);
-
-		rbuf[9] = '\r';
-		rbuf[10] = '\n';
-
-		port->Write(rbuf, 0, 11);
-
-		return true;
-	}
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, uint32_t addr, bool enable) {
-		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(15);
-		//ev
-		rbuf[0] = 0x65;
-		rbuf[1] = 0x76;
-		//message class & ID
-		rbuf[2] = 0x0C;
-		rbuf[3] = 0x04;
-		//len
-		rbuf[4] = 0x00;
-		rbuf[5] = 0x05;
-
-		PasteInBuffer(rbuf, 6, addr);
-		rbuf[10] = enable;
-		CalcSum(rbuf, 13);
-
-		rbuf[13] = '\r';
-		rbuf[14] = '\n';
-
-		port->Write(rbuf, 0, 15);
-
-		return true;
-	}
-
 	double CyclesToMeters(int cycles) {
 		double m = 0;
 		const double cycle = 0.010;
@@ -270,15 +97,15 @@ namespace Evrika {
 		m = (double)c*t;
 		return m;
 	}
-	double dBToW(double lvl,double offset) {
+	double dBToW(double lvl, double offset) {
 		double w = 0;
 		w = pow(10.0, (lvl - offset) / 10.0);
 		return w;
 	}
-	double SignalLvlToMeters(double lvl,double tdB) {
-		double m = 0,Kptx=1,Kprx=1,htx=0.1,hrx=1.5;
-		double Ptx = dBToW(tdB,30);
-		double Prx = dBToW(lvl,30);
+	double SignalLvlToMeters(double lvl, double tdB) {
+		double m = 0, Kptx = 1, Kprx = 1, htx = 0.1, hrx = 1.5;
+		double Ptx = dBToW(tdB, 30);
+		double Prx = dBToW(lvl, 30);
 		m = (Ptx*Kptx*Kprx*htx*hrx) / Prx;
 		m = pow(m, 0.25);
 		return m;
@@ -324,5 +151,155 @@ namespace Evrika {
 		memcpy(&num, temp, 4);
 		return num;
 	}
-	
+
+	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id)
+	{
+		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(14);
+		//header
+		rbuf[0] = 'e';
+		rbuf[1] = 'v';
+		//Addr
+		PasteInBuffer(rbuf, 2, Addr);
+		//msg_class
+		rbuf[6] = msg_class;
+		//msg_id
+		rbuf[7] = msg_id;
+		//msg_len
+		rbuf[8] = 0x0;
+		rbuf[9] = 0x0;
+		//CK_A, CK_B
+		CalcSum(rbuf, 12);	//10,11
+		//Bluetooth compatibility
+		rbuf[12] = '\r';	//CR
+		rbuf[13] = '\n';	//LF
+		port->Write(rbuf, 0, rbuf->Length);
+	}
+	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint8_t msg_data)
+	{
+		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(14 + msg_len);
+		//header
+		rbuf[0] = 'e';
+		rbuf[1] = 'v';
+		//Addr
+		PasteInBuffer(rbuf, 2, Addr);
+		//msg_class
+		rbuf[6] = msg_class;
+		//msg_id
+		rbuf[7] = msg_id;
+		//msg_len
+		rbuf[8] = (uint8_t)(msg_len>>8);
+		rbuf[9] = (uint8_t)msg_len;
+		//msg_data
+		rbuf[10] = msg_data;
+		//CK_A, CK_B
+		CalcSum(rbuf, 12 + msg_len);
+		//Bluetooth compatibility
+		rbuf[13 + msg_len] = '\r';	//CR
+		rbuf[14 + msg_len] = '\n';	//LF
+		port->Write(rbuf, 0, rbuf->Length);
+	}
+	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint32_t msg_data)
+	{
+		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(14 + msg_len);
+		//header
+		rbuf[0] = 'e';
+		rbuf[1] = 'v';
+		//Addr
+		PasteInBuffer(rbuf, 2, Addr);
+		//msg_class
+		rbuf[6] = msg_class;
+		//msg_id
+		rbuf[7] = msg_id;
+		//msg_len
+		rbuf[8] = (uint8_t)(msg_len >> 8);
+		rbuf[9] = (uint8_t)msg_len;
+		//msg_data
+		PasteInBuffer(rbuf, 10, msg_data);
+		//CK_A, CK_B
+		CalcSum(rbuf, 12 + msg_len);
+		//Bluetooth compatibility
+		rbuf[13 + msg_len] = '\r';	//CR
+		rbuf[14 + msg_len] = '\n';	//LF
+		port->Write(rbuf, 0, rbuf->Length);
+	}
+	void Commands::Class_0x0A::TestConnect()
+	{
+		ConstructCMD(NULL, 0x0A, 0);
+	}
+	void Commands::Class_0x0A::GetLocalAddr()
+	{
+		ConstructCMD(NULL, 0x0A, 1);
+	}
+	void Commands::Class_0x0A::GetVoltage(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0A, 2);
+	}
+	void Commands::Class_0x0A::GetRelayState(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0A, 88);
+	}
+	void Commands::Class_0x0A::SetRelayState(uint32_t Addr, uint8_t state)
+	{
+		ConstructCMD(Addr, 0x0A, 89, 1, state);
+	}
+	void Commands::Class_0x0A::ProgrammReset(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0A, 99);
+	}
+	void Commands::Class_0x0B::SetGPSPowerState(uint32_t Addr, uint8_t state)
+	{
+		ConstructCMD(Addr, 0x0B, 1, 1, state);
+	}
+	void Commands::Class_0x0B::GetGPSPowerState(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0B, 2);
+	}
+	void Commands::Class_0x0B::GetGPSStatus(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0B, 3);
+	}
+	void Commands::Class_0x0B::GetGPSPosition(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0B, 4);
+	}
+	void Commands::Class_0x0B::ToggleGPSAntenna(uint32_t Addr, uint8_t state)
+	{
+		ConstructCMD(Addr, 0x0B, 5, 1, state);
+	}
+	void Commands::Class_0x0B::GetGPSUsingAntenna(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0B, 6);
+	}
+	void Commands::Class_0x0C::WakeUp(uint32_t Addr, uint32_t Timeout)
+	{
+		ConstructCMD(Addr, 0x0C, 1, 4, Timeout);
+	}
+	void Commands::Class_0x0C::GetRadioTagsParam(uint32_t Addr, uint8_t Count)
+	{
+		ConstructCMD(Addr, 0x0C, 2, 1, Count);
+	}
+	void Commands::Class_0x0C::RequestRadioTagParam(uint32_t Addr, uint32_t TagAddress)
+	{
+		ConstructCMD(Addr, 0x0C, 5, 4, TagAddress);
+	}
+	void Commands::Class_0x0C::GetRadioTagParam(uint32_t Addr, uint32_t TagAddress)
+	{
+		ConstructCMD(Addr, 0x0C, 6, 4, TagAddress);
+	}
+	void Commands::Class_0x0C::ResetCC1101(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0C, 7);
+	}
+	void Commands::Class_0x0D::StartSearchRepeaters(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0D, 1);
+	}
+	void Commands::Class_0x0D::GetRepeatersParam(uint32_t Addr, uint8_t Count)
+	{
+		ConstructCMD(Addr, 0x0D, 2, 1, Count);
+	}
+	void Commands::Class_0x0D::GlobalResetRepeaters(uint32_t Addr)
+	{
+		ConstructCMD(Addr, 0x0D, 99);
+	}
 }

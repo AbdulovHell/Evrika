@@ -1,5 +1,7 @@
 #pragma once
 #include <stdint.h>
+#define MESSAGE_CLASS 6
+#define MESSAGE_ID 7
 namespace Evrika {
 
 	using namespace System;
@@ -46,13 +48,8 @@ namespace Evrika {
 			}
 		}
 
-	private:
-		Evrika::mapform^ mapform;
-		static Evrika::settings^ settings_window;
-		Evrika::loading_page^ ldng_wnd;
 	private: System::Windows::Forms::Button^  button1;
 	private: System::Windows::Forms::Label^  label1;
-
 	private: System::Windows::Forms::GroupBox^  groupBox1;
 	private: System::Windows::Forms::Label^  label3;
 	private: System::Windows::Forms::Label^  label2;
@@ -69,17 +66,14 @@ namespace Evrika {
 	private: System::Windows::Forms::Button^  button6;
 	private: System::Windows::Forms::Button^  button9;
 	private: System::IO::Ports::SerialPort^  serialPort1;
-
 	private: System::Windows::Forms::TextBox^  proglog;
 	private: System::Windows::Forms::StatusStrip^  statusStrip1;
 	private: System::Windows::Forms::ToolStripStatusLabel^  whatCOM;
-
-
 	private: System::Windows::Forms::MenuStrip^  menuStrip1;
 	private: System::Windows::Forms::ToolStripMenuItem^  файлToolStripMenuItem;
 	private: System::Windows::Forms::ToolStripMenuItem^  savemap;
 	private: System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
-	private: System::Windows::Forms::DataGridView^  dataGridView1;
+	private: System::Windows::Forms::DataGridView^  RadioTagsGrid;
 	private: System::Windows::Forms::Button^  button7;
 	private: System::Windows::Forms::ToolStripMenuItem^  settings_menu;
 	private: System::Windows::Forms::TabControl^  tabControl1;
@@ -88,18 +82,10 @@ namespace Evrika {
 	private: System::Windows::Forms::Button^  button8;
 	private: System::Windows::Forms::Timer^  sys_task;
 	private: System::Windows::Forms::CheckBox^  Get_Dev;
-
-
-
 	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel1;
 	private: System::Windows::Forms::ToolStripProgressBar^  get_device_progress;
 	private: System::Windows::Forms::TabPage^  tabPage3;
 	private: System::Windows::Forms::DataGridView^  dataGridView2;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  UniqueID;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  SignalLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  WorkMode;
 	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column1;
 	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column3;
 	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column4;
@@ -108,16 +94,12 @@ namespace Evrika {
 	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column7;
 	private: System::Windows::Forms::ToolStripMenuItem^  SaveSessionBtn;
 	private: System::Windows::Forms::ToolStripMenuItem^  LoadSessionBtn;
-
-
 	private: System::Windows::Forms::SaveFileDialog^  saveFileDialog2;
 	private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
-
 	private: System::Windows::Forms::ToolStripMenuItem^  подключениеToolStripMenuItem;
 	private: System::Windows::Forms::ToolStripMenuItem^  ConnectDC;
 	private: System::Windows::Forms::ToolStripMenuItem^  ConnCheck;
 	private: System::Windows::Forms::ToolStripMenuItem^  кэшToolStripMenuItem;
-
 	private: System::Windows::Forms::ToolStripMenuItem^  ExportMapBtn;
 	private: System::Windows::Forms::ToolStripMenuItem^  ImportMapBtn;
 	private: System::Windows::Forms::Button^  button11;
@@ -128,20 +110,23 @@ namespace Evrika {
 	private: System::Windows::Forms::ToolStripStatusLabel^  ImageIndication;
 	private: System::Windows::Forms::CheckBox^  GPS_En;
 	private: System::Windows::Forms::TextBox^  A_text;
-
 	private: System::Windows::Forms::Label^  label9;
 	private: System::Windows::Forms::TextBox^  n_text;
-
 	private: System::Windows::Forms::Label^  label8;
 	private: System::Windows::Forms::Label^  label10;
-private: System::Windows::Forms::Button^  button10;
-
-
-
-
+	private: System::Windows::Forms::Button^  button10;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  UniqueID;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  SignalLVL;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
+	private: System::Windows::Forms::DataGridView^  DCGrid;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  dataGridViewTextBoxColumn1;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  dataGridViewTextBoxColumn2;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  dataGridViewTextBoxColumn3;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  dataGridViewTextBoxColumn4;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  WorkMode;
 	private: System::Windows::Forms::ListBox^  listBox1;
-			 /// <summary>
-			 /// Свои классы и глобальные переменные
+			
 	private: ref class geoPoint {                 //Класс geoPoint для хранения координат точек
 	private:
 		double _lat, _lng, _r;	//градусы, км в градусах					
@@ -349,509 +334,54 @@ private: System::Windows::Forms::Button^  button10;
 				 }
 			 };
 	public:	 ref class MyPosition {
-				 KalmanFilter^ lat;
-				 KalmanFilter^ lng;
-				 KalmanFilter^ HDOP;
-				 KalmanFilter^ Height;
-			 public:
-				 bool bFirstRead;
-
-				 MyPosition();
-				 ~MyPosition();
-				 void SetState(double _lat, double _lng, double _HDOP, double _Height);
-				 void Correct(double _lat, double _lng, double _HDOP, double _Height);
-				 void GetState(double* _lat, double* _lng, double* _HDOP, double* _Height);
-				 void GetPos(double* _lat, double* _lng);
-			 };
-	private: void Triangulate(geoPoint^ circle1, geoPoint^ circle2) {	//return points and array size
-				 double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
-				 System::Collections::Generic::List<GMap::NET::PointLatLng> ^Points = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
-				 System::Collections::Generic::List<GMap::NET::PointLatLng> ^cPoints = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
-
-				 double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//поправка на длинну мередиана
-
-				 double A0, B0, C0;
-				 //d = circle1->get_dist(circle2);
-				 //r0 *= 111.11;
-				 //r1 *= 111.11;
-				 //listView1->Items->Clear();
-				 y0 = circle1->get_lat();
-				 y1 = circle2->get_lat();
-				 x0 = circle1->get_lng();
-				 x1 = circle2->get_lng();
-				 //double x = (x1 - x0)*111.11*Z;
-				 //double y = (y1 - y0)*111.11;
-				 double y = circle2->get_lat() - circle1->get_lat();
-				 double x = circle2->get_lng() - circle1->get_lng();
-				 x *= 111.11*Z;
-				 y *= 111.11;
-				 d = Math::Sqrt(y*y + x*x);
-				 //d = Math::Sqrt((y1 - y0)*(y1 - y0) + (x1 - x0)*(x1 - x0));
-				 if (d > r0 + r1)
-					 return;
-				 if (d < Math::Abs(r0 - r1))
-					 return;
-				 a = ((r0 * r0 - r1 * r1) + d * d) / (2 * d);
-
-				 y2 = (a / d) * y;
-				 x2 = (a / d) * x;
-
-				 A0 = x;
-				 B0 = y;
-				 C0 = -A0*x2 - B0*y2;
-
-				 double alfa = Math::Acos(a / r0);  //угол между отрезком, который соединяет центры, и одним из радиусов первой окружности, проведённым в точку пересечения.
-													//хз как арккосинус считается, поправь если что.
-													//здесь требуется правильно считать a.
-				 double cosOx = x / (Math::Sqrt(x*x + y*y)); // вычисляем синус и косинус угла между отрезком, который соединяет центры, и осью иксов
-				 double sinOx = y / (Math::Sqrt(x*x + y*y));  //надо считать корень!)
-
-				 double alfa0;             // смотрим на расположение отрезка по знаку sin/cos
-				 if (sinOx >= 0)
-					 alfa0 = Math::Acos(cosOx);  //первая и вторая четверть, угол положительный 
-				 else
-					 alfa0 = -Math::Acos(cosOx); // третья и четвёртая четверть, знак косинуса не важен, только знак синуса
-
-				 double alfa1 = alfa0 + alfa;
-				 double alfa2 = alfa0 - alfa;
-
-				 if ((alfa1 == Math::PI / 2) || (alfa2 == Math::PI / 2) || (alfa1 == -Math::PI / 2) || (alfa2 == -Math::PI / 2))
-				 {
-					 //проверяем не равен какой-либо из углов пи на два или минус пи на 2. если хоть один из них равен
-					 //то нельзя считать тангенс (он бесконечен), решение будет немного другим. Как пи пишется я не знаю.
-					 if ((alfa1 == Math::PI / 2) || (alfa1 == -Math::PI / 2))
-					 {
-						 x31 = 0;
-						 x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
-						 y31 = -C0 / B0;
-						 y32 = x32 * Math::Tan(alfa2);
-					 }
-					 if ((alfa2 == Math::PI / 2) || (alfa2 == -Math::PI / 2))
-					 {
-						 x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
-						 x32 = 0;
-						 y31 = x31 * Math::Tan(alfa1);
-						 y32 = -C0 / B0;
-					 }
-
-				 }
-				 else                //здесь собственно решение, если углы норм. тогда тг считать можно.
-				 {
-					 x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
-					 x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
-					 y31 = x31 * Math::Tan(alfa1);
-					 y32 = x32 * Math::Tan(alfa2);
-				 }
-
-				 y2 /= 111.11;
-				 x2 /= 111.11*Z;
-
-				 x31 /= 111.11*Z;
-				 x32 /= 111.11*Z;
-				 y31 /= 111.11;
-				 y32 /= 111.11;
-
-				 Points->Add(PointLatLng(x0 + x31, y0 + y31));
-				 Points->Add(PointLatLng(x0 + x32, y0 + y32));
-				 cPoints->Add(PointLatLng(y0, x0));
-				 cPoints->Add(PointLatLng(y1, x1));
-
-				 mrkrOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(y0 + y2, x0 + x2), Markers::GMarkerGoogleType::purple));
-				 mrkrOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(y0 + y31, x0 + x31), Markers::GMarkerGoogleType::red));
-				 mrkrOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(y0 + y32, x0 + x32), Markers::GMarkerGoogleType::red));
-				 GMapPolygon ^line = gcnew GMapPolygon(Points, "line0");
-				 GMapPolygon ^lineC = gcnew GMapPolygon(cPoints, "line0");
-				 line->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(50, Color::Red));
-				 line->Stroke = gcnew Pen(Color::Red, 1);
-				 lineC->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(50, Color::Blue));
-				 lineC->Stroke = gcnew Pen(Color::Blue, 1);
-				 areaOvrl->Polygons->Add(line);
-				 areaOvrl->Polygons->Add(lineC);
-				 return;
-			 }
-			 void Triangulate(geoPoint^ circle1, geoPoint^ circle2, List<PointLatLng>^ twoPoints) {	//return points and array size
-				 double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
-				 List<PointLatLng> ^Points = gcnew List<GMap::NET::PointLatLng>;
-				 List<PointLatLng> ^cPoints = gcnew List<GMap::NET::PointLatLng>;
-
-				 double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//поправка на длинну мередиана
-				 double A0, B0, C0;
-				 y0 = circle1->get_lat();
-				 y1 = circle2->get_lat();
-				 x0 = circle1->get_lng();
-				 x1 = circle2->get_lng();
-				 double y = circle2->get_lat() - circle1->get_lat();
-				 double x = circle2->get_lng() - circle1->get_lng();
-				 x *= 111.11*Z;
-				 y *= 111.11;
-				 d = Math::Sqrt(y*y + x*x); if (d > r0 + r1)
-					 return;
-				 if (d < Math::Abs(r0 - r1))
-					 return;
-				 a = ((r0 * r0 - r1 * r1) + d * d) / (2 * d);
-				 y2 = (a / d) * y;
-				 x2 = (a / d) * x;
-				 A0 = x;
-				 B0 = y;
-				 C0 = -A0*x2 - B0*y2;
-
-				 double alfa = Math::Acos(a / r0);  //угол между отрезком, который соединяет центры, и одним из радиусов первой окружности, проведённым в точку пересечения.
-													//хз как арккосинус считается, поправь если что.
-													//здесь требуется правильно считать a.
-				 double cosOx = x / (Math::Sqrt(x*x + y*y)); // вычисляем синус и косинус угла между отрезком, который соединяет центры, и осью иксов
-				 double sinOx = y / (Math::Sqrt(x*x + y*y));  //надо считать корень!)
-
-				 double alfa0;             // смотрим на расположение отрезка по знаку sin/cos
-				 if (sinOx >= 0)
-					 alfa0 = Math::Acos(cosOx);  //первая и вторая четверть, угол положительный 
-				 else
-					 alfa0 = -Math::Acos(cosOx); // третья и четвёртая четверть, знак косинуса не важен, только знак синуса
-
-				 double alfa1 = alfa0 + alfa;
-				 double alfa2 = alfa0 - alfa;
-
-				 if ((alfa1 == Math::PI / 2) || (alfa2 == Math::PI / 2) || (alfa1 == -Math::PI / 2) || (alfa2 == -Math::PI / 2))
-				 {
-					 //проверяем не равен какой-либо из углов пи на два или минус пи на 2. если хоть один из них равен
-					 //то нельзя считать тангенс (он бесконечен), решение будет немного другим. Как пи пишется я не знаю.
-					 if ((alfa1 == Math::PI / 2) || (alfa1 == -Math::PI / 2))
-					 {
-						 x31 = 0;
-						 x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
-						 y31 = -C0 / B0;
-						 y32 = x32 * Math::Tan(alfa2);
-					 }
-					 if ((alfa2 == Math::PI / 2) || (alfa2 == -Math::PI / 2))
-					 {
-						 x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
-						 x32 = 0;
-						 y31 = x31 * Math::Tan(alfa1);
-						 y32 = -C0 / B0;
-					 }
-
-				 }
-				 else                //здесь собственно решение, если углы норм. тогда тг считать можно.
-				 {
-					 x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
-					 x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
-					 y31 = x31 * Math::Tan(alfa1);
-					 y32 = x32 * Math::Tan(alfa2);
-				 }
-				 x31 /= 111.11*Z;
-				 x32 /= 111.11*Z;
-				 y31 /= 111.11;
-				 y32 /= 111.11;
-				 twoPoints->Add(PointLatLng(y0 + y31, x0 + x31));
-				 twoPoints->Add(PointLatLng(y0 + y32, x0 + x32));
-				 return;
-			 }
-			 int factorial(int n) {
-				 int res = 1;
-				 for (int i = 1; i < n + 1; i++)
-					 res *= i;
-				 return res;
-			 }
-			 List<PointLatLng>^ SortPoint_Line(List<PointLatLng>^ in_p)
-			 {
-				 List<PointLatLng>^ out_p = gcnew List<PointLatLng>;
-				 Line^ line = gcnew Line();
-				 int size = in_p->Count, index = -1, flag = 0;
-				 out_p->Add(in_p[0]);
-				 in_p->RemoveAt(0);
-				 for (int i = 0; i < size - 1; i++) {
-					 for (int j = 0; j < in_p->Count; j++)
-					 {
-						 flag = 0;
-						 line->set_line(out_p[i], in_p[j]);
-						 for (int k = 0; k < in_p->Count; k++)
-						 {
-							 if (k != j)
-								 flag += line->check_point(in_p[k]);
-						 }
-						 for (int k = 0; k < out_p->Count; k++)
-						 {
-							 if (k != i)
-								 flag += line->check_point(out_p[k]);
-						 }
-						 if (Math::Abs(flag) == in_p->Count - 1 + out_p->Count - 1)
-						 {
-							 index = j;
-							 break;
-						 }
-					 }
-					 if (index != -1) {
-						 out_p->Add(in_p[index]);
-						 in_p->RemoveAt(index);
-					 }
-				 }
-				 //out_p->Add(in_p[0]);
-				 //in_p->RemoveAt(0);
-				 return out_p;
-			 }
-			 bool inTheArea(PointLatLng point)
-			 {
-				 bool result = true;
-				 for (int i = 0; i < MyCoords->Count; i++)
-				 {
-					 double r = geoPoint::GetDistanceToPointFrom(point, MyCoords[i]->get_pointLatLng()) * 1000;
-					 double rad = MyCoords[i]->get_r();
-					 //listBox2->Items->Add(r);
-					 if (r - 0.002*rad > rad)
-					 {
-						 //GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(point, Markers::GMarkerGoogleType::green_pushpin);
-						 //marker->ToolTipText = r.ToString();
-						 //marker->ToolTipMode = GMap::NET::WindowsForms::MarkerTooltipMode::OnMouseOver;
-						 //mrkrOvrl->Markers->Add(marker);
-						 result = false;
-					 }
-				 }
-				 return result;
-			 }
-			 bool inTheArea(PointLatLng point, int i, int j, int k)
-			 {
-				 bool result = true;
-				 double r1 = geoPoint::GetDistanceToPointFrom(point, MyCoords[i]->get_pointLatLng()) * 1000;
-				 double r2 = geoPoint::GetDistanceToPointFrom(point, MyCoords[j]->get_pointLatLng()) * 1000;
-				 double r3 = geoPoint::GetDistanceToPointFrom(point, MyCoords[k]->get_pointLatLng()) * 1000;
-				 double radius1 = MyCoords[i]->get_r();
-				 double radius2 = MyCoords[j]->get_r();
-				 double radius3 = MyCoords[k]->get_r();
-				 if ((r1 - 0.002*radius1 > radius1) || (r2 - 0.002*radius2 > radius2) || (r3 - 0.002*radius3 > radius3))
-					 result = false;
-				 return result;
-			 }
-			 void metod_4()
-			 {
-				 List<PointLatLng>^ allPoints = gcnew List<PointLatLng>;
-				 List<int>^ allPoints_mass = gcnew List<int>;
-				 for (int i = 0; i < lCoordsCount; i++)
-					 for (int j = i + 1; j < lCoordsCount; j++) {
-
-						 for (int k = j + 1; k < lCoordsCount; k++)
-						 {
-							 List<PointLatLng>^ peresech = gcnew List<PointLatLng>;
-							 List<PointLatLng>^ center_area = gcnew List<PointLatLng>;
-							 List<geoPoint^>^ troyka_okr = gcnew List<geoPoint^>(3);
-							 troyka_okr->Add(MyCoords[i]);
-							 troyka_okr->Add(MyCoords[j]);
-							 troyka_okr->Add(MyCoords[k]);
-							 //Находим все пересечения
-							 //listBox3->Items->Add(i.ToString() + " " + j.ToString() + " " + k.ToString());
-							 for (int a = 0; a < 3; a++)
-								 for (int b = a + 1; b < 3; b++)
-								 {
-									 List<PointLatLng>^ tempPoints = gcnew List<PointLatLng>;
-									 Triangulate(troyka_okr[a], troyka_okr[b], tempPoints);
-									 peresech->Add(tempPoints[0]);
-									 peresech->Add(tempPoints[1]);
-								 }
-							 PointLatLng center;
-							 for (int c = 0; c < peresech->Count; c++)
-							 {
-								 center.Lat += peresech[c].Lat;
-								 center.Lng += peresech[c].Lng;
-							 }
-							 center.Lat /= peresech->Count;
-							 center.Lng /= peresech->Count;
-
-							 double temp_dist, min_dist = 999999999;
-							 int min_index = -1;
-							 for (int d = 0; d < 3; d++)
-							 {
-								 for (int e = 0; e < peresech->Count; e++) {
-									 temp_dist = Math::Sqrt(
-										 Math::Pow(Math::Abs(center.Lat - peresech[e].Lat), 2) +
-										 Math::Pow(Math::Abs(center.Lng - peresech[e].Lng), 2));
-
-									 if (temp_dist < min_dist && this->inTheArea(peresech[e], i, j, k)) {
-										 min_dist = temp_dist;
-										 min_index = e;
-									 }
-								 }
-								 center_area->Add(peresech[min_index]);
-								 min_dist = 999999;
-								 peresech->RemoveAt(min_index);
-								 min_index = -1;
-							 }
-							 //GMapPolygon ^cent_area = gcnew GMapPolygon(center_area, "center_area");//debug
-							 //cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(63, Color::Green));
-							 //cent_area->Stroke = gcnew Pen(Color::Green, 1);
-							 //areaOvrl->Polygons->Add(cent_area);
-							 for (int p = 0; p < center_area->Count; p++) {
-								 bool duplicate = false;
-								 int index = -1;
-								 for (int f = 0; f < allPoints->Count; f++)
-								 {
-									 if (center_area[p].Lat == allPoints[f].Lat&&center_area[p].Lng == allPoints[f].Lng)	//0.0000005
-									 {
-										 duplicate = true;
-										 index = f;
-										 break;
-									 }
-								 }
-								 if (duplicate)
-								 {
-									 if (inTheArea(allPoints[index])) {
-										 allPoints_mass[index]++;
-									 }
-								 }
-								 else
-								 {
-									 allPoints->Add(center_area[p]);
-									 allPoints_mass->Add(1);
-								 }
-							 }
-						 }
-
-					 }
-
-				 int max_mass = 0;
-				 for (int g = 0; g < allPoints_mass->Count; g++) {
-					 if (max_mass < allPoints_mass[g])
-						 max_mass = allPoints_mass[g];
-				 }
-				 List<PointLatLng>^ center_area = gcnew List<PointLatLng>;
-				 for (int i = 0; i < allPoints->Count; i++) {
-					 if (allPoints_mass[i] == max_mass)
-						 center_area->Add(allPoints[i]);
-				 }
-				 /*for (int i = 0; i < allPoints->Count; i++)
-				 {
-					 GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(allPoints[i], Markers::GMarkerGoogleType::red_small);
-					 marker->ToolTipText = allPoints_mass[i].ToString();
-					 marker->ToolTipMode = GMap::NET::WindowsForms::MarkerTooltipMode::OnMouseOver;
-					 mrkrOvrl->Markers->Add(marker);
-				 }*/
-				 GMapPolygon ^cent_area = gcnew GMapPolygon(SortPoint_Line(center_area), "center_area");
-				 cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
-				 cent_area->Stroke = gcnew Pen(Color::Red, 2);
-				 areaOvrl->Polygons->Add(cent_area);
-			 }
-			 void metod_5() {
-				 List<PointLatLng>^ area_points = gcnew List<PointLatLng>;
-				 List<int>^ mass = gcnew List<int>;
-				 for (int i = 0; i < MyCoords->Count; i++)
-					 for (int j = i + 1; j < MyCoords->Count; j++) {
-						 List<PointLatLng>^ tempPoints = gcnew List<PointLatLng>;
-						 Triangulate(MyCoords[i], MyCoords[j], tempPoints);
-
-						 for (int p = 0; p < tempPoints->Count; p++) {
-							 bool duplicate = false;
-							 int index = -1;
-							 for (int f = 0; f < area_points->Count; f++)
-							 {
-								 if (tempPoints[p].Lat == area_points[f].Lat&&tempPoints[p].Lng == area_points[f].Lng)	//0.0000005
-								 {
-									 duplicate = true;
-									 index = f;
-									 break;
-								 }
-							 }
-							 if (duplicate)
-							 {
-								 if (inTheArea(tempPoints[p])) {
-									 mass[index]++;
-								 }
-							 }
-							 else
-							 {
-								 if (inTheArea(tempPoints[p])) {
-									 area_points->Add(tempPoints[p]);
-									 mass->Add(1);
-								 }
-							 }
-						 }
-					 }
-				 if (area_points->Count > 3) area_points = SortPoint_Line(area_points);
-				 GMapPolygon ^cent_area = gcnew GMapPolygon(area_points, "center_area");
-				 cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
-				 cent_area->Stroke = gcnew Pen(Color::Red, 2);
-				 areaOvrl->Polygons->Add(cent_area);
-			 }
-			 void ParseToPoint(cli::array<wchar_t>^ buf) {
-				 int dist = 0;
-				 dist = buf[6] << 8;
-				 dist += buf[7];
-				 double lat = buf[8] + (buf[9] + (buf[10] + buf[11] / 100.0) / 60.0) / 60.0;
-				 double lon = buf[12] + (buf[13] + (buf[14] + buf[15] / 100.0) / 60.0) / 60.0;
-				 //save
-
-				 MyCoords->Add(gcnew geoPoint(lat, lon, dist, "ID: 1234"));
-				 listBox1->Items->Add(MyCoords[lCoordsCount]->get_name());
-				 lCoordsCount++;
-
-				 if (lCoordsCount > 8) {
-					 MyCoords->RemoveAt(0);
-					 lCoordsCount--;
-					 listBox1->Items->RemoveAt(0);
-				 }
-			 }
-			 void WriteToComStat(String^ str) {
-				 whatCOM->Text = str;
-			 }
-			 void CheckComConn();
-			 void EnumCOMs();
-			 System::String^ Quality(int q) {
-				 //0x2588 full block
-				 //0x2591 light shade
-				 //0x2584 half block
-				 q = q % 7;
-				 wchar_t buf[8];
-				 for (int i = 0; i < 7; i++) {
-					 if (i == 0 && q > 0) buf[i] = 0x2584;
-					 else if (i > 0 && i < q) buf[i] = 0x2588;
-					 else buf[i] = 0x2591;
-				 }
-				 buf[7] = 0;
-				 System::String^ str = gcnew System::String(buf);
-				 return str;
-			 }
-			 int RangeRandInt(int min, int max) {
-				 Random^ autoRand = gcnew Random;
-				 return autoRand->Next(min, max);
-			 }
-			 double RangeRandDouble(double min, double max) {
-				 Random^ autoRand = gcnew Random;
-				 double mult = autoRand->NextDouble();
-				 double num = min + (max - min)*mult;
-				 int temp = int(num * 100);
-				 return temp / 100.0;
-			 }
-			 void update_prop_windows();
+		KalmanFilter^ lat;
+		KalmanFilter^ lng;
+		KalmanFilter^ HDOP;
+		KalmanFilter^ Height;
 	public:
-		void SetTimer(bool en) {
-			sys_task->Enabled = en;
-		}
-		void WriteLog(String^ message) {
-			for (int i = 0; i < logs->Count; i++) {
-				try {
-					logs[i]->AppendText("\r\n" + message);
-				}
-				catch (...) {
-					logs->RemoveAt(i);
-					i--;
-				}
-			}
-		}
+		bool bFirstRead;
+
+		MyPosition();
+		~MyPosition();
+		void SetState(double _lat, double _lng, double _HDOP, double _Height);
+		void Correct(double _lat, double _lng, double _HDOP, double _Height);
+		void GetState(double* _lat, double* _lng, double* _HDOP, double* _Height);
+		void GetPos(double* _lat, double* _lng);
+	};
+	public:
+		void SetTimer(bool en);
+		void WriteLog(String^ message);
 		void AddNewPoint(float m);
-		void UpdateMapPos() {
-			//обновление картой при изменении
-			label2->Text = "Широта: " + map->Position.Lat.ToString();	//Latitude
-			label3->Text = "Долгота: " + map->Position.Lng.ToString();	//Longetude
-		}
+		void UpdateMapPos();
 		bool CheckSum(cli::array<wchar_t>^ rbuf);
 		void update_device_list();
 		void update_event_list();
 		void ParseDeviceBuffer(cli::array<wchar_t>^ rbuf);
 
-	private:
-		String^ ourPort;
-		bool eGPS;
-
-	public:
 		static mainform^ my_handle;
 		MyPosition^ myPos;
 	private:
+		void Triangulate(geoPoint^ circle1, geoPoint^ circle2);
+		void Triangulate(geoPoint^ circle1, geoPoint^ circle2, List<PointLatLng>^ twoPoints);
+		int factorial(int n);
+		List<PointLatLng>^ SortPoint_Line(List<PointLatLng>^ in_p);
+		bool inTheArea(PointLatLng point);
+		bool inTheArea(PointLatLng point, int i, int j, int k);
+		void metod_5();
+		void ParseToPoint(cli::array<wchar_t>^ buf);
+		void WriteToComStat(String^ str);
+		void CheckComConn();
+		void EnumCOMs();
+		System::String^ Quality(int q);
+		int RangeRandInt(int min, int max);
+		double RangeRandDouble(double min, double max);
+		void update_prop_windows();
+
+		Evrika::mapform^ mapform;
+		static Evrika::settings^ settings_window;
+		Evrika::loading_page^ ldng_wnd;
+		String^ ourPort;
+		bool eGPS;
 		KalmanFilter^ mid_cycles;
 		cli::array<GMarkerGoogle^> ^markers;
 		long lCoordsCount;
@@ -875,8 +405,6 @@ private: System::Windows::Forms::Button^  button10;
 		List<device_prop^>^ PropWindows;
 		uint64_t sys_task_counter = 0;
 	private: System::ComponentModel::IContainer^  components;
-			 /// </summary>
-
 
 #pragma region Windows Form Designer generated code
 			 /// <summary>
@@ -888,6 +416,8 @@ private: System::Windows::Forms::Button^  button10;
 				 this->components = (gcnew System::ComponentModel::Container());
 				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle3 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle4 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 				 this->button1 = (gcnew System::Windows::Forms::Button());
 				 this->listBox1 = (gcnew System::Windows::Forms::ListBox());
 				 this->label1 = (gcnew System::Windows::Forms::Label());
@@ -930,15 +460,11 @@ private: System::Windows::Forms::Button^  button10;
 				 this->ImportMapBtn = (gcnew System::Windows::Forms::ToolStripMenuItem());
 				 this->settings_menu = (gcnew System::Windows::Forms::ToolStripMenuItem());
 				 this->saveFileDialog1 = (gcnew System::Windows::Forms::SaveFileDialog());
-				 this->dataGridView1 = (gcnew System::Windows::Forms::DataGridView());
-				 this->UniqueID = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->SignalLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->QualityLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->BatteryLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->WorkMode = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->RadioTagsGrid = (gcnew System::Windows::Forms::DataGridView());
 				 this->button7 = (gcnew System::Windows::Forms::Button());
 				 this->tabControl1 = (gcnew System::Windows::Forms::TabControl());
 				 this->tabPage1 = (gcnew System::Windows::Forms::TabPage());
+				 this->button10 = (gcnew System::Windows::Forms::Button());
 				 this->label10 = (gcnew System::Windows::Forms::Label());
 				 this->A_text = (gcnew System::Windows::Forms::TextBox());
 				 this->label9 = (gcnew System::Windows::Forms::Label());
@@ -960,17 +486,27 @@ private: System::Windows::Forms::Button^  button10;
 				 this->sys_task = (gcnew System::Windows::Forms::Timer(this->components));
 				 this->saveFileDialog2 = (gcnew System::Windows::Forms::SaveFileDialog());
 				 this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
-				 this->button10 = (gcnew System::Windows::Forms::Button());
+				 this->UniqueID = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->SignalLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->QualityLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->BatteryLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->DCGrid = (gcnew System::Windows::Forms::DataGridView());
+				 this->dataGridViewTextBoxColumn1 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->dataGridViewTextBoxColumn2 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->dataGridViewTextBoxColumn3 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->dataGridViewTextBoxColumn4 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+				 this->WorkMode = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->groupBox1->SuspendLayout();
 				 this->groupBox2->SuspendLayout();
 				 this->statusStrip1->SuspendLayout();
 				 this->menuStrip1->SuspendLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView1))->BeginInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->RadioTagsGrid))->BeginInit();
 				 this->tabControl1->SuspendLayout();
 				 this->tabPage1->SuspendLayout();
 				 this->tabPage2->SuspendLayout();
 				 this->tabPage3->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView2))->BeginInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->BeginInit();
 				 this->SuspendLayout();
 				 this->button1->Location = System::Drawing::Point(6, 6);
 				 this->button1->Name = L"button1";
@@ -1120,9 +656,9 @@ private: System::Windows::Forms::Button^  button10;
 						 this->toolStripStatusLabel1, this->get_device_progress, this->toolStripStatusLabel2, this->toolStripStatusLabel3, this->toolStripStatusLabel4,
 						 this->toolStripStatusLabel5
 				 });
-				 this->statusStrip1->Location = System::Drawing::Point(0, 510);
+				 this->statusStrip1->Location = System::Drawing::Point(0, 571);
 				 this->statusStrip1->Name = L"statusStrip1";
-				 this->statusStrip1->Size = System::Drawing::Size(705, 22);
+				 this->statusStrip1->Size = System::Drawing::Size(882, 22);
 				 this->statusStrip1->TabIndex = 14;
 				 this->statusStrip1->Text = L"statusStrip1";
 				 this->ImageIndication->DisplayStyle = System::Windows::Forms::ToolStripItemDisplayStyle::Image;
@@ -1159,7 +695,7 @@ private: System::Windows::Forms::Button^  button10;
 				 });
 				 this->menuStrip1->Location = System::Drawing::Point(0, 0);
 				 this->menuStrip1->Name = L"menuStrip1";
-				 this->menuStrip1->Size = System::Drawing::Size(705, 24);
+				 this->menuStrip1->Size = System::Drawing::Size(882, 24);
 				 this->menuStrip1->TabIndex = 16;
 				 this->menuStrip1->Text = L"menuStrip1";
 				 this->файлToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {
@@ -1218,51 +754,27 @@ private: System::Windows::Forms::Button^  button10;
 				 this->saveFileDialog1->DefaultExt = L"bmp";
 				 this->saveFileDialog1->Filter = L"Bitmap|*.bmp|Все файлы|*.*";
 				 this->saveFileDialog1->SupportMultiDottedExtensions = true;
-				 this->dataGridView1->AllowUserToAddRows = false;
-				 this->dataGridView1->AllowUserToDeleteRows = false;
-				 this->dataGridView1->AllowUserToResizeRows = false;
-				 this->dataGridView1->AutoSizeColumnsMode = System::Windows::Forms::DataGridViewAutoSizeColumnsMode::Fill;
-				 this->dataGridView1->AutoSizeRowsMode = System::Windows::Forms::DataGridViewAutoSizeRowsMode::AllCells;
-				 this->dataGridView1->CellBorderStyle = System::Windows::Forms::DataGridViewCellBorderStyle::Raised;
-				 this->dataGridView1->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
-				 this->dataGridView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(5) {
+				 this->RadioTagsGrid->AllowUserToAddRows = false;
+				 this->RadioTagsGrid->AllowUserToDeleteRows = false;
+				 this->RadioTagsGrid->AllowUserToResizeRows = false;
+				 this->RadioTagsGrid->AutoSizeColumnsMode = System::Windows::Forms::DataGridViewAutoSizeColumnsMode::Fill;
+				 this->RadioTagsGrid->AutoSizeRowsMode = System::Windows::Forms::DataGridViewAutoSizeRowsMode::AllCells;
+				 this->RadioTagsGrid->CellBorderStyle = System::Windows::Forms::DataGridViewCellBorderStyle::Raised;
+				 this->RadioTagsGrid->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
+				 this->RadioTagsGrid->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(4) {
 					 this->UniqueID, this->SignalLVL,
-						 this->QualityLVL, this->BatteryLVL, this->WorkMode
+						 this->QualityLVL, this->BatteryLVL
 				 });
-				 this->dataGridView1->Location = System::Drawing::Point(0, 0);
-				 this->dataGridView1->MultiSelect = false;
-				 this->dataGridView1->Name = L"dataGridView1";
-				 this->dataGridView1->ReadOnly = true;
-				 this->dataGridView1->RowHeadersVisible = false;
-				 this->dataGridView1->SelectionMode = System::Windows::Forms::DataGridViewSelectionMode::CellSelect;
-				 this->dataGridView1->Size = System::Drawing::Size(697, 425);
-				 this->dataGridView1->TabIndex = 17;
-				 this->dataGridView1->CellDoubleClick += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &mainform::open_device);
-				 dataGridViewCellStyle1->BackColor = System::Drawing::Color::White;
-				 this->UniqueID->DefaultCellStyle = dataGridViewCellStyle1;
-				 this->UniqueID->HeaderText = L"Уникальный  ID";
-				 this->UniqueID->Name = L"UniqueID";
-				 this->UniqueID->ReadOnly = true;
-				 this->UniqueID->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 this->SignalLVL->HeaderText = L"Уровень сигнала";
-				 this->SignalLVL->Name = L"SignalLVL";
-				 this->SignalLVL->ReadOnly = true;
-				 this->SignalLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 dataGridViewCellStyle2->ForeColor = System::Drawing::Color::Green;
-				 this->QualityLVL->DefaultCellStyle = dataGridViewCellStyle2;
-				 this->QualityLVL->HeaderText = L"Качество приема сигнала";
-				 this->QualityLVL->Name = L"QualityLVL";
-				 this->QualityLVL->ReadOnly = true;
-				 this->QualityLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 this->BatteryLVL->HeaderText = L"Уровень заряда батареи";
-				 this->BatteryLVL->Name = L"BatteryLVL";
-				 this->BatteryLVL->ReadOnly = true;
-				 this->BatteryLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 this->WorkMode->HeaderText = L"Режим работы";
-				 this->WorkMode->Name = L"WorkMode";
-				 this->WorkMode->ReadOnly = true;
-				 this->WorkMode->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 this->button7->Location = System::Drawing::Point(616, 431);
+				 this->RadioTagsGrid->Location = System::Drawing::Point(500, 3);
+				 this->RadioTagsGrid->MultiSelect = false;
+				 this->RadioTagsGrid->Name = L"RadioTagsGrid";
+				 this->RadioTagsGrid->ReadOnly = true;
+				 this->RadioTagsGrid->RowHeadersVisible = false;
+				 this->RadioTagsGrid->SelectionMode = System::Windows::Forms::DataGridViewSelectionMode::CellSelect;
+				 this->RadioTagsGrid->Size = System::Drawing::Size(371, 425);
+				 this->RadioTagsGrid->TabIndex = 17;
+				 this->RadioTagsGrid->CellDoubleClick += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &mainform::open_device);
+				 this->button7->Location = System::Drawing::Point(362, 443);
 				 this->button7->Name = L"button7";
 				 this->button7->Size = System::Drawing::Size(75, 23);
 				 this->button7->TabIndex = 18;
@@ -1276,7 +788,7 @@ private: System::Windows::Forms::Button^  button10;
 				 this->tabControl1->Location = System::Drawing::Point(0, 24);
 				 this->tabControl1->Name = L"tabControl1";
 				 this->tabControl1->SelectedIndex = 0;
-				 this->tabControl1->Size = System::Drawing::Size(705, 486);
+				 this->tabControl1->Size = System::Drawing::Size(882, 547);
 				 this->tabControl1->TabIndex = 19;
 				 this->tabControl1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::tabControl1_SelectedIndexChanged);
 				 this->tabPage1->Controls->Add(this->button10);
@@ -1297,10 +809,17 @@ private: System::Windows::Forms::Button^  button10;
 				 this->tabPage1->Location = System::Drawing::Point(4, 22);
 				 this->tabPage1->Name = L"tabPage1";
 				 this->tabPage1->Padding = System::Windows::Forms::Padding(3);
-				 this->tabPage1->Size = System::Drawing::Size(697, 460);
+				 this->tabPage1->Size = System::Drawing::Size(874, 521);
 				 this->tabPage1->TabIndex = 0;
 				 this->tabPage1->Text = L"Управление";
 				 this->tabPage1->UseVisualStyleBackColor = true;
+				 this->button10->Location = System::Drawing::Point(78, 288);
+				 this->button10->Name = L"button10";
+				 this->button10->Size = System::Drawing::Size(75, 23);
+				 this->button10->TabIndex = 23;
+				 this->button10->Text = L"Сброс";
+				 this->button10->UseVisualStyleBackColor = true;
+				 this->button10->Click += gcnew System::EventHandler(this, &mainform::button10_Click);
 				 this->label10->AutoSize = true;
 				 this->label10->Location = System::Drawing::Point(310, 196);
 				 this->label10->Name = L"label10";
@@ -1344,26 +863,27 @@ private: System::Windows::Forms::Button^  button10;
 				 this->button11->Text = L"Get position";
 				 this->button11->UseVisualStyleBackColor = true;
 				 this->button11->Click += gcnew System::EventHandler(this, &mainform::button11_Click);
+				 this->tabPage2->Controls->Add(this->DCGrid);
 				 this->tabPage2->Controls->Add(this->Get_Dev);
 				 this->tabPage2->Controls->Add(this->button8);
-				 this->tabPage2->Controls->Add(this->dataGridView1);
+				 this->tabPage2->Controls->Add(this->RadioTagsGrid);
 				 this->tabPage2->Controls->Add(this->button7);
 				 this->tabPage2->Location = System::Drawing::Point(4, 22);
 				 this->tabPage2->Name = L"tabPage2";
 				 this->tabPage2->Padding = System::Windows::Forms::Padding(3);
-				 this->tabPage2->Size = System::Drawing::Size(697, 460);
+				 this->tabPage2->Size = System::Drawing::Size(874, 521);
 				 this->tabPage2->TabIndex = 1;
 				 this->tabPage2->Text = L"Устройства";
 				 this->tabPage2->UseVisualStyleBackColor = true;
 				 this->Get_Dev->AutoSize = true;
-				 this->Get_Dev->Location = System::Drawing::Point(327, 434);
+				 this->Get_Dev->Location = System::Drawing::Point(293, 472);
 				 this->Get_Dev->Name = L"Get_Dev";
 				 this->Get_Dev->Size = System::Drawing::Size(83, 17);
 				 this->Get_Dev->TabIndex = 20;
 				 this->Get_Dev->Text = L"Get devices";
 				 this->Get_Dev->UseVisualStyleBackColor = true;
 				 this->Get_Dev->CheckedChanged += gcnew System::EventHandler(this, &mainform::checkBox2_CheckedChanged);
-				 this->button8->Location = System::Drawing::Point(488, 431);
+				 this->button8->Location = System::Drawing::Point(405, 472);
 				 this->button8->Name = L"button8";
 				 this->button8->Size = System::Drawing::Size(75, 23);
 				 this->button8->TabIndex = 19;
@@ -1374,7 +894,7 @@ private: System::Windows::Forms::Button^  button10;
 				 this->tabPage3->Location = System::Drawing::Point(4, 22);
 				 this->tabPage3->Name = L"tabPage3";
 				 this->tabPage3->Padding = System::Windows::Forms::Padding(3);
-				 this->tabPage3->Size = System::Drawing::Size(697, 460);
+				 this->tabPage3->Size = System::Drawing::Size(874, 521);
 				 this->tabPage3->TabIndex = 2;
 				 this->tabPage3->Text = L"События";
 				 this->tabPage3->UseVisualStyleBackColor = true;
@@ -1395,7 +915,7 @@ private: System::Windows::Forms::Button^  button10;
 				 this->dataGridView2->Name = L"dataGridView2";
 				 this->dataGridView2->ReadOnly = true;
 				 this->dataGridView2->RowHeadersVisible = false;
-				 this->dataGridView2->Size = System::Drawing::Size(691, 454);
+				 this->dataGridView2->Size = System::Drawing::Size(868, 515);
 				 this->dataGridView2->TabIndex = 0;
 				 this->Column1->HeaderText = L"Уникальный ID";
 				 this->Column1->Name = L"Column1";
@@ -1424,16 +944,72 @@ private: System::Windows::Forms::Button^  button10;
 				 this->openFileDialog1->DefaultExt = L"esf";
 				 this->openFileDialog1->Filter = L"Evrika session file|*.esf";
 				 this->openFileDialog1->SupportMultiDottedExtensions = true;
-				 this->button10->Location = System::Drawing::Point(78, 288);
-				 this->button10->Name = L"button10";
-				 this->button10->Size = System::Drawing::Size(75, 23);
-				 this->button10->TabIndex = 23;
-				 this->button10->Text = L"Сброс";
-				 this->button10->UseVisualStyleBackColor = true;
-				 this->button10->Click += gcnew System::EventHandler(this, &mainform::button10_Click);
+				 dataGridViewCellStyle1->BackColor = System::Drawing::Color::White;
+				 this->UniqueID->DefaultCellStyle = dataGridViewCellStyle1;
+				 this->UniqueID->HeaderText = L"Уникальный  ID";
+				 this->UniqueID->Name = L"UniqueID";
+				 this->UniqueID->ReadOnly = true;
+				 this->UniqueID->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->SignalLVL->HeaderText = L"Уровень сигнала";
+				 this->SignalLVL->Name = L"SignalLVL";
+				 this->SignalLVL->ReadOnly = true;
+				 this->SignalLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 dataGridViewCellStyle2->ForeColor = System::Drawing::Color::Green;
+				 this->QualityLVL->DefaultCellStyle = dataGridViewCellStyle2;
+				 this->QualityLVL->HeaderText = L"Качество приема сигнала";
+				 this->QualityLVL->Name = L"QualityLVL";
+				 this->QualityLVL->ReadOnly = true;
+				 this->QualityLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->BatteryLVL->HeaderText = L"Уровень заряда батареи";
+				 this->BatteryLVL->Name = L"BatteryLVL";
+				 this->BatteryLVL->ReadOnly = true;
+				 this->BatteryLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->DCGrid->AllowUserToAddRows = false;
+				 this->DCGrid->AllowUserToDeleteRows = false;
+				 this->DCGrid->AllowUserToResizeRows = false;
+				 this->DCGrid->AutoSizeColumnsMode = System::Windows::Forms::DataGridViewAutoSizeColumnsMode::Fill;
+				 this->DCGrid->AutoSizeRowsMode = System::Windows::Forms::DataGridViewAutoSizeRowsMode::AllCells;
+				 this->DCGrid->CellBorderStyle = System::Windows::Forms::DataGridViewCellBorderStyle::Raised;
+				 this->DCGrid->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
+				 this->DCGrid->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(5) {
+					 this->dataGridViewTextBoxColumn1,
+						 this->dataGridViewTextBoxColumn2, this->dataGridViewTextBoxColumn3, this->dataGridViewTextBoxColumn4, this->WorkMode
+				 });
+				 this->DCGrid->Location = System::Drawing::Point(3, 3);
+				 this->DCGrid->MultiSelect = false;
+				 this->DCGrid->Name = L"DCGrid";
+				 this->DCGrid->ReadOnly = true;
+				 this->DCGrid->RowHeadersVisible = false;
+				 this->DCGrid->SelectionMode = System::Windows::Forms::DataGridViewSelectionMode::CellSelect;
+				 this->DCGrid->Size = System::Drawing::Size(491, 425);
+				 this->DCGrid->TabIndex = 21;
+				 dataGridViewCellStyle3->BackColor = System::Drawing::Color::White;
+				 this->dataGridViewTextBoxColumn1->DefaultCellStyle = dataGridViewCellStyle3;
+				 this->dataGridViewTextBoxColumn1->HeaderText = L"Уникальный  ID";
+				 this->dataGridViewTextBoxColumn1->Name = L"dataGridViewTextBoxColumn1";
+				 this->dataGridViewTextBoxColumn1->ReadOnly = true;
+				 this->dataGridViewTextBoxColumn1->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->dataGridViewTextBoxColumn2->HeaderText = L"Уровень сигнала";
+				 this->dataGridViewTextBoxColumn2->Name = L"dataGridViewTextBoxColumn2";
+				 this->dataGridViewTextBoxColumn2->ReadOnly = true;
+				 this->dataGridViewTextBoxColumn2->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 dataGridViewCellStyle4->ForeColor = System::Drawing::Color::Green;
+				 this->dataGridViewTextBoxColumn3->DefaultCellStyle = dataGridViewCellStyle4;
+				 this->dataGridViewTextBoxColumn3->HeaderText = L"Качество приема сигнала";
+				 this->dataGridViewTextBoxColumn3->Name = L"dataGridViewTextBoxColumn3";
+				 this->dataGridViewTextBoxColumn3->ReadOnly = true;
+				 this->dataGridViewTextBoxColumn3->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->dataGridViewTextBoxColumn4->HeaderText = L"Уровень заряда батареи";
+				 this->dataGridViewTextBoxColumn4->Name = L"dataGridViewTextBoxColumn4";
+				 this->dataGridViewTextBoxColumn4->ReadOnly = true;
+				 this->dataGridViewTextBoxColumn4->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->WorkMode->HeaderText = L"Режим работы";
+				 this->WorkMode->Name = L"WorkMode";
+				 this->WorkMode->ReadOnly = true;
+				 this->WorkMode->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
 				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 				 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-				 this->ClientSize = System::Drawing::Size(705, 532);
+				 this->ClientSize = System::Drawing::Size(882, 593);
 				 this->Controls->Add(this->tabControl1);
 				 this->Controls->Add(this->statusStrip1);
 				 this->Controls->Add(this->menuStrip1);
@@ -1451,7 +1027,7 @@ private: System::Windows::Forms::Button^  button10;
 				 this->statusStrip1->PerformLayout();
 				 this->menuStrip1->ResumeLayout(false);
 				 this->menuStrip1->PerformLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView1))->EndInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->RadioTagsGrid))->EndInit();
 				 this->tabControl1->ResumeLayout(false);
 				 this->tabPage1->ResumeLayout(false);
 				 this->tabPage1->PerformLayout();
@@ -1459,145 +1035,39 @@ private: System::Windows::Forms::Button^  button10;
 				 this->tabPage2->PerformLayout();
 				 this->tabPage3->ResumeLayout(false);
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView2))->EndInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->EndInit();
 				 this->ResumeLayout(false);
 				 this->PerformLayout();
 
 			 }
 #pragma endregion
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
-		//MyCoords[lCoordsCount] = gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString());
-		MyCoords->Add(gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString()));
-		listBox1->Items->Add(MyCoords[lCoordsCount]->get_name());
-		lCoordsCount++;
-	}
-	private: System::Void listBox1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e) {
-		if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
-		groupBox2->Text = MyCoords[listBox1->SelectedIndex]->get_name();
-		label5->Text = "R: " + MyCoords[listBox1->SelectedIndex]->get_r().ToString();
-		label6->Text = "Lat: " + MyCoords[listBox1->SelectedIndex]->get_lat().ToString();
-		label7->Text = "Lng: " + MyCoords[listBox1->SelectedIndex]->get_lng().ToString();
-	}
-	private: System::Void button5_Click(System::Object^  sender, System::EventArgs^  e) {
-		if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
-		delete MyCoords[listBox1->SelectedIndex];
-		for (int i = listBox1->SelectedIndex; i < lCoordsCount - 1; i++) {
-			MyCoords[i] = MyCoords[i + 1];
-		}
-		lCoordsCount--;
-		listBox1->Items->Clear();
-		for (int i = 0; i < lCoordsCount; i++) {
-			listBox1->Items->Add(MyCoords[i]->get_name());
-		}
-	}
-	private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
-		//draw area point
-		if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
-		GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[listBox1->SelectedIndex]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
-		mrkrOvrl->Markers->Add(marker);
-
-		GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[listBox1->SelectedIndex]->CreateCircle()), "circ");
-		circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Blue));
-		circ->Stroke = gcnew Pen(Color::Blue, 1);
-		areaOvrl->Polygons->Add(circ);
-	}
-	private: System::Void button6_Click(System::Object^  sender, System::EventArgs^  e) {
-		areaOvrl->Clear();
-		mrkrOvrl->Clear();
-	}
-	private: System::Void button4_Click(System::Object^  sender, System::EventArgs^  e) {
-		GMarkerGoogle^ marker = gcnew GMarkerGoogle(MyCoords[listBox1->SelectedIndex]->get_pointLatLng(), GMarkerGoogleType::blue_pushpin);
-		mrkrOvrl->Markers->Add(marker);
-	}
-	private: System::Void button7_Click(System::Object^  sender, System::EventArgs^  e) {
-		//find points of intersect
-		Triangulate(MyCoords[0], MyCoords[1]);
-	}
-	private: System::Void button9_Click(System::Object^  sender, System::EventArgs^  e) {
-		metod_5();
-	}
+	private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void listBox1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button5_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button6_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button4_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button7_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button9_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void savemap_Click(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void button7_Click_1(System::Object^  sender, System::EventArgs^  e) {
-		//dataGridView1->Rows[0]->Cells[0]->Value = "abc";
-		//dataGridView1->Rows->Add(1);
-		//dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[0]->Value = "1";	//id
-		//dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[1]->Value = "2";	//temp id
-		//dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[2]->Value = RangeRandInt(-127, 10);	//sgnl lvl
-		//dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[3]->Value = Quality(RangeRandInt(0, 7));	//quality
-		//dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[4]->Value = RangeRandDouble(2.5, 4.5);	//batt lvl
-		//dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[5]->Value = "0";	//mode
-
-
-		try {
-			serialPort1->Open();
-			serialPort1->WriteLine("WAKE\r");
-
-		}
-		catch (IO::IOException ^ioexception) {
-			proglog->AppendText("\r\n" + ioexception->Message);
-		}
-	}
+	private: System::Void button7_Click_1(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void настройкиToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void tabControl1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e) {
-		switch (tabControl1->SelectedIndex)
-		{
-		case 0:
-			this->Width = 512;
-			this->Height = 570;
-			break;
-		case 1:
-		case 2:
-			this->Width = 721;
-			this->Height = 570;
-			break;
-		default:
-			break;
-		}
-		this->Refresh();
-	}
+	private: System::Void tabControl1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button8_Click_1(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void serialPort1_DataReceived(System::Object^  sender, System::IO::Ports::SerialDataReceivedEventArgs^  e) {
-		cli::array<wchar_t>^ rbuf = gcnew cli::array<wchar_t>(512);
-		try {
-			for (int i = 0; i < 512; i++)
-				rbuf[i] = serialPort1->ReadByte();
-
-			this->Invoke(gcnew Action<cli::array<wchar_t>^>(this, &mainform::ParseDeviceBuffer), rbuf);
-		}
-		catch (...) {
-
-		}
-		//serialPort1->Close();
-	}
-	private: System::Void checkBox2_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-		if (Get_Dev->Checked)
-			get_device_progress->Value = 0;
-	}
+	private: System::Void serialPort1_DataReceived(System::Object^  sender, System::IO::Ports::SerialDataReceivedEventArgs^  e);
+	private: System::Void checkBox2_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void open_device(System::Object^  sender, System::Windows::Forms::DataGridViewCellEventArgs^  e);
 	private: System::Void save_events(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void load_session(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void переподключениеКДЦToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-		Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
-		connthrd->Start();
-	}
-	private: System::Void проверкаСоединенияToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-		Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::CheckComConn));
-		connthrd->Start();
-	}
-	private: System::Void mainform_Load(System::Object^  sender, System::EventArgs^  e) {
-		my_handle = this;
-		Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
-		connthrd->Start();
-	}
-	private: System::Void ExportMapBtn_Click(System::Object^  sender, System::EventArgs^  e) {
-		map->ShowExportDialog();
-	}
-	private: System::Void ImportMapBtn_Click(System::Object^  sender, System::EventArgs^  e) {
-		map->ShowImportDialog();
-	}
+	private: System::Void переподключениеКДЦToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void проверкаСоединенияToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void mainform_Load(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void ExportMapBtn_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void ImportMapBtn_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button11_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void checkBox3_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void sys_task_Tick(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button10_Click(System::Object^  sender, System::EventArgs^  e);
-};
+	};
 }

@@ -179,35 +179,84 @@ namespace Evrika {
 		}
 	};
 
-	enum class CMDtype : unsigned char {
-		CHECK_COM = 1,
-		RESET = 2,
-		GETGPS = 3,
-		GPSSTAT = 4
+	public ref class Commands {
+		static System::IO::Ports::SerialPort^ port;
+		static void ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id);
+		static void ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint8_t msg_data);
+		static void ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint32_t msg_data);
+	public:
+		Commands(System::IO::Ports::SerialPort^ _port) { port = _port; }
+
+		//Предоставляет методы управления ретрансляторами и блоками управления
+		ref class Class_0x0A {
+		public:
+			//Проверка соединения, id 0
+			static void TestConnect();
+			//Запрос локального адреса, id 1
+			static void GetLocalAddr();
+			//Запрос напряжений, id 2. В качестве параметра - адрес ретранслятора, для получения с локального у-ва - NULL
+			static void GetVoltage(uint32_t Addr);
+			//Запрос состояния реле, id 88
+			static void GetRelayState(uint32_t Addr);
+			//Управление реле, id 89
+			static void SetRelayState(uint32_t Addr, uint8_t state);
+			//Программный сброс, id 99
+			static void ProgrammReset(uint32_t Addr);
+		};
+		//Содержит методы для управления GPS
+		ref class Class_0x0B {
+		public:
+			//Вкл/Выкл GPS, id 1
+			static void SetGPSPowerState(uint32_t Addr, uint8_t state);
+			//Запрос состояния питания GPS, id 2
+			static void GetGPSPowerState(uint32_t Addr);
+			//Запрос статуса GPS, id 3
+			static void GetGPSStatus(uint32_t Addr);
+			//Запрос данных местоположения GPS, id 4
+			static void GetGPSPosition(uint32_t Addr);
+			//Переключение антенны GPS, id 5. 0 - внутренняя, 1 - внешняя антенна.
+			static void ToggleGPSAntenna(uint32_t Addr, uint8_t state);
+			//Запрос используемой антенны GPS, id 6.
+			static void GetGPSUsingAntenna(uint32_t Addr);
+		};
+		//Методы управления радиометками
+		ref class Class_0x0C {
+		public:
+			//Запуск цикла пробуждения радиометок, id 1. Addr - используемый ретранслятор, Timeout - время ожидания ответа.
+			static void WakeUp(uint32_t Addr, uint32_t Timeout);
+			//Запрос параметров найденных радиометок, id 2. Count - количество найденных после WakeUp радиометок.
+			static void GetRadioTagsParam(uint32_t Addr, uint8_t Count);
+			//Запуск цикла измерения временных задержек, id 3
+			//static void StartTimeDelayMeasure();
+			//Запрос данных измерения временных задержек, id 4
+			//static void GetTimeDelayMeasureData();
+			//Запрос параметров метки по адресу, id 5
+			static void RequestRadioTagParam(uint32_t Addr, uint32_t TagAddress);
+			//Считывание параметров метки по адресу, id 6
+			static void GetRadioTagParam(uint32_t Addr, uint32_t TagAddress);
+			//Сброс СС1101 к первоначальным установкам, id 7
+			static void ResetCC1101(uint32_t Addr);
+		};
+		//Методы управления ретрансляторами
+		ref class Class_0x0D {
+		public:
+			//Запуск цикла поиска ретрансляторов, id 1
+			static void StartSearchRepeaters(uint32_t Addr);
+			//Запрос параметров найденных ретрансляторов, id 2
+			static void GetRepeatersParam(uint32_t Addr, uint8_t Count);
+			//Глобальный сброс всех ретрансляторов, id 99
+			static void GlobalResetRepeaters(uint32_t Addr);
+		};
 	};
-	//Конструктор команды на пробуждение меток
-	bool ConstructCMD(System::IO::Ports::SerialPort^, uint32_t);
-	//Конструктор команды запроса параметров конкретной метки
-	bool ConstructCMD(System::IO::Ports::SerialPort^, uint32_t, uint16_t dummy);
-	//Конструктор команд без аргументов
-	bool ConstructCMD(System::IO::Ports::SerialPort^, CMDtype);
-	//Конструктор команды изменения параметров
-	bool ConstructCMD(System::IO::Ports::SerialPort^, uint32_t, uint8_t, uint32_t, uint8_t, uint8_t, uint8_t);
-	//Конструктор команды запуска цикла измерения задержек
-	bool ConstructCMD(System::IO::Ports::SerialPort^, uint32_t, uint8_t);
-	//Конструктор команды вкл/выкл GPS
-	bool ConstructCMD(System::IO::Ports::SerialPort^, bool);
-	//Конструктор команды переключения в режим измерения задержек
-	bool ConstructCMD(System::IO::Ports::SerialPort^ port, uint32_t addr, bool enable);
 
 	double CyclesToMeters(int);
 	double dBToW(double lvl, double offset);
 	double SignalLvlToMeters(double lvl, double tdB);
-	double ConvertToMeters(double RSSI,double n,double A);
+	double ConvertToMeters(double RSSI, double n, double A);
 	//CK_A[size-2],CK_B[size-1]
 	void CalcSum(cli::array<unsigned char>^, size_t);
 	void PasteInBuffer(cli::array<unsigned char>^, size_t, uint32_t);
 	double GetDoubleFromBuf(cli::array<wchar_t>^, size_t offset);
 	float GetFloatFromBuf(cli::array<wchar_t>^, size_t offset);
-	
+
 }

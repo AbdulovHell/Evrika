@@ -162,7 +162,6 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="device_prop.cpp" />
     <ClCompile Include="EventLog.pb.cc" />
     <ClCompile Include="loading_page.cpp" />
     <ClCompile Include="mainform.cpp" />
@@ -172,9 +171,6 @@
     <ClCompile Include="templates.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="device_prop.h">
-      <FileType>CppForm</FileType>
-    </ClInclude>
     <ClInclude Include="EventLog.pb.h" />
     <ClInclude Include="loading_page.h">
       <FileType>CppForm</FileType>
@@ -192,9 +188,6 @@
     <ClInclude Include="templates.h" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="device_prop.resx">
-      <DependentUpon>device_prop.h</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="loading_page.resx">
       <DependentUpon>loading_page.h</DependentUpon>
     </EmbeddedResource>

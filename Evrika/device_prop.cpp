@@ -18,7 +18,7 @@ void Evrika::device_prop::MeasDist()
 			for (int i = 0; i < MeasCycles; i++) {
 				try {
 					if (comport->IsOpen) {
-						ConstructCMD(comport, curDev->unique_id, (uint16_t)NULL);
+						//ConstructCMD(comport, curDev->unique_id, (uint16_t)NULL);
 					}
 					else {
 						//закрыт, ошибк
@@ -50,7 +50,7 @@ void Evrika::device_prop::MeasDist()
 		else if (radioButton2->Checked) {	//Time
 			try {
 				if (comport->IsOpen) {
-					ConstructCMD(comport, curDev->unique_id, (uint8_t)MeasCycles);
+					//ConstructCMD(comport, curDev->unique_id, (uint8_t)MeasCycles);
 				}
 				else {
 					//закрыт, ошибк
@@ -136,13 +136,14 @@ void Evrika::device_prop::ChangeParam()
 {
 	//выкл режим измерения времени, если надо
 	if (MeasModeIsTime) {
-		ConstructCMD(comport, curDev->unique_id, false);
+		//ConstructCMD(comport, curDev->unique_id, false);
+		
 		sMeasDist->WaitOne(1000);
 	}
 	//изменение параметров
 	try {
 		if (comport->IsOpen)
-			ConstructCMD(comport, curDev->unique_id, comboBox1->SelectedIndex, 900000000, comboBox2->SelectedIndex, NULL, NULL);
+			;//ConstructCMD(comport, curDev->unique_id, comboBox1->SelectedIndex, 900000000, comboBox2->SelectedIndex, NULL, NULL);
 	}
 	catch (IO::IOException ^ioexception) {
 		textBox1->AppendText("\r\n" + ioexception->Message);
@@ -150,7 +151,7 @@ void Evrika::device_prop::ChangeParam()
 	sMeasDist->WaitOne(5000);
 	//вкл режим измерения времени, если он был вкл
 	if (MeasModeIsTime) {
-		ConstructCMD(comport, curDev->unique_id, true);
+		//ConstructCMD(comport, curDev->unique_id, true);
 		sMeasDist->WaitOne(1000);
 	}
 }
@@ -233,13 +234,13 @@ System::Void Evrika::device_prop::change_dist_meas_method(System::Object ^ sende
 {
 	if (radioButton1->Checked) {	//RSSI
 		numericUpDown1->Value = 10;
-		ConstructCMD(comport, curDev->unique_id, false);
+		//ConstructCMD(comport, curDev->unique_id, false);
 		sMeasDist->WaitOne(1000);
 		MeasModeIsTime = false;
 	}
 	else if (radioButton2->Checked) {	//Time
 		numericUpDown1->Value = 50;
-		ConstructCMD(comport, curDev->unique_id, true);
+		//ConstructCMD(comport, curDev->unique_id, true);
 		sMeasDist->WaitOne(1000);
 		MeasModeIsTime = true;
 	}

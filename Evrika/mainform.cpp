@@ -1,14 +1,15 @@
 //#define _CRT_SECURE_NO_WARNINGS
 
-#include "EventLog.pb.h"
+#include <stdint.h>
 #include <fstream>
+#include <Windows.h>
+#include <Psapi.h>
+#include "EventLog.pb.h"
 #include "templates.h"
 #include "settings.h"
 #include "loading_page.h"
 #include "device_prop.h"
 #include "mapform.h"
-#include <Windows.h>
-#include <Psapi.h>
 #include "mainform.h"
 
 using namespace System;
@@ -191,11 +192,344 @@ Evrika::mainform::mainform(void)
 	SetWindowPos((HWND)this->Handle.ToInt32(), HWND_TOP, NULL, NULL, NULL, NULL, SWP_NOSIZE | SWP_NOMOVE);
 }
 
+void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2)
+{	//return points and array size
+	double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
+	System::Collections::Generic::List<GMap::NET::PointLatLng> ^Points = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
+	System::Collections::Generic::List<GMap::NET::PointLatLng> ^cPoints = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
+
+	double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//поправка на длинну мередиана
+
+	double A0, B0, C0;
+	//d = circle1->get_dist(circle2);
+	//r0 *= 111.11;
+	//r1 *= 111.11;
+	//listView1->Items->Clear();
+	y0 = circle1->get_lat();
+	y1 = circle2->get_lat();
+	x0 = circle1->get_lng();
+	x1 = circle2->get_lng();
+	//double x = (x1 - x0)*111.11*Z;
+	//double y = (y1 - y0)*111.11;
+	double y = circle2->get_lat() - circle1->get_lat();
+	double x = circle2->get_lng() - circle1->get_lng();
+	x *= 111.11*Z;
+	y *= 111.11;
+	d = Math::Sqrt(y*y + x*x);
+	//d = Math::Sqrt((y1 - y0)*(y1 - y0) + (x1 - x0)*(x1 - x0));
+	if (d > r0 + r1)
+		return;
+	if (d < Math::Abs(r0 - r1))
+		return;
+	a = ((r0 * r0 - r1 * r1) + d * d) / (2 * d);
+
+	y2 = (a / d) * y;
+	x2 = (a / d) * x;
+
+	A0 = x;
+	B0 = y;
+	C0 = -A0*x2 - B0*y2;
+
+	double alfa = Math::Acos(a / r0);  //угол между отрезком, который соединяет центры, и одним из радиусов первой окружности, проведённым в точку пересечения.
+									   //хз как арккосинус считается, поправь если что.
+									   //здесь требуется правильно считать a.
+	double cosOx = x / (Math::Sqrt(x*x + y*y)); // вычисляем синус и косинус угла между отрезком, который соединяет центры, и осью иксов
+	double sinOx = y / (Math::Sqrt(x*x + y*y));  //надо считать корень!)
+
+	double alfa0;             // смотрим на расположение отрезка по знаку sin/cos
+	if (sinOx >= 0)
+		alfa0 = Math::Acos(cosOx);  //первая и вторая четверть, угол положительный 
+	else
+		alfa0 = -Math::Acos(cosOx); // третья и четвёртая четверть, знак косинуса не важен, только знак синуса
+
+	double alfa1 = alfa0 + alfa;
+	double alfa2 = alfa0 - alfa;
+
+	if ((alfa1 == Math::PI / 2) || (alfa2 == Math::PI / 2) || (alfa1 == -Math::PI / 2) || (alfa2 == -Math::PI / 2))
+	{
+		//проверяем не равен какой-либо из углов пи на два или минус пи на 2. если хоть один из них равен
+		//то нельзя считать тангенс (он бесконечен), решение будет немного другим. Как пи пишется я не знаю.
+		if ((alfa1 == Math::PI / 2) || (alfa1 == -Math::PI / 2))
+		{
+			x31 = 0;
+			x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
+			y31 = -C0 / B0;
+			y32 = x32 * Math::Tan(alfa2);
+		}
+		if ((alfa2 == Math::PI / 2) || (alfa2 == -Math::PI / 2))
+		{
+			x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
+			x32 = 0;
+			y31 = x31 * Math::Tan(alfa1);
+			y32 = -C0 / B0;
+		}
+
+	}
+	else                //здесь собственно решение, если углы норм. тогда тг считать можно.
+	{
+		x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
+		x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
+		y31 = x31 * Math::Tan(alfa1);
+		y32 = x32 * Math::Tan(alfa2);
+	}
+
+	y2 /= 111.11;
+	x2 /= 111.11*Z;
+
+	x31 /= 111.11*Z;
+	x32 /= 111.11*Z;
+	y31 /= 111.11;
+	y32 /= 111.11;
+
+	Points->Add(PointLatLng(x0 + x31, y0 + y31));
+	Points->Add(PointLatLng(x0 + x32, y0 + y32));
+	cPoints->Add(PointLatLng(y0, x0));
+	cPoints->Add(PointLatLng(y1, x1));
+
+	mrkrOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(y0 + y2, x0 + x2), Markers::GMarkerGoogleType::purple));
+	mrkrOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(y0 + y31, x0 + x31), Markers::GMarkerGoogleType::red));
+	mrkrOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(y0 + y32, x0 + x32), Markers::GMarkerGoogleType::red));
+	GMapPolygon ^line = gcnew GMapPolygon(Points, "line0");
+	GMapPolygon ^lineC = gcnew GMapPolygon(cPoints, "line0");
+	line->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(50, Color::Red));
+	line->Stroke = gcnew Pen(Color::Red, 1);
+	lineC->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(50, Color::Blue));
+	lineC->Stroke = gcnew Pen(Color::Blue, 1);
+	areaOvrl->Polygons->Add(line);
+	areaOvrl->Polygons->Add(lineC);
+	return;
+}
+
+void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<PointLatLng>^ twoPoints)
+{	//return points and array size
+	double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
+	List<PointLatLng> ^Points = gcnew List<GMap::NET::PointLatLng>;
+	List<PointLatLng> ^cPoints = gcnew List<GMap::NET::PointLatLng>;
+
+	double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//поправка на длинну мередиана
+	double A0, B0, C0;
+	y0 = circle1->get_lat();
+	y1 = circle2->get_lat();
+	x0 = circle1->get_lng();
+	x1 = circle2->get_lng();
+	double y = circle2->get_lat() - circle1->get_lat();
+	double x = circle2->get_lng() - circle1->get_lng();
+	x *= 111.11*Z;
+	y *= 111.11;
+	d = Math::Sqrt(y*y + x*x); if (d > r0 + r1)
+		return;
+	if (d < Math::Abs(r0 - r1))
+		return;
+	a = ((r0 * r0 - r1 * r1) + d * d) / (2 * d);
+	y2 = (a / d) * y;
+	x2 = (a / d) * x;
+	A0 = x;
+	B0 = y;
+	C0 = -A0*x2 - B0*y2;
+
+	double alfa = Math::Acos(a / r0);  //угол между отрезком, который соединяет центры, и одним из радиусов первой окружности, проведённым в точку пересечения.
+									   //хз как арккосинус считается, поправь если что.
+									   //здесь требуется правильно считать a.
+	double cosOx = x / (Math::Sqrt(x*x + y*y)); // вычисляем синус и косинус угла между отрезком, который соединяет центры, и осью иксов
+	double sinOx = y / (Math::Sqrt(x*x + y*y));  //надо считать корень!)
+
+	double alfa0;             // смотрим на расположение отрезка по знаку sin/cos
+	if (sinOx >= 0)
+		alfa0 = Math::Acos(cosOx);  //первая и вторая четверть, угол положительный 
+	else
+		alfa0 = -Math::Acos(cosOx); // третья и четвёртая четверть, знак косинуса не важен, только знак синуса
+
+	double alfa1 = alfa0 + alfa;
+	double alfa2 = alfa0 - alfa;
+
+	if ((alfa1 == Math::PI / 2) || (alfa2 == Math::PI / 2) || (alfa1 == -Math::PI / 2) || (alfa2 == -Math::PI / 2))
+	{
+		//проверяем не равен какой-либо из углов пи на два или минус пи на 2. если хоть один из них равен
+		//то нельзя считать тангенс (он бесконечен), решение будет немного другим. Как пи пишется я не знаю.
+		if ((alfa1 == Math::PI / 2) || (alfa1 == -Math::PI / 2))
+		{
+			x31 = 0;
+			x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
+			y31 = -C0 / B0;
+			y32 = x32 * Math::Tan(alfa2);
+		}
+		if ((alfa2 == Math::PI / 2) || (alfa2 == -Math::PI / 2))
+		{
+			x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
+			x32 = 0;
+			y31 = x31 * Math::Tan(alfa1);
+			y32 = -C0 / B0;
+		}
+
+	}
+	else                //здесь собственно решение, если углы норм. тогда тг считать можно.
+	{
+		x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
+		x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
+		y31 = x31 * Math::Tan(alfa1);
+		y32 = x32 * Math::Tan(alfa2);
+	}
+	x31 /= 111.11*Z;
+	x32 /= 111.11*Z;
+	y31 /= 111.11;
+	y32 /= 111.11;
+	twoPoints->Add(PointLatLng(y0 + y31, x0 + x31));
+	twoPoints->Add(PointLatLng(y0 + y32, x0 + x32));
+	return;
+}
+
+int Evrika::mainform::factorial(int n)
+{
+	int res = 1;
+	for (int i = 1; i < n + 1; i++)
+		res *= i;
+	return res;
+}
+
+List<PointLatLng>^ Evrika::mainform::SortPoint_Line(List<PointLatLng>^ in_p)
+{
+	List<PointLatLng>^ out_p = gcnew List<PointLatLng>;
+	Line^ line = gcnew Line();
+	int size = in_p->Count, index = -1, flag = 0;
+	out_p->Add(in_p[0]);
+	in_p->RemoveAt(0);
+	for (int i = 0; i < size - 1; i++) {
+		for (int j = 0; j < in_p->Count; j++)
+		{
+			flag = 0;
+			line->set_line(out_p[i], in_p[j]);
+			for (int k = 0; k < in_p->Count; k++)
+			{
+				if (k != j)
+					flag += line->check_point(in_p[k]);
+			}
+			for (int k = 0; k < out_p->Count; k++)
+			{
+				if (k != i)
+					flag += line->check_point(out_p[k]);
+			}
+			if (Math::Abs(flag) == in_p->Count - 1 + out_p->Count - 1)
+			{
+				index = j;
+				break;
+			}
+		}
+		if (index != -1) {
+			out_p->Add(in_p[index]);
+			in_p->RemoveAt(index);
+		}
+	}
+	//out_p->Add(in_p[0]);
+	//in_p->RemoveAt(0);
+	return out_p;
+}
+
+bool Evrika::mainform::inTheArea(PointLatLng point)
+{
+	bool result = true;
+	for (int i = 0; i < MyCoords->Count; i++)
+	{
+		double r = geoPoint::GetDistanceToPointFrom(point, MyCoords[i]->get_pointLatLng()) * 1000;
+		double rad = MyCoords[i]->get_r();
+		//listBox2->Items->Add(r);
+		if (r - 0.002*rad > rad)
+		{
+			//GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(point, Markers::GMarkerGoogleType::green_pushpin);
+			//marker->ToolTipText = r.ToString();
+			//marker->ToolTipMode = GMap::NET::WindowsForms::MarkerTooltipMode::OnMouseOver;
+			//mrkrOvrl->Markers->Add(marker);
+			result = false;
+		}
+	}
+	return result;
+}
+
+bool Evrika::mainform::inTheArea(PointLatLng point, int i, int j, int k){
+	bool result = true;
+	double r1 = geoPoint::GetDistanceToPointFrom(point, MyCoords[i]->get_pointLatLng()) * 1000;
+	double r2 = geoPoint::GetDistanceToPointFrom(point, MyCoords[j]->get_pointLatLng()) * 1000;
+	double r3 = geoPoint::GetDistanceToPointFrom(point, MyCoords[k]->get_pointLatLng()) * 1000;
+	double radius1 = MyCoords[i]->get_r();
+	double radius2 = MyCoords[j]->get_r();
+	double radius3 = MyCoords[k]->get_r();
+	if ((r1 - 0.002*radius1 > radius1) || (r2 - 0.002*radius2 > radius2) || (r3 - 0.002*radius3 > radius3))
+		result = false;
+	return result;
+}
+
+void Evrika::mainform::metod_5()
+{
+	List<PointLatLng>^ area_points = gcnew List<PointLatLng>;
+	List<int>^ mass = gcnew List<int>;
+	for (int i = 0; i < MyCoords->Count; i++)
+		for (int j = i + 1; j < MyCoords->Count; j++) {
+			List<PointLatLng>^ tempPoints = gcnew List<PointLatLng>;
+			Triangulate(MyCoords[i], MyCoords[j], tempPoints);
+
+			for (int p = 0; p < tempPoints->Count; p++) {
+				bool duplicate = false;
+				int index = -1;
+				for (int f = 0; f < area_points->Count; f++)
+				{
+					if (tempPoints[p].Lat == area_points[f].Lat&&tempPoints[p].Lng == area_points[f].Lng)	//0.0000005
+					{
+						duplicate = true;
+						index = f;
+						break;
+					}
+				}
+				if (duplicate)
+				{
+					if (inTheArea(tempPoints[p])) {
+						mass[index]++;
+					}
+				}
+				else
+				{
+					if (inTheArea(tempPoints[p])) {
+						area_points->Add(tempPoints[p]);
+						mass->Add(1);
+					}
+				}
+			}
+		}
+	if (area_points->Count > 3) area_points = SortPoint_Line(area_points);
+	GMapPolygon ^cent_area = gcnew GMapPolygon(area_points, "center_area");
+	cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
+	cent_area->Stroke = gcnew Pen(Color::Red, 2);
+	areaOvrl->Polygons->Add(cent_area);
+}
+
+void Evrika::mainform::ParseToPoint(cli::array<wchar_t>^ buf)
+{
+	int dist = 0;
+	dist = buf[6] << 8;
+	dist += buf[7];
+	double lat = buf[8] + (buf[9] + (buf[10] + buf[11] / 100.0) / 60.0) / 60.0;
+	double lon = buf[12] + (buf[13] + (buf[14] + buf[15] / 100.0) / 60.0) / 60.0;
+	//save
+
+	MyCoords->Add(gcnew geoPoint(lat, lon, dist, "ID: 1234"));
+	listBox1->Items->Add(MyCoords[lCoordsCount]->get_name());
+	lCoordsCount++;
+
+	if (lCoordsCount > 8) {
+		MyCoords->RemoveAt(0);
+		lCoordsCount--;
+		listBox1->Items->RemoveAt(0);
+	}
+}
+
+void Evrika::mainform::WriteToComStat(String ^ str)
+{
+	whatCOM->Text = str;
+}
+
 void Evrika::mainform::CheckComConn()
 {
 	try {
 		isOurCom = false;
-		ConstructCMD(serialPort1, CMDtype::CHECK_COM);
+		Commands::Class_0x0A::TestConnect();
 		sEnumCom->WaitOne(10000);
 		if (isOurCom) {
 			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Есть соединение");
@@ -231,7 +565,8 @@ void Evrika::mainform::EnumCOMs()
 					serialPort1->Open();
 					if (serialPort1->IsOpen) {
 						isOurCom = false;
-						ConstructCMD(serialPort1, CMDtype::CHECK_COM);
+						Commands::Commands(serialPort1);
+						Commands::Class_0x0A::TestConnect();
 						sEnumCom->WaitOne(10000);	//TODO: настроить
 						if (isOurCom) {
 							this->Invoke(gcnew Action<String^>(this, &mainform::WriteToComStat), serialPort1->PortName);
@@ -264,6 +599,38 @@ void Evrika::mainform::EnumCOMs()
 	LastStateIsOpen = false;
 }
 
+System::String ^ Evrika::mainform::Quality(int q)
+{
+	//0x2588 full block
+	//0x2591 light shade
+	//0x2584 half block
+	q = q % 7;
+	wchar_t buf[8];
+	for (int i = 0; i < 7; i++) {
+		if (i == 0 && q > 0) buf[i] = 0x2584;
+		else if (i > 0 && i < q) buf[i] = 0x2588;
+		else buf[i] = 0x2591;
+	}
+	buf[7] = 0;
+	System::String^ str = gcnew System::String(buf);
+	return str;
+}
+
+int Evrika::mainform::RangeRandInt(int min, int max)
+{
+	Random^ autoRand = gcnew Random;
+	return autoRand->Next(min, max);
+}
+
+double Evrika::mainform::RangeRandDouble(double min, double max)
+{
+	Random^ autoRand = gcnew Random;
+	double mult = autoRand->NextDouble();
+	double num = min + (max - min)*mult;
+	int temp = int(num * 100);
+	return temp / 100.0;
+}
+
 void Evrika::mainform::update_prop_windows()
 {
 	for (int i = 0; i < PropWindows->Count; i++) {
@@ -289,6 +656,24 @@ void Evrika::mainform::update_prop_windows()
 		}
 		catch (...) {
 			PropWindows->RemoveAt(i);
+			i--;
+		}
+	}
+}
+
+void Evrika::mainform::SetTimer(bool en)
+{
+	sys_task->Enabled = en;
+}
+
+void Evrika::mainform::WriteLog(String ^ message)
+{
+	for (int i = 0; i < logs->Count; i++) {
+		try {
+			logs[i]->AppendText("\r\n" + message);
+		}
+		catch (...) {
+			logs->RemoveAt(i);
 			i--;
 		}
 	}
@@ -321,15 +706,22 @@ void Evrika::mainform::AddNewPoint(float m)
 	}
 }
 
+void Evrika::mainform::UpdateMapPos()
+{
+	//обновление картой при изменении
+	label2->Text = "Широта: " + map->Position.Lat.ToString();	//Latitude
+	label3->Text = "Долгота: " + map->Position.Lng.ToString();	//Longetude
+}
+
 bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 {
 	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//базовая проверка
 
-	int len = (rbuf[4] << 8) + rbuf[5];
+	int len = (rbuf[8] << 8) + rbuf[9];
 
-	uint8_t mCK_A = (uint8_t)rbuf[5 + len + 1], mCK_B = (uint8_t)rbuf[5 + len + 2];
+	uint8_t mCK_A = (uint8_t)rbuf[9 + len + 1], mCK_B = (uint8_t)rbuf[9 + len + 2];
 	uint8_t cCK_A = 0, cCK_B = 0;
-	for (int i = 2; i < (5 + len + 1); i++) {
+	for (int i = 2; i < (9 + len + 1); i++) {
 		cCK_A += (uint8_t)rbuf[i];
 		cCK_B += cCK_A;
 	}
@@ -339,51 +731,51 @@ bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 
 void Evrika::mainform::update_device_list()
 {	//TODO: Доработать до многооконного аля writelog
-	dataGridView1->Rows->Clear();
+	RadioTagsGrid->Rows->Clear();
 	for (int i = 0; i < Devices->Count; i++) {
-		dataGridView1->Rows->Add(1);
+		RadioTagsGrid->Rows->Add(1);
 		if (Devices[i]->missing_counter == 0)
-			dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
+			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
 		else
-			dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
-		dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[1]->Value = Devices[i]->signal_lvl;	//sgnl lvl
-		dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[2]->Value = Devices[i]->signal_quality;	//quality
-		dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[3]->Value = Devices[i]->battery_lvl;	//batt lvl
-		dataGridView1->Rows[dataGridView1->RowCount - 1]->Cells[4]->Value = Devices[i]->work_mode;	//mode
+			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = Devices[i]->signal_lvl;	//sgnl lvl
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = Devices[i]->signal_quality;	//quality
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = Devices[i]->battery_lvl;	//batt lvl
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = Devices[i]->work_mode;	//mode
 	}
 
-	for (int i = 0; i < dataGridView1->RowCount; i++) {
+	for (int i = 0; i < RadioTagsGrid->RowCount; i++) {
 		double tempval = 0;
 		int templvl = 100;
 		//try {
-		tempval = double(dataGridView1->Rows[i]->Cells[3]->Value);
+		tempval = double(RadioTagsGrid->Rows[i]->Cells[3]->Value);
 		//}
 		//catch (...) {}
 		if (tempval) {
 			if (tempval < Evrika::settings::GetMySettingP()->voltLvl[0]) {
-				dataGridView1->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
+				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
 			}
 			else if (tempval < Evrika::settings::GetMySettingP()->voltLvl[1]) {
-				dataGridView1->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
+				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
 			}
 			else {
-				dataGridView1->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
+				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
 			}
 		}
 
 		//try {
-		templvl = (int)(dataGridView1->Rows[i]->Cells[1]->Value);
+		templvl = (int)(RadioTagsGrid->Rows[i]->Cells[1]->Value);
 		//}
 		//catch (...) {}
 		if (templvl < 100) {
 			if (templvl < Evrika::settings::GetMySettingP()->signlLvl[0]) {
-				dataGridView1->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
+				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
 			}
 			else if (templvl < Evrika::settings::GetMySettingP()->signlLvl[1]) {
-				dataGridView1->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
+				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
 			}
 			else {
-				dataGridView1->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
+				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
 			}
 		}
 	}
@@ -412,17 +804,14 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		return;
 	}
 	//проверка пройдена, обработка
-	switch (rbuf[2]) {	//message class
+	switch (rbuf[MESSAGE_CLASS]) {	//message class
 	case 0x0A:
-		switch (rbuf[3]) {	//message ID
-		case 0x00:	//ответ на любую введеную команду
-			if ((rbuf[6] == 0x4F) && (rbuf[7] == 0x4B)) WriteLog("Ок");	//OK
-			else if ((rbuf[6] == 0x45) && (rbuf[7] == 0x52)) WriteLog("Ошибка");	//ER
-			else WriteLog("ParseBuffer error: Unknown response code");
-			break;
-		case 0x01:	//для проверки COM порта
+		switch (rbuf[MESSAGE_ID]) {	//message ID
+		case 0x00:	//ответ на проверку соединения
 			isOurCom = true;
 			sEnumCom->Release();
+			break;
+		case 0x01:	//ответ на запрос локального адреса
 			break;
 		case 0x02:
 			WriteLog("Параметры СС1101 сброшены");
@@ -646,6 +1035,73 @@ System::Void Evrika::mainform::button1_Click(System::Object ^ sender, System::Ev
 	else mapform->Show();
 }
 
+System::Void Evrika::mainform::button2_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	//MyCoords[lCoordsCount] = gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString());
+	MyCoords->Add(gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString()));
+	listBox1->Items->Add(MyCoords[lCoordsCount]->get_name());
+	lCoordsCount++;
+}
+
+System::Void Evrika::mainform::listBox1_SelectedIndexChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
+	groupBox2->Text = MyCoords[listBox1->SelectedIndex]->get_name();
+	label5->Text = "R: " + MyCoords[listBox1->SelectedIndex]->get_r().ToString();
+	label6->Text = "Lat: " + MyCoords[listBox1->SelectedIndex]->get_lat().ToString();
+	label7->Text = "Lng: " + MyCoords[listBox1->SelectedIndex]->get_lng().ToString();
+}
+
+System::Void Evrika::mainform::button5_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
+	delete MyCoords[listBox1->SelectedIndex];
+	for (int i = listBox1->SelectedIndex; i < lCoordsCount - 1; i++) {
+		MyCoords[i] = MyCoords[i + 1];
+	}
+	lCoordsCount--;
+	listBox1->Items->Clear();
+	for (int i = 0; i < lCoordsCount; i++) {
+		listBox1->Items->Add(MyCoords[i]->get_name());
+	}
+}
+
+System::Void Evrika::mainform::button3_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	//draw area point
+	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
+	GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[listBox1->SelectedIndex]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
+	mrkrOvrl->Markers->Add(marker);
+
+	GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[listBox1->SelectedIndex]->CreateCircle()), "circ");
+	circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Blue));
+	circ->Stroke = gcnew Pen(Color::Blue, 1);
+	areaOvrl->Polygons->Add(circ);
+}
+
+System::Void Evrika::mainform::button6_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	areaOvrl->Clear();
+	mrkrOvrl->Clear();
+}
+
+System::Void Evrika::mainform::button4_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	GMarkerGoogle^ marker = gcnew GMarkerGoogle(MyCoords[listBox1->SelectedIndex]->get_pointLatLng(), GMarkerGoogleType::blue_pushpin);
+	mrkrOvrl->Markers->Add(marker);
+}
+
+System::Void Evrika::mainform::button7_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	//find points of intersect
+	Triangulate(MyCoords[0], MyCoords[1]);
+}
+
+System::Void Evrika::mainform::button9_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	metod_5();
+}
+
 System::Void Evrika::mainform::savemap_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	TimeAndDate dt;
@@ -666,48 +1122,110 @@ System::Void Evrika::mainform::savemap_Click(System::Object ^ sender, System::Ev
 	//a.add_events();
 }
 
+System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::EventArgs ^ e)
+{
+	//RadioTagsGrid->Rows[0]->Cells[0]->Value = "abc";
+	//RadioTagsGrid->Rows->Add(1);
+	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = "1";	//id
+	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = "2";	//temp id
+	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = RangeRandInt(-127, 10);	//sgnl lvl
+	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = Quality(RangeRandInt(0, 7));	//quality
+	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = RangeRandDouble(2.5, 4.5);	//batt lvl
+	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[5]->Value = "0";	//mode
+
+
+	try {
+		serialPort1->Open();
+		serialPort1->WriteLine("WAKE\r");
+
+	}
+	catch (IO::IOException ^ioexception) {
+		proglog->AppendText("\r\n" + ioexception->Message);
+	}
+}
+
 System::Void Evrika::mainform::настройкиToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	settings_window->Show();
 }
 
+System::Void Evrika::mainform::tabControl1_SelectedIndexChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	switch (tabControl1->SelectedIndex)
+	{
+	case 0:
+		this->Width = 512;
+		this->Height = 570;
+		break;
+	case 1:
+	case 2:
+		this->Width = 721;
+		this->Height = 570;
+		break;
+	default:
+		break;
+	}
+	this->Refresh();
+}
+
 System::Void Evrika::mainform::button8_Click_1(System::Object ^ sender, System::EventArgs ^ e)
 {
-	for (int i = 0; i < dataGridView1->RowCount; i++) {
+	for (int i = 0; i < RadioTagsGrid->RowCount; i++) {
 		double tempval = 0;
 		int templvl = 100;
 		//try {
-		tempval = double(dataGridView1->Rows[i]->Cells[4]->Value);
+		tempval = double(RadioTagsGrid->Rows[i]->Cells[4]->Value);
 		//}
 		//catch (...) {}
 		if (tempval) {
 			if (tempval < Evrika::settings::GetMySettingP()->voltLvl[0]) {
-				dataGridView1->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
+				RadioTagsGrid->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
 			}
 			else if (tempval < Evrika::settings::GetMySettingP()->voltLvl[1]) {
-				dataGridView1->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
+				RadioTagsGrid->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
 			}
 			else {
-				dataGridView1->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
+				RadioTagsGrid->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
 			}
 		}
 
 		//try {
-		templvl = (int)(dataGridView1->Rows[i]->Cells[2]->Value);
+		templvl = (int)(RadioTagsGrid->Rows[i]->Cells[2]->Value);
 		//}
 		//catch (...) {}
 		if (templvl < 100) {
 			if (templvl < Evrika::settings::GetMySettingP()->signlLvl[0]) {
-				dataGridView1->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
+				RadioTagsGrid->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
 			}
 			else if (templvl < Evrika::settings::GetMySettingP()->signlLvl[1]) {
-				dataGridView1->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
+				RadioTagsGrid->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
 			}
 			else {
-				dataGridView1->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
+				RadioTagsGrid->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
 			}
 		}
 	}
+}
+
+System::Void Evrika::mainform::serialPort1_DataReceived(System::Object ^ sender, System::IO::Ports::SerialDataReceivedEventArgs ^ e)
+{
+	cli::array<wchar_t>^ rbuf = gcnew cli::array<wchar_t>(512);
+	try {
+		for (int i = 0; i < 512; i++)
+			rbuf[i] = serialPort1->ReadByte();
+
+		this->Invoke(gcnew Action<cli::array<wchar_t>^>(this, &mainform::ParseDeviceBuffer), rbuf);
+	}
+	catch (...) {
+
+	}
+	//serialPort1->Close();
+}
+
+System::Void Evrika::mainform::checkBox2_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (Get_Dev->Checked)
+		get_device_progress->Value = 0;
 }
 
 System::Void Evrika::mainform::open_device(System::Object ^ sender, System::Windows::Forms::DataGridViewCellEventArgs ^ e)
@@ -810,13 +1328,45 @@ System::Void Evrika::mainform::load_session(System::Object ^ sender, System::Eve
 	update_event_list();
 }
 
+System::Void Evrika::mainform::переподключениеКДЦToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
+	connthrd->Start();
+}
+
+System::Void Evrika::mainform::проверкаСоединенияToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::CheckComConn));
+	connthrd->Start();
+}
+
+System::Void Evrika::mainform::mainform_Load(System::Object ^ sender, System::EventArgs ^ e)
+{
+	my_handle = this;
+	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
+	connthrd->Start();
+	if (LastStateIsOpen)
+		Commands::Class_0x0A::GetLocalAddr();
+}
+
+System::Void Evrika::mainform::ExportMapBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	map->ShowExportDialog();
+}
+
+System::Void Evrika::mainform::ImportMapBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	map->ShowImportDialog();
+}
+
 System::Void Evrika::mainform::button11_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (!eGPS) return;
 	try {
 		if (!serialPort1->IsOpen)
 			serialPort1->Open();
-		ConstructCMD(serialPort1, CMDtype::GETGPS);
+		//ConstructCMD(serialPort1, CMDtype::GETGPS);
+		Commands::Class_0x0B::GetGPSPosition(NULL);
 	}
 	catch (IO::IOException ^ioexception) {
 		proglog->AppendText("\r\n" + ioexception->Message);
@@ -830,7 +1380,8 @@ System::Void Evrika::mainform::checkBox3_CheckedChanged(System::Object ^ sender,
 			serialPort1->Open();
 		eGPS = GPS_En->Checked;
 		myPos->bFirstRead = true;
-		ConstructCMD(serialPort1, eGPS);
+		//ConstructCMD(serialPort1, eGPS);
+		Commands::Class_0x0B::SetGPSPowerState(NULL, eGPS);
 	}
 	catch (IO::IOException ^ioexception) {
 		proglog->AppendText("\r\n" + ioexception->Message);
@@ -861,7 +1412,8 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 			//my_pos_accepted = false;
 			try {
 				if (serialPort1->IsOpen)
-					ConstructCMD(serialPort1, CMDtype::GETGPS);
+					//ConstructCMD(serialPort1, CMDtype::GETGPS);
+					Commands::Class_0x0B::GetGPSPosition(NULL);
 			}
 			catch (IO::IOException ^ioexception) {
 				proglog->AppendText("\r\n" + ioexception->Message + " in sys_task_Tick gpsknownpos.");
@@ -872,7 +1424,8 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 			get_device_progress->Value = 0;
 			try {
 				if (serialPort1->IsOpen)
-					ConstructCMD(serialPort1, (uint32_t)3000);
+					//ConstructCMD(serialPort1, (uint32_t)3000);
+					Commands::Class_0x0C::WakeUp(NULL, 3000);
 			}
 			catch (IO::IOException ^ioexception) {
 				proglog->AppendText("\r\n" + ioexception->Message);
@@ -886,7 +1439,7 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 		if (GPS_En->Checked) {
 			try {
 				if (serialPort1->IsOpen) {
-					ConstructCMD(serialPort1, CMDtype::GPSSTAT);
+					Commands::Class_0x0B::GetGPSStatus(NULL);
 				}
 			}
 			catch (IO::IOException ^ioexception) {
@@ -902,7 +1455,8 @@ System::Void Evrika::mainform::button10_Click(System::Object ^ sender, System::E
 	try {
 		if (!serialPort1->IsOpen)
 			serialPort1->Open();
-		ConstructCMD(serialPort1, CMDtype::RESET);
+		//ConstructCMD(serialPort1, CMDtype::RESET);
+		Commands::Class_0x0C::ResetCC1101(NULL);
 	}
 	catch (IO::IOException ^ioexception) {
 		textBox1->AppendText("\r\n" + ioexception->Message);

@@ -30,9 +30,6 @@
     <ClCompile Include="mapform.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="device_prop.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="settings.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
@@ -57,9 +54,6 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="loading_page.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="device_prop.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="templates.h">
