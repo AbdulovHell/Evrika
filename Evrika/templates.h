@@ -4,63 +4,77 @@ namespace Evrika {
 	ref class TimeAndDate;
 
 	public ref class Device {
+		uint32_t Addr;
 
+		int8_t rssi;
+		int8_t lqi;
+		float vbatt;
+
+		bool relay;
 	public:
-		int unique_id;
-		int signal_lvl;
-		int signal_quality;
-		double battery_lvl;
-		int work_mode;
-		void* pWork_mode;
 		bool Processed;
 		int missing_counter;
 
-		ref class work_mode1 {
-			double Latitude;
-			double Longitude;
-			int Precision;
-			TimeAndDate^ dt;
-		};
-		ref class work_mode2 {
-			int Freq_ch;
-			int tPulse;
-			int tPause;
-			int PulseCount;
-		};
-		ref class work_mode3 {
-			TimeAndDate^ inSleep;
-			TimeAndDate^ outSleep;
-			int Mode_out;
-		};
-		ref class work_mode4 {
-			int bSwitch;
-		};
-
-		Device()
+		Device(uint32_t _addr)
 		{
-			int unique_id = NULL;
-			int signal_lvl = NULL;
-			int signal_quality = NULL;
-			double battery_lvl = NULL;
-			int work_mode = NULL;
-			void* pWork_mode = NULL;
-			bool Processed = NULL;
-			int missing_counter = NULL;
-		}
-		~Device() {}
-		Device(int _unique_id, int _signal_lvl, int _signal_quality, double _battery_lvl, int _work_mode, void* _pWork_mode)
-		{
-			unique_id = _unique_id;
-			signal_lvl = _signal_lvl;
-			signal_quality = _signal_quality;
-			battery_lvl = _battery_lvl;
-			work_mode = _work_mode;
-			pWork_mode = _pWork_mode;
+			Addr = _addr;
 			Processed = false;
 			missing_counter = 0;
 		}
+
+		void Fill(float _vbatt,int8_t _rssi,int8_t _lqi) {
+			vbatt = _vbatt;
+			rssi = _rssi;
+			lqi = _lqi;
+		}
+		void SaveRelayStat(bool _r) {
+			relay = _r;
+		}
 		String^ Device::IdInHex();
-		void Device::copy(Device^);
+		uint32_t GetAddr() { return Addr; }
+		int8_t GetSignalLvl() { return rssi; }
+		int8_t GetSignalQuality() { return lqi; }
+		float GetBatteryLvl() { return vbatt; }
+		void copy(Device^ dev) {
+			Addr = dev->Addr;
+			rssi = dev->rssi;
+			lqi = dev->lqi;
+			vbatt = dev->vbatt;
+			relay = dev->relay;
+			Processed = dev->Processed;
+			missing_counter = dev->missing_counter;
+		}
+	};
+
+	public ref class Repeater : public Device {
+		
+	public:
+		bool isLocal;
+
+		Repeater(uint32_t _addr, bool local) : Device(_addr) { isLocal = local; }
+
+		void GetInfo();
+
+		void copy(Repeater^ rep) {
+			isLocal = rep->isLocal;
+			Device::copy(rep);
+		}
+	};
+
+	public ref class RadioTag : public Device {
+		uint32_t time;
+		int8_t adaptive_rssi;
+		float adaptive_time;
+		uint8_t adaptive_bitrate;
+	public:
+		RadioTag(uint32_t _addr) : Device(_addr) {}
+
+		void Fill(uint32_t _time,int8_t _adaptive_rssi,float _adaptive_time,uint8_t _adaptive_bitrate) {
+			time = _time;
+			adaptive_rssi = _adaptive_rssi;
+			adaptive_time = _adaptive_time;
+			adaptive_bitrate = _adaptive_bitrate;
+		}
 	};
 
 	public ref class TimeAndDate {
@@ -115,7 +129,7 @@ namespace Evrika {
 		//default
 		Event() {
 			td = gcnew TimeAndDate();
-			device = gcnew Device();
+			device = gcnew Device(NULL);
 			sEvent = "null";
 		}
 		~Event() {
@@ -125,16 +139,16 @@ namespace Evrika {
 		//this td, in dev&event
 		Event(Device^ _device, EventCode _eCode) {
 			td = gcnew TimeAndDate();
-			device = gcnew Device();
-			device->copy(_device);
+			device = gcnew Device(NULL);
+			//device->copy(_device);
 			td->GetCurrentTimeAndDate();
 			eCode = _eCode;
 			sEvent = toStr(eCode);
 		}
 		Event(Device^ _device, TimeAndDate^ _td, EventCode _eCode) {
 			td = gcnew TimeAndDate();
-			device = gcnew Device();
-			device->copy(_device);
+			device = gcnew Device(NULL);
+			//device->copy(_device);
 			td->copy(_td);
 			eCode = _eCode;
 			sEvent = toStr(eCode);
@@ -258,5 +272,5 @@ namespace Evrika {
 	void PasteInBuffer(cli::array<unsigned char>^, size_t, uint32_t);
 	double GetDoubleFromBuf(cli::array<wchar_t>^, size_t offset);
 	float GetFloatFromBuf(cli::array<wchar_t>^, size_t offset);
-
+	uint32_t ToInt32FromBuf(cli::array<wchar_t>^, size_t offset);
 }

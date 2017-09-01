@@ -13,18 +13,10 @@ namespace Evrika {
 
 	String^ Device::IdInHex() {
 		char* buf = new char[12];
-		sprintf_s(buf, 12, "%X", unique_id);
+		sprintf_s(buf, 12, "%X", Addr);
 		String^ str = gcnew String(buf);
 		delete[] buf;
 		return str;
-	}
-	void Device::copy(Device^ _src) {
-		unique_id = _src->unique_id;
-		signal_lvl = _src->signal_lvl;
-		signal_quality = _src->signal_quality;
-		battery_lvl = _src->battery_lvl;
-		work_mode = _src->work_mode;
-		pWork_mode = _src->pWork_mode;
 	}
 
 	int TimeAndDate::GetCurrentTimeAndDate() {
@@ -152,6 +144,11 @@ namespace Evrika {
 		return num;
 	}
 
+	uint32_t ToInt32FromBuf(cli::array<wchar_t>^ rbuf, size_t offset)
+	{
+		return rbuf[offset] + (rbuf[offset + 1] << 8) + (rbuf[offset + 2] << 16) + (rbuf[offset + 3] << 24);
+	}
+
 	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id)
 	{
 		cli::array<unsigned char>^ rbuf = gcnew cli::array<unsigned char>(14);
@@ -187,15 +184,15 @@ namespace Evrika {
 		//msg_id
 		rbuf[7] = msg_id;
 		//msg_len
-		rbuf[8] = (uint8_t)(msg_len>>8);
+		rbuf[8] = (uint8_t)(msg_len >> 8);
 		rbuf[9] = (uint8_t)msg_len;
 		//msg_data
 		rbuf[10] = msg_data;
 		//CK_A, CK_B
 		CalcSum(rbuf, 12 + msg_len);
 		//Bluetooth compatibility
-		rbuf[13 + msg_len] = '\r';	//CR
-		rbuf[14 + msg_len] = '\n';	//LF
+		rbuf[12 + msg_len] = '\r';	//CR
+		rbuf[13 + msg_len] = '\n';	//LF
 		port->Write(rbuf, 0, rbuf->Length);
 	}
 	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint32_t msg_data)
@@ -218,8 +215,8 @@ namespace Evrika {
 		//CK_A, CK_B
 		CalcSum(rbuf, 12 + msg_len);
 		//Bluetooth compatibility
-		rbuf[13 + msg_len] = '\r';	//CR
-		rbuf[14 + msg_len] = '\n';	//LF
+		rbuf[12 + msg_len] = '\r';	//CR
+		rbuf[13 + msg_len] = '\n';	//LF
 		port->Write(rbuf, 0, rbuf->Length);
 	}
 	void Commands::Class_0x0A::TestConnect()
@@ -236,15 +233,15 @@ namespace Evrika {
 	}
 	void Commands::Class_0x0A::GetRelayState(uint32_t Addr)
 	{
-		ConstructCMD(Addr, 0x0A, 88);
+		ConstructCMD(Addr, 0x0A, 0x88);
 	}
 	void Commands::Class_0x0A::SetRelayState(uint32_t Addr, uint8_t state)
 	{
-		ConstructCMD(Addr, 0x0A, 89, 1, state);
+		ConstructCMD(Addr, 0x0A, 0x89, 1, state);
 	}
 	void Commands::Class_0x0A::ProgrammReset(uint32_t Addr)
 	{
-		ConstructCMD(Addr, 0x0A, 99);
+		ConstructCMD(Addr, 0x0A, 0x99);
 	}
 	void Commands::Class_0x0B::SetGPSPowerState(uint32_t Addr, uint8_t state)
 	{
@@ -300,6 +297,10 @@ namespace Evrika {
 	}
 	void Commands::Class_0x0D::GlobalResetRepeaters(uint32_t Addr)
 	{
-		ConstructCMD(Addr, 0x0D, 99);
+		ConstructCMD(Addr, 0x0D, 0x99);
+	}
+	void Repeater::GetInfo()
+	{
+
 	}
 }

@@ -1,4 +1,4 @@
-//#define _CRT_SECURE_NO_WARNINGS
+п»ї//#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdint.h>
 #include <fstream>
@@ -8,7 +8,6 @@
 #include "templates.h"
 #include "settings.h"
 #include "loading_page.h"
-#include "device_prop.h"
 #include "mapform.h"
 #include "mainform.h"
 
@@ -17,8 +16,6 @@ using namespace System::Windows::Forms;
 using namespace System::Threading;
 using namespace System::Runtime::InteropServices;
 using namespace Evrika;
-
-
 
 ref class Worker {
 	static loading_page^ ldwnd;
@@ -94,7 +91,7 @@ void Main(cli::array<String^>^ args) {
 
 Evrika::mainform::mainform(void)
 {
-	//создание окна загрузки
+	//СЃРѕР·РґР°РЅРёРµ РѕРєРЅР° Р·Р°РіСЂСѓР·РєРё
 	//Thread^ oThread = gcnew Thread(gcnew ThreadStart(&ThreadExample::ThreadProc));
 	/*ThreadStart^ threadDelegate = gcnew ThreadStart(w, &Work::DoMoreWork);
 	Thread^ newThread = gcnew Thread(threadDelegate);*/
@@ -117,36 +114,37 @@ Evrika::mainform::mainform(void)
 	Semaphore^ mut = loading_page::getMutex();
 	mut->WaitOne();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), " Старт.");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), " РЎС‚Р°СЂС‚.");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 1);
 
 	//notLoaded = true;
 	InitializeComponent();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Запуск окна карты...");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Р—Р°РїСѓСЃРє РѕРєРЅР° РєР°СЂС‚С‹...");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 2);
 
 	mapform = gcnew Evrika::mapform();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Загрузка карты...");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Р—Р°РіСЂСѓР·РєР° РєР°СЂС‚С‹...");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 3);
 
 	map = mapform->getMapPointer();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Инициализация настроек...");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РЅР°СЃС‚СЂРѕРµРє...");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 4);
 
 	settings_window = gcnew Evrika::settings();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Подготовка программы...");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "РџРѕРґРіРѕС‚РѕРІРєР° РїСЂРѕРіСЂР°РјРјС‹...");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 5);
 
 	lCoordsCount = 0;
 	MyCoords = gcnew List< geoPoint^ >(20);
-	Devices = gcnew List<Device^>(20);
+	Devices = gcnew List<Repeater^>(20);
+	RadioTags = gcnew List<RadioTag^>(20);
 	Events = gcnew List<Event^>(50);
 	logs = gcnew List<TextBox^>;
-	PropWindows = gcnew List<device_prop^>;
+	//PropWindows = gcnew List<device_prop^>;
 	logs->Add(proglog);
 	//cDevices = 0;
 	markers = gcnew cli::array< GMarkerGoogle^ >(50);
@@ -162,24 +160,24 @@ Evrika::mainform::mainform(void)
 	this->Width = 512;
 	this->Height = 570;
 	UpdateMapPos();
-	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
+	groupBox1->Text = "РўРѕС‡РµРє СЃРѕС…СЂР°РЅРµРЅРѕ: " + MyCoords->Count.ToString(); //РѕР±РЅРѕРІР»РµРЅРёРµ РїСЂРё РїРѕР»СѓС‡РµРЅРёРё С‚РѕС‡Рє
 
 	//proglog->Clear();
 
-	//lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Перечисление COM...");
+	//lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "РџРµСЂРµС‡РёСЃР»РµРЅРёРµ COM...");
 	//pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 6);
 
 	//EnumCOMs();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Запуск карты...");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Р—Р°РїСѓСЃРє РєР°СЂС‚С‹...");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 7);
 
 	mapform->Show();
 
-	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Готово.");
+	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Р“РѕС‚РѕРІРѕ.");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 8);
 
-	//разблок
+	//СЂР°Р·Р±Р»РѕРє
 	//ldng_wnd->Hide();
 	//Semaphore^ mut=loading_page::getMutex();
 	//mut->Release();
@@ -188,7 +186,7 @@ Evrika::mainform::mainform(void)
 	p->Invoke(gcnew Action(&loading_page::Suicide));
 
 	//this->BringToFront();
-	//BringWindowToTop();	//TODO: почему на заднем фоне?!
+	//BringWindowToTop();	//TODO: РїРѕС‡РµРјСѓ РЅР° Р·Р°РґРЅРµРј С„РѕРЅРµ?!
 	SetWindowPos((HWND)this->Handle.ToInt32(), HWND_TOP, NULL, NULL, NULL, NULL, SWP_NOSIZE | SWP_NOMOVE);
 }
 
@@ -198,7 +196,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2)
 	System::Collections::Generic::List<GMap::NET::PointLatLng> ^Points = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
 	System::Collections::Generic::List<GMap::NET::PointLatLng> ^cPoints = gcnew System::Collections::Generic::List<GMap::NET::PointLatLng>;
 
-	double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//поправка на длинну мередиана
+	double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//РїРѕРїСЂР°РІРєР° РЅР° РґР»РёРЅРЅСѓ РјРµСЂРµРґРёР°РЅР°
 
 	double A0, B0, C0;
 	//d = circle1->get_dist(circle2);
@@ -230,25 +228,25 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2)
 	B0 = y;
 	C0 = -A0*x2 - B0*y2;
 
-	double alfa = Math::Acos(a / r0);  //угол между отрезком, который соединяет центры, и одним из радиусов первой окружности, проведённым в точку пересечения.
-									   //хз как арккосинус считается, поправь если что.
-									   //здесь требуется правильно считать a.
-	double cosOx = x / (Math::Sqrt(x*x + y*y)); // вычисляем синус и косинус угла между отрезком, который соединяет центры, и осью иксов
-	double sinOx = y / (Math::Sqrt(x*x + y*y));  //надо считать корень!)
+	double alfa = Math::Acos(a / r0);  //СѓРіРѕР» РјРµР¶РґСѓ РѕС‚СЂРµР·РєРѕРј, РєРѕС‚РѕСЂС‹Р№ СЃРѕРµРґРёРЅСЏРµС‚ С†РµРЅС‚СЂС‹, Рё РѕРґРЅРёРј РёР· СЂР°РґРёСѓСЃРѕРІ РїРµСЂРІРѕР№ РѕРєСЂСѓР¶РЅРѕСЃС‚Рё, РїСЂРѕРІРµРґС‘РЅРЅС‹Рј РІ С‚РѕС‡РєСѓ РїРµСЂРµСЃРµС‡РµРЅРёСЏ.
+									   //С…Р· РєР°Рє Р°СЂРєРєРѕСЃРёРЅСѓСЃ СЃС‡РёС‚Р°РµС‚СЃСЏ, РїРѕРїСЂР°РІСЊ РµСЃР»Рё С‡С‚Рѕ.
+									   //Р·РґРµСЃСЊ С‚СЂРµР±СѓРµС‚СЃСЏ РїСЂР°РІРёР»СЊРЅРѕ СЃС‡РёС‚Р°С‚СЊ a.
+	double cosOx = x / (Math::Sqrt(x*x + y*y)); // РІС‹С‡РёСЃР»СЏРµРј СЃРёРЅСѓСЃ Рё РєРѕСЃРёРЅСѓСЃ СѓРіР»Р° РјРµР¶РґСѓ РѕС‚СЂРµР·РєРѕРј, РєРѕС‚РѕСЂС‹Р№ СЃРѕРµРґРёРЅСЏРµС‚ С†РµРЅС‚СЂС‹, Рё РѕСЃСЊСЋ РёРєСЃРѕРІ
+	double sinOx = y / (Math::Sqrt(x*x + y*y));  //РЅР°РґРѕ СЃС‡РёС‚Р°С‚СЊ РєРѕСЂРµРЅСЊ!)
 
-	double alfa0;             // смотрим на расположение отрезка по знаку sin/cos
+	double alfa0;             // СЃРјРѕС‚СЂРёРј РЅР° СЂР°СЃРїРѕР»РѕР¶РµРЅРёРµ РѕС‚СЂРµР·РєР° РїРѕ Р·РЅР°РєСѓ sin/cos
 	if (sinOx >= 0)
-		alfa0 = Math::Acos(cosOx);  //первая и вторая четверть, угол положительный 
+		alfa0 = Math::Acos(cosOx);  //РїРµСЂРІР°СЏ Рё РІС‚РѕСЂР°СЏ С‡РµС‚РІРµСЂС‚СЊ, СѓРіРѕР» РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Р№ 
 	else
-		alfa0 = -Math::Acos(cosOx); // третья и четвёртая четверть, знак косинуса не важен, только знак синуса
+		alfa0 = -Math::Acos(cosOx); // С‚СЂРµС‚СЊСЏ Рё С‡РµС‚РІС‘СЂС‚Р°СЏ С‡РµС‚РІРµСЂС‚СЊ, Р·РЅР°Рє РєРѕСЃРёРЅСѓСЃР° РЅРµ РІР°Р¶РµРЅ, С‚РѕР»СЊРєРѕ Р·РЅР°Рє СЃРёРЅСѓСЃР°
 
 	double alfa1 = alfa0 + alfa;
 	double alfa2 = alfa0 - alfa;
 
 	if ((alfa1 == Math::PI / 2) || (alfa2 == Math::PI / 2) || (alfa1 == -Math::PI / 2) || (alfa2 == -Math::PI / 2))
 	{
-		//проверяем не равен какой-либо из углов пи на два или минус пи на 2. если хоть один из них равен
-		//то нельзя считать тангенс (он бесконечен), решение будет немного другим. Как пи пишется я не знаю.
+		//РїСЂРѕРІРµСЂСЏРµРј РЅРµ СЂР°РІРµРЅ РєР°РєРѕР№-Р»РёР±Рѕ РёР· СѓРіР»РѕРІ РїРё РЅР° РґРІР° РёР»Рё РјРёРЅСѓСЃ РїРё РЅР° 2. РµСЃР»Рё С…РѕС‚СЊ РѕРґРёРЅ РёР· РЅРёС… СЂР°РІРµРЅ
+		//С‚Рѕ РЅРµР»СЊР·СЏ СЃС‡РёС‚Р°С‚СЊ С‚Р°РЅРіРµРЅСЃ (РѕРЅ Р±РµСЃРєРѕРЅРµС‡РµРЅ), СЂРµС€РµРЅРёРµ Р±СѓРґРµС‚ РЅРµРјРЅРѕРіРѕ РґСЂСѓРіРёРј. РљР°Рє РїРё РїРёС€РµС‚СЃСЏ СЏ РЅРµ Р·РЅР°СЋ.
 		if ((alfa1 == Math::PI / 2) || (alfa1 == -Math::PI / 2))
 		{
 			x31 = 0;
@@ -265,7 +263,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2)
 		}
 
 	}
-	else                //здесь собственно решение, если углы норм. тогда тг считать можно.
+	else                //Р·РґРµСЃСЊ СЃРѕР±СЃС‚РІРµРЅРЅРѕ СЂРµС€РµРЅРёРµ, РµСЃР»Рё СѓРіР»С‹ РЅРѕСЂРј. С‚РѕРіРґР° С‚Рі СЃС‡РёС‚Р°С‚СЊ РјРѕР¶РЅРѕ.
 	{
 		x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
 		x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
@@ -306,7 +304,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<
 	List<PointLatLng> ^Points = gcnew List<GMap::NET::PointLatLng>;
 	List<PointLatLng> ^cPoints = gcnew List<GMap::NET::PointLatLng>;
 
-	double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//поправка на длинну мередиана
+	double Z = Math::Cos(circle1->get_lat()*(Math::PI / 180));	//РїРѕРїСЂР°РІРєР° РЅР° РґР»РёРЅРЅСѓ РјРµСЂРµРґРёР°РЅР°
 	double A0, B0, C0;
 	y0 = circle1->get_lat();
 	y1 = circle2->get_lat();
@@ -327,25 +325,25 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<
 	B0 = y;
 	C0 = -A0*x2 - B0*y2;
 
-	double alfa = Math::Acos(a / r0);  //угол между отрезком, который соединяет центры, и одним из радиусов первой окружности, проведённым в точку пересечения.
-									   //хз как арккосинус считается, поправь если что.
-									   //здесь требуется правильно считать a.
-	double cosOx = x / (Math::Sqrt(x*x + y*y)); // вычисляем синус и косинус угла между отрезком, который соединяет центры, и осью иксов
-	double sinOx = y / (Math::Sqrt(x*x + y*y));  //надо считать корень!)
+	double alfa = Math::Acos(a / r0);  //СѓРіРѕР» РјРµР¶РґСѓ РѕС‚СЂРµР·РєРѕРј, РєРѕС‚РѕСЂС‹Р№ СЃРѕРµРґРёРЅСЏРµС‚ С†РµРЅС‚СЂС‹, Рё РѕРґРЅРёРј РёР· СЂР°РґРёСѓСЃРѕРІ РїРµСЂРІРѕР№ РѕРєСЂСѓР¶РЅРѕСЃС‚Рё, РїСЂРѕРІРµРґС‘РЅРЅС‹Рј РІ С‚РѕС‡РєСѓ РїРµСЂРµСЃРµС‡РµРЅРёСЏ.
+									   //С…Р· РєР°Рє Р°СЂРєРєРѕСЃРёРЅСѓСЃ СЃС‡РёС‚Р°РµС‚СЃСЏ, РїРѕРїСЂР°РІСЊ РµСЃР»Рё С‡С‚Рѕ.
+									   //Р·РґРµСЃСЊ С‚СЂРµР±СѓРµС‚СЃСЏ РїСЂР°РІРёР»СЊРЅРѕ СЃС‡РёС‚Р°С‚СЊ a.
+	double cosOx = x / (Math::Sqrt(x*x + y*y)); // РІС‹С‡РёСЃР»СЏРµРј СЃРёРЅСѓСЃ Рё РєРѕСЃРёРЅСѓСЃ СѓРіР»Р° РјРµР¶РґСѓ РѕС‚СЂРµР·РєРѕРј, РєРѕС‚РѕСЂС‹Р№ СЃРѕРµРґРёРЅСЏРµС‚ С†РµРЅС‚СЂС‹, Рё РѕСЃСЊСЋ РёРєСЃРѕРІ
+	double sinOx = y / (Math::Sqrt(x*x + y*y));  //РЅР°РґРѕ СЃС‡РёС‚Р°С‚СЊ РєРѕСЂРµРЅСЊ!)
 
-	double alfa0;             // смотрим на расположение отрезка по знаку sin/cos
+	double alfa0;             // СЃРјРѕС‚СЂРёРј РЅР° СЂР°СЃРїРѕР»РѕР¶РµРЅРёРµ РѕС‚СЂРµР·РєР° РїРѕ Р·РЅР°РєСѓ sin/cos
 	if (sinOx >= 0)
-		alfa0 = Math::Acos(cosOx);  //первая и вторая четверть, угол положительный 
+		alfa0 = Math::Acos(cosOx);  //РїРµСЂРІР°СЏ Рё РІС‚РѕСЂР°СЏ С‡РµС‚РІРµСЂС‚СЊ, СѓРіРѕР» РїРѕР»РѕР¶РёС‚РµР»СЊРЅС‹Р№ 
 	else
-		alfa0 = -Math::Acos(cosOx); // третья и четвёртая четверть, знак косинуса не важен, только знак синуса
+		alfa0 = -Math::Acos(cosOx); // С‚СЂРµС‚СЊСЏ Рё С‡РµС‚РІС‘СЂС‚Р°СЏ С‡РµС‚РІРµСЂС‚СЊ, Р·РЅР°Рє РєРѕСЃРёРЅСѓСЃР° РЅРµ РІР°Р¶РµРЅ, С‚РѕР»СЊРєРѕ Р·РЅР°Рє СЃРёРЅСѓСЃР°
 
 	double alfa1 = alfa0 + alfa;
 	double alfa2 = alfa0 - alfa;
 
 	if ((alfa1 == Math::PI / 2) || (alfa2 == Math::PI / 2) || (alfa1 == -Math::PI / 2) || (alfa2 == -Math::PI / 2))
 	{
-		//проверяем не равен какой-либо из углов пи на два или минус пи на 2. если хоть один из них равен
-		//то нельзя считать тангенс (он бесконечен), решение будет немного другим. Как пи пишется я не знаю.
+		//РїСЂРѕРІРµСЂСЏРµРј РЅРµ СЂР°РІРµРЅ РєР°РєРѕР№-Р»РёР±Рѕ РёР· СѓРіР»РѕРІ РїРё РЅР° РґРІР° РёР»Рё РјРёРЅСѓСЃ РїРё РЅР° 2. РµСЃР»Рё С…РѕС‚СЊ РѕРґРёРЅ РёР· РЅРёС… СЂР°РІРµРЅ
+		//С‚Рѕ РЅРµР»СЊР·СЏ СЃС‡РёС‚Р°С‚СЊ С‚Р°РЅРіРµРЅСЃ (РѕРЅ Р±РµСЃРєРѕРЅРµС‡РµРЅ), СЂРµС€РµРЅРёРµ Р±СѓРґРµС‚ РЅРµРјРЅРѕРіРѕ РґСЂСѓРіРёРј. РљР°Рє РїРё РїРёС€РµС‚СЃСЏ СЏ РЅРµ Р·РЅР°СЋ.
 		if ((alfa1 == Math::PI / 2) || (alfa1 == -Math::PI / 2))
 		{
 			x31 = 0;
@@ -362,7 +360,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<
 		}
 
 	}
-	else                //здесь собственно решение, если углы норм. тогда тг считать можно.
+	else                //Р·РґРµСЃСЊ СЃРѕР±СЃС‚РІРµРЅРЅРѕ СЂРµС€РµРЅРёРµ, РµСЃР»Рё СѓРіР»С‹ РЅРѕСЂРј. С‚РѕРіРґР° С‚Рі СЃС‡РёС‚Р°С‚СЊ РјРѕР¶РЅРѕ.
 	{
 		x31 = -C0 / (A0 + B0 * Math::Tan(alfa1));
 		x32 = -C0 / (A0 + B0 * Math::Tan(alfa2));
@@ -444,7 +442,7 @@ bool Evrika::mainform::inTheArea(PointLatLng point)
 	return result;
 }
 
-bool Evrika::mainform::inTheArea(PointLatLng point, int i, int j, int k){
+bool Evrika::mainform::inTheArea(PointLatLng point, int i, int j, int k) {
 	bool result = true;
 	double r1 = geoPoint::GetDistanceToPointFrom(point, MyCoords[i]->get_pointLatLng()) * 1000;
 	double r2 = geoPoint::GetDistanceToPointFrom(point, MyCoords[j]->get_pointLatLng()) * 1000;
@@ -532,11 +530,11 @@ void Evrika::mainform::CheckComConn()
 		Commands::Class_0x0A::TestConnect();
 		sEnumCom->WaitOne(10000);
 		if (isOurCom) {
-			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Есть соединение");
+			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Р•СЃС‚СЊ СЃРѕРµРґРёРЅРµРЅРёРµ");
 			LastStateIsOpen = true;
 		}
 		else {
-			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Подключение отсутствует");
+			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "РџРѕРґРєР»СЋС‡РµРЅРёРµ РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚");
 			if (serialPort1->IsOpen)
 				serialPort1->Close();
 			LastStateIsOpen = false;
@@ -550,7 +548,7 @@ void Evrika::mainform::CheckComConn()
 
 void Evrika::mainform::EnumCOMs()
 {
-	this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Поиск последовательного порта...");
+	this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "РџРѕРёСЃРє РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕРіРѕ РїРѕСЂС‚Р°...");
 	cli::array<String^>^ coms = IO::Ports::SerialPort::GetPortNames();
 	size_t coms_count = coms->GetLength(0);
 	try {
@@ -567,11 +565,12 @@ void Evrika::mainform::EnumCOMs()
 						isOurCom = false;
 						Commands::Commands(serialPort1);
 						Commands::Class_0x0A::TestConnect();
-						sEnumCom->WaitOne(10000);	//TODO: настроить
+						sEnumCom->WaitOne(10000);	//TODO: РЅР°СЃС‚СЂРѕРёС‚СЊ
 						if (isOurCom) {
 							this->Invoke(gcnew Action<String^>(this, &mainform::WriteToComStat), serialPort1->PortName);
-							this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "ДЦ найден по " + whatCOM->Text);
+							this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Р”Р¦ РЅР°Р№РґРµРЅ РїРѕ " + whatCOM->Text);
 							LastStateIsOpen = true;
+							Commands::Class_0x0A::GetLocalAddr();
 							return;
 						}
 					}
@@ -581,12 +580,12 @@ void Evrika::mainform::EnumCOMs()
 				}
 				Sleep(100);
 			}
-			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "ДЦ не найден.");
+			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Р”Р¦ РЅРµ РЅР°Р№РґРµРЅ.");
 			this->Invoke(gcnew Action<String^>(this, &mainform::WriteToComStat), "COM?");
 			LastStateIsOpen = false;
 		}
 		else {
-			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "ДЦ не найден.");
+			this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Р”Р¦ РЅРµ РЅР°Р№РґРµРЅ.");
 			this->Invoke(gcnew Action<String^>(this, &mainform::WriteToComStat), "COM?");
 			LastStateIsOpen = false;
 		}
@@ -631,36 +630,6 @@ double Evrika::mainform::RangeRandDouble(double min, double max)
 	return temp / 100.0;
 }
 
-void Evrika::mainform::update_prop_windows()
-{
-	for (int i = 0; i < PropWindows->Count; i++) {
-		try {
-			int dev_id = PropWindows[i]->curDev->unique_id;	//тут вылет, если окна уже нет
-			bool finded = false;
-			for (int j = 0; j < Devices->Count; j++) {
-				if (Devices[j]->unique_id == dev_id) {
-					finded = true;
-					PropWindows[i]->curDev->copy(Devices[j]);
-
-					if (PropWindows[i]->curDev->missing_counter == 0)
-						PropWindows[i]->dataGridView1->Rows[0]->Cells[0]->Value = PropWindows[i]->curDev->IdInHex();	//id
-					else
-						PropWindows[i]->dataGridView1->Rows[0]->Cells[0]->Value = PropWindows[i]->curDev->IdInHex() + " (!)";	//id
-					PropWindows[i]->dataGridView1->Rows[0]->Cells[1]->Value = PropWindows[i]->curDev->signal_lvl;	//sgnl lvl
-					PropWindows[i]->dataGridView1->Rows[0]->Cells[2]->Value = PropWindows[i]->curDev->signal_quality;	//quality
-					PropWindows[i]->dataGridView1->Rows[0]->Cells[3]->Value = PropWindows[i]->curDev->battery_lvl;	//batt lvl
-					PropWindows[i]->dataGridView1->Rows[0]->Cells[4]->Value = PropWindows[i]->curDev->work_mode;	//mode
-				}
-			}
-			if (!finded) PropWindows[i]->Text = "Сигнал потерян";
-		}
-		catch (...) {
-			PropWindows->RemoveAt(i);
-			i--;
-		}
-	}
-}
-
 void Evrika::mainform::SetTimer(bool en)
 {
 	sys_task->Enabled = en;
@@ -688,8 +657,8 @@ void Evrika::mainform::AddNewPoint(float m)
 	MyCoords->Add(gcnew geoPoint(lat, lng, r_m));
 	if (MyCoords->Count > 8)
 		MyCoords->RemoveAt(0);
-	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
-	WriteLog("Точка добавлена");
+	groupBox1->Text = "РўРѕС‡РµРє СЃРѕС…СЂР°РЅРµРЅРѕ: " + MyCoords->Count.ToString(); //РѕР±РЅРѕРІР»РµРЅРёРµ РїСЂРё РїРѕР»СѓС‡РµРЅРёРё С‚РѕС‡Рє
+	WriteLog("РўРѕС‡РєР° РґРѕР±Р°РІР»РµРЅР°");
 	if (MyCoords->Count > 3) {
 		areaOvrl->Clear();
 		mrkrOvrl->Clear();
@@ -708,14 +677,14 @@ void Evrika::mainform::AddNewPoint(float m)
 
 void Evrika::mainform::UpdateMapPos()
 {
-	//обновление картой при изменении
-	label2->Text = "Широта: " + map->Position.Lat.ToString();	//Latitude
-	label3->Text = "Долгота: " + map->Position.Lng.ToString();	//Longetude
+	//РѕР±РЅРѕРІР»РµРЅРёРµ РєР°СЂС‚РѕР№ РїСЂРё РёР·РјРµРЅРµРЅРёРё
+	label2->Text = "РЁРёСЂРѕС‚Р°: " + map->Position.Lat.ToString();	//Latitude
+	label3->Text = "Р”РѕР»РіРѕС‚Р°: " + map->Position.Lng.ToString();	//Longetude
 }
 
 bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 {
-	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//базовая проверка
+	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//Р±Р°Р·РѕРІР°СЏ РїСЂРѕРІРµСЂРєР°
 
 	int len = (rbuf[8] << 8) + rbuf[9];
 
@@ -729,95 +698,189 @@ bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 	return false;
 }
 
-void Evrika::mainform::update_device_list()
-{	//TODO: Доработать до многооконного аля writelog
-	RadioTagsGrid->Rows->Clear();
+void Evrika::mainform::UpdateRadioTagsList()
+{
+	//RadioTagsGrid->Rows->Clear();
+	//for (int i = 0; i < Devices->Count; i++) {
+	//	RadioTagsGrid->Rows->Add(1);
+	//	if (Devices[i]->missing_counter == 0)
+	//		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
+	//	else
+	//		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
+	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = Devices[i]->signal_lvl;	//sgnl lvl
+	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = Devices[i]->signal_quality;	//quality
+	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = Devices[i]->battery_lvl;	//batt lvl
+	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = Devices[i]->work_mode;	//mode
+	//}
+
+	//for (int i = 0; i < RadioTagsGrid->RowCount; i++) {
+	//	double tempval = 0;
+	//	int templvl = 100;
+	//	//try {
+	//	tempval = double(RadioTagsGrid->Rows[i]->Cells[3]->Value);
+	//	//}
+	//	//catch (...) {}
+	//	if (tempval) {
+	//		if (tempval < Evrika::settings::GetMySettingP()->voltLvl[0]) {
+	//			RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
+	//		}
+	//		else if (tempval < Evrika::settings::GetMySettingP()->voltLvl[1]) {
+	//			RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
+	//		}
+	//		else {
+	//			RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
+	//		}
+	//	}
+
+	//	//try {
+	//	templvl = (int)(RadioTagsGrid->Rows[i]->Cells[1]->Value);
+	//	//}
+	//	//catch (...) {}
+	//	if (templvl < 100) {
+	//		if (templvl < Evrika::settings::GetMySettingP()->signlLvl[0]) {
+	//			RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
+	//		}
+	//		else if (templvl < Evrika::settings::GetMySettingP()->signlLvl[1]) {
+	//			RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
+	//		}
+	//		else {
+	//			RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
+	//		}
+	//	}
+	//}
+}
+
+void Evrika::mainform::UpdateRepeatersList()
+{
+	this->DCGrid->SelectionChanged -= gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
+	//РћС‡РёСЃС‚РєР° СЃРµС‚РєРё
+	DCGrid->Rows->Clear();
 	for (int i = 0; i < Devices->Count; i++) {
-		RadioTagsGrid->Rows->Add(1);
+		//РґРѕР±Р°РІР»СЏРµРј РЅРѕРІСѓСЋ СЃС‚СЂРѕРєСѓ
+		DCGrid->Rows->Add(1);
+		//СЃС‚РѕР»Р±РµС† Р°РґСЂРµСЃР°
 		if (Devices[i]->missing_counter == 0)
-			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
+			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
 		else
-			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
-		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = Devices[i]->signal_lvl;	//sgnl lvl
-		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = Devices[i]->signal_quality;	//quality
-		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = Devices[i]->battery_lvl;	//batt lvl
-		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = Devices[i]->work_mode;	//mode
-	}
-
-	for (int i = 0; i < RadioTagsGrid->RowCount; i++) {
-		double tempval = 0;
-		int templvl = 100;
-		//try {
-		tempval = double(RadioTagsGrid->Rows[i]->Cells[3]->Value);
-		//}
-		//catch (...) {}
-		if (tempval) {
-			if (tempval < Evrika::settings::GetMySettingP()->voltLvl[0]) {
-				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
+			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
+		//СЃС‚РѕР»Р±РµС† СѓСЂРѕРІРЅСЏ СЃРёРіРЅР°Р»Р°
+		int8_t rssi = Devices[i]->GetSignalLvl();
+		DCGrid->Rows[DCGrid->RowCount - 1]->Cells[1]->Value = rssi.ToString();
+		if (rssi < 100) {
+			if (rssi < Evrika::settings::GetMySettingP()->signlLvl[0]) {
+				DCGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
 			}
-			else if (tempval < Evrika::settings::GetMySettingP()->voltLvl[1]) {
-				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
+			else if (rssi < Evrika::settings::GetMySettingP()->signlLvl[1]) {
+				DCGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
 			}
 			else {
-				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
+				DCGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
 			}
 		}
-
-		//try {
-		templvl = (int)(RadioTagsGrid->Rows[i]->Cells[1]->Value);
-		//}
-		//catch (...) {}
-		if (templvl < 100) {
-			if (templvl < Evrika::settings::GetMySettingP()->signlLvl[0]) {
-				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
+		//СЃС‚РѕР»Р±РµС† РєР°С‡РµСЃС‚РІР° РїСЂРёРµРјР° СЃРёРіРЅР°Р»Р°
+		DCGrid->Rows[DCGrid->RowCount - 1]->Cells[2]->Value = Devices[i]->GetSignalQuality().ToString();
+		//СѓСЂРѕРІРµРЅСЊ Р·Р°СЂСЏРґР° Р±Р°С‚Р°СЂРµРё, Р’
+		float vbatt = Devices[i]->GetBatteryLvl();
+		DCGrid->Rows[DCGrid->RowCount - 1]->Cells[3]->Value = vbatt.ToString();
+		if (vbatt) {
+			if (vbatt < Evrika::settings::GetMySettingP()->voltLvl[0]) {
+				DCGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
 			}
-			else if (templvl < Evrika::settings::GetMySettingP()->signlLvl[1]) {
-				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
+			else if (vbatt < Evrika::settings::GetMySettingP()->voltLvl[1]) {
+				DCGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
 			}
 			else {
-				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
+				DCGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
 			}
 		}
+		//СЂРµР¶РёРј СЂР°Р±РѕС‚С‹
+		if (Devices[i]->isLocal)
+			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[4]->Value = "Р›РѕРєР°Р»СЊРЅС‹Р№";
+		else
+			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[4]->Value = "Р РµС‚СЂР°РЅСЃР»СЏС‚РѕСЂ";
 	}
+	this->DCGrid->SelectionChanged += gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
+	DCGrid_SelectionChanged(this, gcnew EventArgs());
 }
 
 void Evrika::mainform::update_event_list()
 {
-	dataGridView2->Rows->Clear();
-	for (int i = 0; i < Events->Count; i++) {
-		dataGridView2->Rows->Add(1);
+	//dataGridView2->Rows->Clear();
+	//for (int i = 0; i < Events->Count; i++) {
+	//	dataGridView2->Rows->Add(1);
 
-		dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[0]->Value = Events[i]->device->IdInHex();	//id
-		dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[1]->Value = Events[i]->device->signal_lvl;	//sgnl lvl
-		dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[2]->Value = Events[i]->device->battery_lvl;	//batt lvl
-		dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[3]->Value = Events[i]->device->work_mode;	//mode
-		dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[4]->Value = Events[i]->sEvent;	//event type
-		dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[5]->Value = Events[i]->td->ToSysString();	//dt
-	}
+	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[0]->Value = Events[i]->device->IdInHex();	//id
+	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[1]->Value = Events[i]->device->signal_lvl;	//sgnl lvl
+	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[2]->Value = Events[i]->device->battery_lvl;	//batt lvl
+	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[3]->Value = Events[i]->device->work_mode;	//mode
+	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[4]->Value = Events[i]->sEvent;	//event type
+	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[5]->Value = Events[i]->td->ToSysString();	//dt
+	//}
 }
 
 void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 {
-	//проверка синхробайтов и контрольной суммы, в случае ошибки выдаем в лог и не обрабатываем
+	//РїСЂРѕРІРµСЂРєР° СЃРёРЅС…СЂРѕР±Р°Р№С‚РѕРІ Рё РєРѕРЅС‚СЂРѕР»СЊРЅРѕР№ СЃСѓРјРјС‹, РІ СЃР»СѓС‡Р°Рµ РѕС€РёР±РєРё РІС‹РґР°РµРј РІ Р»РѕРі Рё РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°РµРј
 	if (!CheckSum(rbuf)) {
-		WriteLog("Какая-то дичь... : " + gcnew String(rbuf));
+		//WriteLog("РљР°РєР°СЏ-С‚Рѕ РґРёС‡СЊ... : " + gcnew String(rbuf));
 		return;
 	}
-	//проверка пройдена, обработка
+	//РїСЂРѕРІРµСЂРєР° РїСЂРѕР№РґРµРЅР°, РѕР±СЂР°Р±РѕС‚РєР°
 	switch (rbuf[MESSAGE_CLASS]) {	//message class
 	case 0x0A:
 		switch (rbuf[MESSAGE_ID]) {	//message ID
-		case 0x00:	//ответ на проверку соединения
+		case 0x00:	//РѕС‚РІРµС‚ РЅР° РїСЂРѕРІРµСЂРєСѓ СЃРѕРµРґРёРЅРµРЅРёСЏ
 			isOurCom = true;
 			sEnumCom->Release();
 			break;
-		case 0x01:	//ответ на запрос локального адреса
-			break;
-		case 0x02:
-			WriteLog("Параметры СС1101 сброшены");
-			break;
-		case 0x03:
-			WriteLog("Параметры СС1101 изменены");
+		case 0x01:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ Р»РѕРєР°Р»СЊРЅРѕРіРѕ Р°РґСЂРµСЃР°
+		{
+			uint32_t addr = ToInt32FromBuf(rbuf, 10);
+			Devices->Add(gcnew Repeater(addr, true));
+			Commands::Class_0x0A::GetVoltage(Devices[0]->GetAddr());
+			UpdateRepeatersList();
+		}
+		break;
+		case 0x02:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ РЅР°РїСЂСЏР¶РµРЅРёР№
+		{
+			uint32_t addr = ToInt32FromBuf(rbuf, 2);
+			float vbatt = GetFloatFromBuf(rbuf, 10);
+			float charger = GetFloatFromBuf(rbuf, 14);
+			float lna1 = GetFloatFromBuf(rbuf, 18);
+			float lna2 = GetFloatFromBuf(rbuf, 22);
+			float vcore = GetFloatFromBuf(rbuf, 26);
+			float vtemp = GetFloatFromBuf(rbuf, 30);
+
+			if (Devices[0]->GetAddr() == addr) {
+				Devices[0]->Fill(vbatt, 0, 0);
+				UpdateRepeatersList();
+			}
+			else {
+				for (int i = 1; i < Devices->Count; i++) {
+					if (addr == Devices[i]->GetAddr()) {
+						vbattLbl->Text = "vbatt: " + vbatt.ToString() + " V";
+						vchargerLbl->Text = charger.ToString();
+						vlna1Lbl->Text=lna1.ToString();
+						vlna2Lbl->Text=lna2.ToString();
+						vcoreLbl->Text=vcore.ToString();
+						vtempLbl->Text=vtemp.ToString();
+					}
+				}
+			}
+		}
+		break;
+		case 0x88:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ Рѕ СЃРѕСЃС‚РѕСЏРЅРёРё СЂРµР»Рµ
+		{
+			uint32_t addr = ToInt32FromBuf(rbuf, 2);
+			uint8_t state = rbuf[10];
+			for (int i = 0; i < Devices->Count; i++)
+				if (addr == Devices[i]->GetAddr())
+					Devices[i]->SaveRelayStat(state);
+			RelayStatCheckBox->Checked = state;
+		}
+		break;
+		case 0x89:	//РѕС‚РІРµС‚ РЅР° СѓРїСЂР°РІР»РµРЅРёРµ СЂРµР»Рµ
+
 			break;
 		default:
 			WriteLog("ParseBuffer error: Unknown message ID in class 0x0A");
@@ -825,69 +888,106 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		}
 		break;
 	case 0x0B:
-		switch (rbuf[3]) {
-		case 0x01:
+		switch (rbuf[MESSAGE_ID]) {
+		case 0x01:	//РѕС‚РІРµС‚ РЅР° СѓРїСЂР°РІР»РµРЅРёРµ РїРёС‚Р°РЅРёРµРј GPS
 			if (eGPS)
-				WriteLog("GPS включен");
+				WriteLog("GPS РІРєР»СЋС‡РµРЅ");
 			else
-				WriteLog("GPS выключен");
+				WriteLog("GPS РІС‹РєР»СЋС‡РµРЅ");
 			break;
-		case 0x02:
+		case 0x02:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ СЃРѕСЃС‚РѕСЏРЅРёСЏ РїРёС‚Р°РЅРёСЏ GPS
 		{
-			int len = (rbuf[4] << 8) + rbuf[5];	//28
-			uint8_t hh = (uint8_t)rbuf[6];	//1
-			uint8_t mm = (uint8_t)rbuf[7];	//2
-			uint8_t ss = (uint8_t)rbuf[8];	//3
-			int8_t lat_p = (int8_t)rbuf[9];	//4
-			uint8_t lat_dd = (uint8_t)rbuf[10];	//5
-			uint8_t lat_mm = (uint8_t)rbuf[11];	//6
-			double lat_ss = GetFloatFromBuf(rbuf, 12);	//10
-			int8_t lng_p = (int8_t)rbuf[17];	//11
-			uint8_t lng_dd = (uint8_t)rbuf[18];	//12
-			uint8_t lng_mm = (uint8_t)rbuf[19];	//13
-			double lng_ss = GetFloatFromBuf(rbuf, 20);	//17
-			uint8_t satellites = (uint8_t)rbuf[25];	//18
-			double HDOP = GetFloatFromBuf(rbuf, 26);	//22
-			double height = GetFloatFromBuf(rbuf, 30);	//26
+			bool state = rbuf[10];
+#pragma region Old Code
+			//int len = (rbuf[4] << 8) + rbuf[5];	//28
+			//uint8_t hh = (uint8_t)rbuf[6];	//1
+			//uint8_t mm = (uint8_t)rbuf[7];	//2
+			//uint8_t ss = (uint8_t)rbuf[8];	//3
+			//int8_t lat_p = (int8_t)rbuf[9];	//4
+			//uint8_t lat_dd = (uint8_t)rbuf[10];	//5
+			//uint8_t lat_mm = (uint8_t)rbuf[11];	//6
+			//double lat_ss = GetFloatFromBuf(rbuf, 12);	//10
+			//int8_t lng_p = (int8_t)rbuf[17];	//11
+			//uint8_t lng_dd = (uint8_t)rbuf[18];	//12
+			//uint8_t lng_mm = (uint8_t)rbuf[19];	//13
+			//double lng_ss = GetFloatFromBuf(rbuf, 20);	//17
+			//uint8_t satellites = (uint8_t)rbuf[25];	//18
+			//double HDOP = GetFloatFromBuf(rbuf, 26);	//22
+			//double height = GetFloatFromBuf(rbuf, 30);	//26
 
-			double lat = lat_dd + (lat_mm + lat_ss) / 60.0,
-				lng = lng_dd + (lng_mm + lng_ss) / 60.0;
+			//double lat = lat_dd + (lat_mm + lat_ss) / 60.0,
+			//	lng = lng_dd + (lng_mm + lng_ss) / 60.0;
 
-			if (myPos->bFirstRead) {
-				myPos->bFirstRead = false;
-				myPos->SetState(lat, lng, HDOP, height);
-			}
-			myPos->Correct(lat, lng, HDOP, height);
-			//test
-			/*{
-			GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::red_small);
-			mrkrOvrl->Markers->Add(marker);
+			//if (myPos->bFirstRead) {
+			//	myPos->bFirstRead = false;
+			//	myPos->SetState(lat, lng, HDOP, height);
+			//}
+			//myPos->Correct(lat, lng, HDOP, height);
+			////Test-----------------------------
+			///*{
+			//GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::red_small);
+			//mrkrOvrl->Markers->Add(marker);
 
-			GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
-			circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Red));
-			circ->Stroke = gcnew Pen(Color::Red, 1);
-			areaOvrl->Polygons->Add(circ);
-			}*/
-			myPos->GetState(&lat, &lng, &HDOP, &height);
-			toolStripStatusLabel3->Text = "Sat: " + satellites;
-			toolStripStatusLabel3->Visible = true;
-			toolStripStatusLabel4->Text = "HDOP: " + (float)HDOP;
-			toolStripStatusLabel4->Visible = true;
-			toolStripStatusLabel5->Text = "H: " + (float)height + " m";
-			toolStripStatusLabel5->Visible = true;
-			/*myPosOvrl->Clear();
-			myPosOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::blue_small));
-			GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
-			circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Blue));
-			circ->Stroke = gcnew Pen(Color::Blue, 1);
-			myPosOvrl->Polygons->Add(circ);*/
-			my_pos_accepted = true;
-			//sPointReciver->Release();
+			//GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
+			//circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Red));
+			//circ->Stroke = gcnew Pen(Color::Red, 1);
+			//areaOvrl->Polygons->Add(circ);
+			//}*/
+			////---------------------------------
+			//myPos->GetState(&lat, &lng, &HDOP, &height);
+			//toolStripStatusLabel3->Text = "Sat: " + satellites;
+			//toolStripStatusLabel3->Visible = true;
+			//toolStripStatusLabel4->Text = "HDOP: " + (float)HDOP;
+			//toolStripStatusLabel4->Visible = true;
+			//toolStripStatusLabel5->Text = "H: " + (float)height + " m";
+			//toolStripStatusLabel5->Visible = true;
+			////---------------------------------
+			///*myPosOvrl->Clear();
+			//myPosOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::blue_small));
+			//GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
+			//circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Blue));
+			//circ->Stroke = gcnew Pen(Color::Blue, 1);
+			//myPosOvrl->Polygons->Add(circ);*/
+			////sPointReciver->Release();
+			////---------------------------------
+			//my_pos_accepted = true;
+#pragma endregion
 		}
 		break;
-		case 0x03:
+		case 0x03:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ СЃС‚Р°С‚СѓСЃР° GPS
 		{
-			GPS_KnownPos = rbuf[6];
+			//0 - nofix, 1 - standart, 2 - Diff., 3 - Estimate
+			uint8_t type = rbuf[10];
+		}
+		break;
+		case 0x04:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ РґР°РЅРЅС‹С… GPS
+		{
+			uint8_t hh = rbuf[10];
+			uint8_t mm = rbuf[11];
+			uint8_t ss = rbuf[12];
+			uint8_t lat_sign = rbuf[13];
+			uint8_t lat_deg = rbuf[14];
+			uint8_t lat_min = rbuf[15];
+			float lat_sec = GetFloatFromBuf(rbuf, 16);
+			uint8_t lon_sign = rbuf[20];
+			uint8_t lon_deg = rbuf[21];
+			uint8_t lon_min = rbuf[22];
+			float lon_sec = GetFloatFromBuf(rbuf, 23);
+			uint8_t satellites = rbuf[27];
+			float hdop = GetFloatFromBuf(rbuf, 28);
+			float alt = GetFloatFromBuf(rbuf, 32);
+
+		}
+		break;
+		case 0x05:	//РѕС‚РІРµС‚ РЅР° РїРµСЂРµРєР»СЋС‡РµРЅРёРµ Р°РЅС‚РµРЅРЅС‹
+		{
+
+		}
+		break;
+		case 0x06:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ РёСЃРї. Р°РЅС‚РµРЅРЅС‹
+		{
+			bool isExternal = rbuf[10];
+
 		}
 		break;
 		default:
@@ -896,26 +996,182 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		}
 		break;
 	case 0x0C:
-		switch (rbuf[3]) {	//message ID
-		case 0x01:	//список устройств
+		switch (rbuf[MESSAGE_ID]) {	//message ID
+		case 0x01:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСѓСЃРє С†РёРєР»Р° РїСЂРѕР±СѓР¶РґРµРЅРёСЏ РјРµС‚РѕРє
 		{
-			int len = (rbuf[4] << 8) + rbuf[5];
-			int devices = (len - 0) / 8;	//количество устройств в буфере
-			List<Device^>^ tempdev = gcnew List<Device^>;
-			//парсинг буфера в список у-в
-			for (int i = 0; i < devices; i++) {	//массив у-в в список у-в
-				int addr = rbuf[6 + 8 * i] + (rbuf[7 + 8 * i] << 8) + (rbuf[8 + 8 * i] << 16) + (rbuf[9 + 8 * i] << 24);
-				int raw_v = rbuf[12 + 8 * i];
-				double volt = raw_v >> 4;
-				volt += ((double)(raw_v & 0xF)) / 10.0;
-				tempdev->Add(gcnew Device(addr, (char)rbuf[10 + 8 * i], rbuf[11 + 8 * i], volt, rbuf[13 + 8 * i], NULL));
+			uint8_t count = rbuf[10];
+#pragma region Old Code
+			//int len = (rbuf[4] << 8) + rbuf[5];
+			//int devices = (len - 0) / 8;	//РєРѕР»РёС‡РµСЃС‚РІРѕ СѓСЃС‚СЂРѕР№СЃС‚РІ РІ Р±СѓС„РµСЂРµ
+			//List<Device^>^ tempdev = gcnew List<Device^>;
+			////РїР°СЂСЃРёРЅРі Р±СѓС„РµСЂР° РІ СЃРїРёСЃРѕРє Сѓ-РІ
+			//for (int i = 0; i < devices; i++) {	//РјР°СЃСЃРёРІ Сѓ-РІ РІ СЃРїРёСЃРѕРє Сѓ-РІ
+			//	int addr = rbuf[6 + 8 * i] + (rbuf[7 + 8 * i] << 8) + (rbuf[8 + 8 * i] << 16) + (rbuf[9 + 8 * i] << 24);
+			//	int raw_v = rbuf[12 + 8 * i];
+			//	double volt = raw_v >> 4;
+			//	volt += ((double)(raw_v & 0xF)) / 10.0;
+			//	tempdev->Add(gcnew Device(addr, (char)rbuf[10 + 8 * i], rbuf[11 + 8 * i], volt, rbuf[13 + 8 * i], NULL));
+			//}
+			////СЃР±СЂРѕСЃ С„Р»Р°РіРѕРІ РѕР±СЂР°Р±РѕС‚РєРё Сѓ-РІ, СѓР¶Рµ РЅР°С…РѕРґ РІ РїР°РјСЏС‚Рё
+			//for (int i = 0; i < Devices->Count; i++) Devices[i]->Processed = false;
+			////СЃСЂР°РІРЅРµРЅРёРµ Рё РѕР±РЅРѕРІР»РµРЅРёРµ Сѓ-РІ, РєРѕС‚РѕСЂС‹Рµ СѓР¶Рµ Р±С‹Р»Рё РІ РїР°РјСЏС‚Рё
+			//for (int i = 0; i < Devices->Count; i++) {
+			//	for (int j = 0; j < tempdev->Count; j++) {
+			//		if (Devices[i]->unique_id == tempdev[j]->unique_id) {
+			//			Devices[i]->copy(tempdev[j]);
+			//			Devices[i]->Processed = true;
+			//			Devices[i]->missing_counter = 0;
+			//			tempdev->RemoveAt(j);
+			//		}
+			//	}
+			//}
+			////РѕР±СЂР°Р±РѕС‚РєР° "СѓСЃС‚Р°СЂРµРІС€РёС…" Сѓ-РІ
+			//for (int i = 0; i < Devices->Count; i++) {
+			//	if (Devices[i]->Processed == false) {
+			//		if (Devices[i]->missing_counter > 3) {
+			//			//generate_event_disconnect
+			//			Events->Add(gcnew Event(Devices[i], Event::EventCode::DEV_DISCONNECTED));
+			//			update_event_list();
+			//			Devices->RemoveAt(i);
+			//		}
+			//		else
+			//			Devices[i]->missing_counter++;
+			//	}
+			//}
+			////РѕР±СЂР°Р±РѕС‚РєР° "РЅРѕРІС‹С…" Сѓ-РІ
+			//for (int i = 0; i < tempdev->Count; i++) {
+			//	//generate_newdev_event
+			//	Events->Add(gcnew Event(tempdev[i], Event::EventCode::DEV_CONNECTED));
+			//	update_event_list();
+			//	Devices->Add(tempdev[i]);
+			//	tempdev->RemoveAt(i);
+			//}
+			//if (Devices->Count > 0)
+			//	this->device_get = true;
+			//else
+			//	device_get = false;
+			////РѕР±РЅРѕРІР»РµРЅРёРµ СЃРїРёСЃРєР° Сѓ-РІ
+			//update_device_list();
+			////РѕР±РЅРѕРІР»РµРЅРёРµ РѕРєРѕРЅ СЃРІ-РІ
+			//update_prop_windows();
+#pragma endregion
+		}
+		break;
+		case 0x02:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ РїР°СЂР°РјРµС‚СЂРѕРІ СЂР°РґРёРѕРјРµС‚РѕРє
+		{
+			uint16_t len = rbuf[8] + rbuf[9] << 8;
+			uint32_t addr = rbuf[10] + rbuf[11] << 8 + rbuf[12] << 16 + rbuf[13] << 24;
+			int8_t rssi = rbuf[14];
+			int8_t lqi = rbuf[15];
+			uint8_t vbatt = rbuf[16];
+			int8_t a_rssi = rbuf[17];
+			uint8_t bitrate = rbuf[18];
+			//rbuf[19]
+#pragma region Old code time meas
+			////invoke РІ device_prop
+			//int size = (rbuf[4] << 8) + rbuf[5];
+			//int count = size / 5;
+			//List<int>^ sign_lvls = gcnew List<int>;
+			//List<int64_t>^ cycles = gcnew List<int64_t>;
+			//int midRSSI = 0;
+			//for (int i = 0; i < count; i++) {
+			//	sign_lvls->Add((char)(rbuf[6 + 5 * i]));
+			//	cycles->Add(rbuf[7 + 5 * i] + (rbuf[8 + 5 * i] << 8) + (rbuf[9 + 5 * i] << 16) + (rbuf[10 + 5 * i] << 24));
+			//	midRSSI += (char)(rbuf[6 + 5 * i]);
+			//}
+			//midRSSI /= sign_lvls->Count;
+			//if (cycles->Count == 0) return;
+			//try {
+			//	//device_prop::hDevice_prop->Invoke(gcnew Action< List<int64_t>^ >(device_prop::hDevice_prop, &device_prop::SaveCycles), cycles);
+			//	device_prop::hDevice_prop->SaveCycles(cycles, midRSSI);
+			//}
+			//catch (...) {
+
+			//}
+#pragma endregion
+		}
+		break;
+		case 0x03:
+		{
+
+		}
+		break;
+		case 0x04:
+		{
+
+		}
+		break;
+		case 0x06:	//Р±Р°Р·РѕРІР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ Рѕ РјРµС‚РєРµ
+		{
+			//Device^ tempdev;
+			//РїР°СЂСЃРёРЅРі Р±СѓС„РµСЂР° РІ СЃРїРёСЃРѕРє Сѓ-РІ
+			uint32_t addr = rbuf[10] + (rbuf[11] << 8) + (rbuf[12] << 16) + (rbuf[13] << 24);
+			int8_t rssi = rbuf[14];
+			uint32_t time = rbuf[15] + rbuf[16] << 8 + rbuf[17] << 16 + rbuf[18] << 24;
+			int8_t lqi = rbuf[19];
+			uint8_t vbatt = rbuf[20];
+			int8_t a_rssi = rbuf[21];
+			float a_time = GetFloatFromBuf(rbuf, 22);
+			uint8_t bitrate = rbuf[26];
+			//double volt = raw_v >> 4;
+			//volt += ((double)(raw_v & 0xF)) / 10.0;
+			//tempdev = gcnew Device(addr, (char)rbuf[10], rbuf[11], volt, rbuf[13], NULL);
+			//СЃСЂР°РІРЅРµРЅРёРµ Рё РѕР±РЅРѕРІР»РµРЅРёРµ Сѓ-РІ, РєРѕС‚РѕСЂС‹Рµ СѓР¶Рµ Р±С‹Р»Рё РІ РїР°РјСЏС‚Рё
+			//for (int i = 0; i < Devices->Count; i++)
+			//	if (Devices[i]->unique_id == tempdev->unique_id)
+			//		Devices[i]->copy(tempdev);
+			//РѕР±РЅРѕРІР»РµРЅРёРµ РѕРєРѕРЅ СЃРІ-РІ
+			//update_prop_windows();
+			//РјР°СЏРєРЅСѓС‚СЊ РѕРєРЅСѓ СЃРІ-РІ РѕР± РёР·РјРµРЅРµРЅРёРё СЃС‚Р°С‚РѕРІ
+			//device_prop::sMeasDist->Release();
+			//РѕР±РЅРѕРІР»РµРЅРёРµ СЃРїРёСЃРєР° Сѓ-РІ
+			//update_device_list();
+		}
+		break;
+		case 0x07: //РѕС‚РІРµС‚ РЅР° СЃР±СЂРѕСЃ РЎРЎ1101 Рє РїРµСЂРІ. СѓСЃС‚.
+		{
+
+		}
+		break;
+		default:
+			WriteLog("ParseBuffer error: Unknown message ID in class 0x0C");
+			break;
+		}
+		break;
+	case 0x0D:
+		switch (rbuf[MESSAGE_ID]) {
+		case 0x01:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСѓСЃРє РїРѕРёСЃРєР° СЂРµС‚СЂР°РЅСЃР».
+		{
+			uint8_t count = rbuf[10];
+			if (count > 0) {
+				CurrentActionLbl->Text = "РќР°Р№РґРµРЅРЅРѕ СЂРµС‚СЂР°РЅСЃР»СЏС‚РѕСЂРѕРІ: " + count.ToString() + ". Р—Р°РїСЂРѕСЃ РїР°СЂР°РјРµС‚СЂРѕРІ...";
+				Commands::Class_0x0D::GetRepeatersParam(NULL, count);
 			}
-			//сброс флагов обработки у-в, уже наход в памяти
-			for (int i = 0; i < Devices->Count; i++) Devices[i]->Processed = false;
-			//сравнение и обновление у-в, которые уже были в памяти
-			for (int i = 0; i < Devices->Count; i++) {
+			else
+				CurrentActionLbl->Text = "РќР°Р№РґРµРЅРЅРѕ СЂРµС‚СЂР°РЅСЃР»СЏС‚РѕСЂРѕРІ: " + count.ToString() + ".";
+		}
+		break;
+		case 0x02:	//РѕС‚РІРµС‚ РЅР° Р·Р°РїСЂРѕСЃ РїР°СЂР°РјРµС‚СЂРѕРІ СЂРµС‚СЂР°РЅСЃР».
+		{
+			int len = (rbuf[8] << 8) + rbuf[9];
+			int devices = len / 8;	//РєРѕР»РёС‡РµСЃС‚РІРѕ СѓСЃС‚СЂРѕР№СЃС‚РІ РІ Р±СѓС„РµСЂРµ
+			List<Repeater^>^ tempdev = gcnew List<Repeater^>;
+			//РїР°СЂСЃРёРЅРі Р±СѓС„РµСЂР° РІ СЃРїРёСЃРѕРє Сѓ-РІ
+			for (int i = 0; i < devices; i++) {	//РјР°СЃСЃРёРІ Сѓ-РІ РІ СЃРїРёСЃРѕРє Сѓ-РІ
+				uint32_t addr = ToInt32FromBuf(rbuf, 10 + 8 * i);
+				int8_t rssi = rbuf[14 + 8 * i];
+				int8_t lqi = rbuf[15 + 8 * i];
+				float vbatt = (rbuf[16 + 8 * i] >> 4) + (rbuf[16 + 8 * i] & 0xF) / 10.0;
+				//uint8_t param = rbuf[17+8*i];
+				tempdev->Add(gcnew Repeater(addr, false));
+				tempdev[i]->Fill(vbatt, rssi, lqi);
+			}
+			//СЃР±СЂРѕСЃ С„Р»Р°РіРѕРІ РѕР±СЂР°Р±РѕС‚РєРё Сѓ-РІ, СѓР¶Рµ РЅР°С…РѕРґ РІ РїР°РјСЏС‚Рё
+			for (int i = 1; i < Devices->Count; i++) Devices[i]->Processed = false;
+			//СЃСЂР°РІРЅРµРЅРёРµ Рё РѕР±РЅРѕРІР»РµРЅРёРµ Сѓ-РІ, РєРѕС‚РѕСЂС‹Рµ СѓР¶Рµ Р±С‹Р»Рё РІ РїР°РјСЏС‚Рё
+			for (int i = 1; i < Devices->Count; i++) {
 				for (int j = 0; j < tempdev->Count; j++) {
-					if (Devices[i]->unique_id == tempdev[j]->unique_id) {
+					if (Devices[i]->GetAddr() == tempdev[j]->GetAddr()) {
 						Devices[i]->copy(tempdev[j]);
 						Devices[i]->Processed = true;
 						Devices[i]->missing_counter = 0;
@@ -923,8 +1179,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 					}
 				}
 			}
-			//обработка "устаревших" у-в
-			for (int i = 0; i < Devices->Count; i++) {
+			//РѕР±СЂР°Р±РѕС‚РєР° "СѓСЃС‚Р°СЂРµРІС€РёС…" Сѓ-РІ
+			for (int i = 1; i < Devices->Count; i++) {
 				if (Devices[i]->Processed == false) {
 					if (Devices[i]->missing_counter > 3) {
 						//generate_event_disconnect
@@ -936,7 +1192,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 						Devices[i]->missing_counter++;
 				}
 			}
-			//обработка "новых" у-в
+			//РѕР±СЂР°Р±РѕС‚РєР° "РЅРѕРІС‹С…" Сѓ-РІ
 			for (int i = 0; i < tempdev->Count; i++) {
 				//generate_newdev_event
 				Events->Add(gcnew Event(tempdev[i], Event::EventCode::DEV_CONNECTED));
@@ -944,81 +1200,22 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				Devices->Add(tempdev[i]);
 				tempdev->RemoveAt(i);
 			}
-			if (Devices->Count > 0)
+			if (Devices->Count > 1)
 				this->device_get = true;
 			else
 				device_get = false;
-			//обновление списка у-в
-			update_device_list();
-			//обновление окон св-в
-			update_prop_windows();
+			//РѕР±РЅРѕРІР»РµРЅРёРµ СЃРїРёСЃРєР° Сѓ-РІ
+			UpdateRepeatersList();
+			CurrentActionLbl->Text += " Р“РѕС‚РѕРІРѕ.";
 		}
 		break;
-		case 0x02:	//резутат измерения времени
+		case 0x99:	//РѕС‚РІРµС‚ РЅР° РіР»РѕР±Р°Р»СЊРЅС‹Р№ СЃР±СЂРѕСЃ РІСЃРµС… СЂРµС‚СЂР°РЅСЃР».
 		{
-			//invoke в device_prop
-			int size = (rbuf[4] << 8) + rbuf[5];
-			int count = size / 5;
-			List<int>^ sign_lvls = gcnew List<int>;
-			List<int64_t>^ cycles = gcnew List<int64_t>;
-			int midRSSI = 0;
-			for (int i = 0; i < count; i++) {
-				sign_lvls->Add((char)(rbuf[6 + 5 * i]));
-				cycles->Add(rbuf[7 + 5 * i] + (rbuf[8 + 5 * i] << 8) + (rbuf[9 + 5 * i] << 16) + (rbuf[10 + 5 * i] << 24));
-				midRSSI += (char)(rbuf[6 + 5 * i]);
-			}
-			midRSSI /= sign_lvls->Count;
-			if (cycles->Count == 0) return;
-			try {
-				//device_prop::hDevice_prop->Invoke(gcnew Action< List<int64_t>^ >(device_prop::hDevice_prop, &device_prop::SaveCycles), cycles);
-				device_prop::hDevice_prop->SaveCycles(cycles,midRSSI);
-			}
-			catch (...) {
 
-			}
-		}
-		break;
-		case 0x03:	//изменение параметров метки (полоса, мощность)
-		{
-			if (rbuf[6]) {
-				device_prop::sMeasDist->Release();
-				WriteLog("Параметры изменены");
-			}
-			else {
-				device_prop::sMeasDist->Release();
-				WriteLog("Ошибка при изменении параметров");
-			}
-		}
-		break;
-		case 0x04:	//смена режима измерения расстояния на временной метод
-		{
-			device_prop::sMeasDist->Release();
-			WriteLog("Режим измерения задержки");
-		}
-		break;
-		case 0x05:	//базовая информация о метке
-		{
-			Device^ tempdev;
-			//парсинг буфера в список у-в
-			int addr = rbuf[6] + (rbuf[7] << 8) + (rbuf[8] << 16) + (rbuf[9] << 24);
-			int raw_v = rbuf[12];
-			double volt = raw_v >> 4;
-			volt += ((double)(raw_v & 0xF)) / 10.0;
-			tempdev = gcnew Device(addr, (char)rbuf[10], rbuf[11], volt, rbuf[13], NULL);
-			//сравнение и обновление у-в, которые уже были в памяти
-			for (int i = 0; i < Devices->Count; i++)
-				if (Devices[i]->unique_id == tempdev->unique_id)
-					Devices[i]->copy(tempdev);
-			//обновление окон св-в
-			update_prop_windows();
-			//маякнуть окну св-в об изменении статов
-			device_prop::sMeasDist->Release();
-			//обновление списка у-в
-			update_device_list();
 		}
 		break;
 		default:
-			WriteLog("ParseBuffer error: Unknown message ID in class 0x0C");
+			WriteLog("ParseBuffer error: Unknown message ID in class 0x0D");
 			break;
 		}
 		break;
@@ -1144,7 +1341,7 @@ System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::
 	}
 }
 
-System::Void Evrika::mainform::настройкиToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
+System::Void Evrika::mainform::РЅР°СЃС‚СЂРѕР№РєРёToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	settings_window->Show();
 }
@@ -1159,8 +1356,8 @@ System::Void Evrika::mainform::tabControl1_SelectedIndexChanged(System::Object ^
 		break;
 	case 1:
 	case 2:
-		this->Width = 721;
-		this->Height = 570;
+		this->Width = 902;
+		this->Height = 636;
 		break;
 	default:
 		break;
@@ -1230,111 +1427,111 @@ System::Void Evrika::mainform::checkBox2_CheckedChanged(System::Object ^ sender,
 
 System::Void Evrika::mainform::open_device(System::Object ^ sender, System::Windows::Forms::DataGridViewCellEventArgs ^ e)
 {
-	int row = e->RowIndex;
-	if ((row < 0) || (Devices->Count == 0) || (row > Devices->Count - 1)) return;
+	//int row = e->RowIndex;
+	//if ((row < 0) || (Devices->Count == 0) || (row > Devices->Count - 1)) return;
 
-	//ConstructCMD(serialPort1, Devices[row]->unique_id, true);
-	device_prop^ prop = gcnew device_prop(Devices[row], serialPort1);
-	prop->Show();
-	logs->Add(prop->my_log);
-	PropWindows->Add(prop);
+	////ConstructCMD(serialPort1, Devices[row]->unique_id, true);
+	//device_prop^ prop = gcnew device_prop(Devices[row], serialPort1);
+	//prop->Show();
+	//logs->Add(prop->my_log);
+	//PropWindows->Add(prop);
 }
 
 System::Void Evrika::mainform::save_events(System::Object ^ sender, System::EventArgs ^ e)
 {
-	TimeAndDate dt;
-	dt.GetCurrentTimeAndDate();
-	String^ datatime = dt.ToSysString();
-	saveFileDialog2->FileName = "Evrika_session_" + datatime;
-	saveFileDialog2->ShowDialog();
+	//TimeAndDate dt;
+	//dt.GetCurrentTimeAndDate();
+	//String^ datatime = dt.ToSysString();
+	//saveFileDialog2->FileName = "Evrika_session_" + datatime;
+	//saveFileDialog2->ShowDialog();
 
-	EvLog::EventLog eLog;
-	for (int i = 0; i < Events->Count; i++) {
-		EvLog::Event* tempevent = eLog.add_events();
+	//EvLog::EventLog eLog;
+	//for (int i = 0; i < Events->Count; i++) {
+	//	EvLog::Event* tempevent = eLog.add_events();
 
-		EvLog::Device* dev = new EvLog::Device();
+	//	EvLog::Device* dev = new EvLog::Device();
 
-		dev->set_battery_lvl(Events[i]->device->battery_lvl);
-		dev->set_signal_lvl(Events[i]->device->signal_lvl);
-		dev->set_signal_quality(Events[i]->device->signal_quality);
-		dev->set_unique_id(Events[i]->device->unique_id);
-		dev->set_work_mode(Events[i]->device->work_mode);
+	//	dev->set_battery_lvl(Events[i]->device->battery_lvl);
+	//	dev->set_signal_lvl(Events[i]->device->signal_lvl);
+	//	dev->set_signal_quality(Events[i]->device->signal_quality);
+	//	dev->set_unique_id(Events[i]->device->unique_id);
+	//	dev->set_work_mode(Events[i]->device->work_mode);
 
-		dev->set_allocated_pmode1(new EvLog::Device_mode1());
-		dev->set_allocated_pmode2(new EvLog::Device_mode2());
-		dev->set_allocated_pmode3(new EvLog::Device_mode3());
-		dev->set_allocated_pmode4(new EvLog::Device_mode4());
+	//	dev->set_allocated_pmode1(new EvLog::Device_mode1());
+	//	dev->set_allocated_pmode2(new EvLog::Device_mode2());
+	//	dev->set_allocated_pmode3(new EvLog::Device_mode3());
+	//	dev->set_allocated_pmode4(new EvLog::Device_mode4());
 
-		tempevent->set_allocated_dev(dev);
+	//	tempevent->set_allocated_dev(dev);
 
-		EvLog::TD* td = new EvLog::TD();
+	//	EvLog::TD* td = new EvLog::TD();
 
-		td->set_day(Events[i]->td->day);
-		td->set_month(Events[i]->td->month);
-		td->set_year(Events[i]->td->year);
-		td->set_hour(Events[i]->td->hours);
-		td->set_minute(Events[i]->td->minutes);
-		td->set_second(Events[i]->td->seconds);
+	//	td->set_day(Events[i]->td->day);
+	//	td->set_month(Events[i]->td->month);
+	//	td->set_year(Events[i]->td->year);
+	//	td->set_hour(Events[i]->td->hours);
+	//	td->set_minute(Events[i]->td->minutes);
+	//	td->set_second(Events[i]->td->seconds);
 
-		tempevent->set_allocated_td(td);
+	//	tempevent->set_allocated_td(td);
 
-		tempevent->set_ecode((UINT32)Events[i]->eCode);
+	//	tempevent->set_ecode((UINT32)Events[i]->eCode);
 
-		//delete dev;
-		//delete td;
-	}
-	ofstream fs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(saveFileDialog2->FileName), ios::out | ios::trunc | ios::binary);
-	int b = eLog.ByteSize();
-	void *output = malloc(b);
-	if (!eLog.SerializeToArray(output, b)) {
-		//WriteLog("Error loading settings.");
-	}
-	fs.write((char*)output, b);
-	fs.close();
-	delete output;
-	//saveFileDialog2->FileName; путь
+	//	//delete dev;
+	//	//delete td;
+	//}
+	//ofstream fs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(saveFileDialog2->FileName), ios::out | ios::trunc | ios::binary);
+	//int b = eLog.ByteSize();
+	//void *output = malloc(b);
+	//if (!eLog.SerializeToArray(output, b)) {
+	//	//WriteLog("Error loading settings.");
+	//}
+	//fs.write((char*)output, b);
+	//fs.close();
+	//delete output;
+	////saveFileDialog2->FileName; РїСѓС‚СЊ
 }
 
 System::Void Evrika::mainform::load_session(System::Object ^ sender, System::EventArgs ^ e)
 {
-	openFileDialog1->ShowDialog();
+	//openFileDialog1->ShowDialog();
 
-	ifstream ifs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), ios::in | ios::binary);
+	//ifstream ifs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), ios::in | ios::binary);
 
-	struct stat fi;
-	stat((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), &fi);
-	int filesize = fi.st_size;
+	//struct stat fi;
+	//stat((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), &fi);
+	//int filesize = fi.st_size;
 
-	void *input = malloc(filesize);
-	ifs.read((char*)input, filesize);
+	//void *input = malloc(filesize);
+	//ifs.read((char*)input, filesize);
 
-	EvLog::EventLog *eLog = new EvLog::EventLog();
-	if (!eLog->ParseFromArray(input, filesize)) {
-		//cerr << "Failed to parse address book." << endl;
-		return;
-	}
+	//EvLog::EventLog *eLog = new EvLog::EventLog();
+	//if (!eLog->ParseFromArray(input, filesize)) {
+	//	//cerr << "Failed to parse address book." << endl;
+	//	return;
+	//}
 
-	Events->Clear();
-	for (int i = 0; i < eLog->events_size(); i++) {
-		EvLog::Event tempevent = eLog->events(i);
+	//Events->Clear();
+	//for (int i = 0; i < eLog->events_size(); i++) {
+	//	EvLog::Event tempevent = eLog->events(i);
 
-		EvLog::Device dev = tempevent.dev();
-		Event::EventCode eCode = (Event::EventCode)tempevent.ecode();
-		EvLog::TD td = tempevent.td();
+	//	EvLog::Device dev = tempevent.dev();
+	//	Event::EventCode eCode = (Event::EventCode)tempevent.ecode();
+	//	EvLog::TD td = tempevent.td();
 
-		Events->Add(gcnew Event(gcnew Device(dev.unique_id(), dev.signal_lvl(), dev.signal_quality(), dev.battery_lvl(), dev.work_mode(), NULL),
-			gcnew TimeAndDate(td.day(), td.month(), td.year(), td.hour(), td.minute(), td.second()), eCode));
-	}
-	update_event_list();
+	//	Events->Add(gcnew Event(gcnew Device(dev.unique_id(), dev.signal_lvl(), dev.signal_quality(), dev.battery_lvl(), dev.work_mode(), NULL),
+	//		gcnew TimeAndDate(td.day(), td.month(), td.year(), td.hour(), td.minute(), td.second()), eCode));
+	//}
+	//update_event_list();
 }
 
-System::Void Evrika::mainform::переподключениеКДЦToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
+System::Void Evrika::mainform::РїРµСЂРµРїРѕРґРєР»СЋС‡РµРЅРёРµРљР”Р¦ToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
 	connthrd->Start();
 }
 
-System::Void Evrika::mainform::проверкаСоединенияToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
+System::Void Evrika::mainform::РїСЂРѕРІРµСЂРєР°РЎРѕРµРґРёРЅРµРЅРёСЏToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::CheckComConn));
 	connthrd->Start();
@@ -1345,8 +1542,6 @@ System::Void Evrika::mainform::mainform_Load(System::Object ^ sender, System::Ev
 	my_handle = this;
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
 	connthrd->Start();
-	if (LastStateIsOpen)
-		Commands::Class_0x0A::GetLocalAddr();
 }
 
 System::Void Evrika::mainform::ExportMapBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1392,7 +1587,7 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 {
 	//T=0.2c
 	if (sys_task_counter & 0x01) {
-		//Обновление состояния порта
+		//РћР±РЅРѕРІР»РµРЅРёРµ СЃРѕСЃС‚РѕСЏРЅРёСЏ РїРѕСЂС‚Р°
 		if (serialPort1->IsOpen && LastStateIsOpen) {
 			System::ComponentModel::ComponentResourceManager^ resource = (gcnew System::ComponentModel::ComponentResourceManager(loading_page::typeid));
 			ImageIndication->Image = (safe_cast<System::Drawing::Image^>(resource->GetObject("green_icon")));
@@ -1461,6 +1656,41 @@ System::Void Evrika::mainform::button10_Click(System::Object ^ sender, System::E
 	catch (IO::IOException ^ioexception) {
 		textBox1->AppendText("\r\n" + ioexception->Message);
 	}
+}
+
+System::Void Evrika::mainform::DCGrid_SelectionChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (DCGrid->SelectedCells->Count != 1) return;
+	int row = DCGrid->SelectedCells[0]->RowIndex;
+	if ((row < 0) || (Devices->Count == 0) || (row > Devices->Count - 1)) return;
+	if (PrevSelectedRepeaterIndex == row) return;
+	PrevSelectedRepeaterIndex = row;
+	Commands::Class_0x0A::GetRelayState(Devices[row]->GetAddr());
+	Sleep(300);
+	Commands::Class_0x0A::GetVoltage(Devices[row]->GetAddr());
+}
+
+System::Void Evrika::mainform::RelayStatCheckBox_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
+	Commands::Class_0x0A::SetRelayState(Devices[PrevSelectedRepeaterIndex]->GetAddr(), RelayStatCheckBox->Checked);
+}
+
+System::Void Evrika::mainform::ResetRepeaterBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
+	Commands::Class_0x0A::ProgrammReset(Devices[PrevSelectedRepeaterIndex]->GetAddr());
+}
+
+System::Void Evrika::mainform::button12_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	Commands::Class_0x0D::StartSearchRepeaters(NULL);
+	CurrentActionLbl->Text = "РџРѕРёСЃРє СЂРµС‚СЂР°РЅСЃР»СЏС‚РѕСЂРѕРІ...";
+}
+
+System::Void Evrika::mainform::ResetRepeatersBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	Commands::Class_0x0D::GlobalResetRepeaters(NULL);
 }
 
 Evrika::mainform::MyPosition::MyPosition()
