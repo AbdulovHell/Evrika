@@ -47,13 +47,15 @@ namespace Evrika {
 	};
 
 	public ref class Repeater : public Device {
-		
+		uint8_t gps_stat;
 	public:
 		bool isLocal;
 
 		Repeater(uint32_t _addr, bool local) : Device(_addr) { isLocal = local; }
 
 		void GetInfo();
+		void SetGPSStat(uint8_t _gps_stat) { gps_stat = _gps_stat; }
+		bool IfKnownPos() { return (bool)gps_stat; }
 
 		void copy(Repeater^ rep) {
 			isLocal = rep->isLocal;

@@ -150,6 +150,7 @@ Evrika::mainform::mainform(void)
 	markers = gcnew cli::array< GMarkerGoogle^ >(50);
 	sEnumCom = gcnew Semaphore(0, 3);
 	sPointReciver = gcnew Semaphore(0, 3);
+	ParamReciver = gcnew Semaphore(0, 3);
 	listBox1->Items->Clear();
 	mrkrOvrl = mapform->mrkrOvrl;
 	areaOvrl = mapform->areaOvrl;
@@ -630,6 +631,66 @@ double Evrika::mainform::RangeRandDouble(double min, double max)
 	return temp / 100.0;
 }
 
+void Evrika::mainform::ParamRequest()
+{
+	uint32_t addr = Devices[PrevSelectedRepeaterIndex]->GetAddr();
+	int attempts = 0;
+	do {
+		Commands::Class_0x0A::GetRelayState(addr);
+		attempts++;
+		if (attempts > 10) break;
+	} while (!ParamReciver->WaitOne(1500));
+	this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//1
+	attempts = 0;
+	do {
+		Commands::Class_0x0A::GetVoltage(addr);
+		attempts++;
+		if (attempts > 10) break;
+	} while (!ParamReciver->WaitOne(1500));
+	this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//2
+	attempts = 0;
+	do {
+		Commands::Class_0x0B::GetGPSPowerState(addr);
+		attempts++;
+		if (attempts > 10) break;
+	} while (!ParamReciver->WaitOne(1500));
+	this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//3
+	attempts = 0;
+	do {
+		Commands::Class_0x0B::GetGPSStatus(addr);
+		attempts++;
+		if (attempts > 10) break;
+	} while (!ParamReciver->WaitOne(1500));
+	this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//4
+	attempts = 0;
+	do {
+		Commands::Class_0x0B::GetGPSUsingAntenna(addr);
+		attempts++;
+		if (attempts > 10) break;
+	} while (!ParamReciver->WaitOne(1500));
+	this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//5
+	attempts = 0;
+	if (Devices[PrevSelectedRepeaterIndex]->IfKnownPos()) {
+		do {
+			Commands::Class_0x0B::GetGPSPosition(addr);
+			attempts++;
+			if (attempts > 10) break;
+		} while (!ParamReciver->WaitOne(1500));
+		this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//6
+	}
+	this->Invoke(gcnew Action<bool>(this, &mainform::MakeVisible), false);
+}
+
+void Evrika::mainform::IncrementProgress()
+{
+	GetRepParamProgress->Increment(1);
+}
+
+void Evrika::mainform::MakeVisible(bool state)
+{
+	GetRepParamProgress->Visible = state;
+}
+
 void Evrika::mainform::SetTimer(bool en)
 {
 	sys_task->Enabled = en;
@@ -860,13 +921,17 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 					if (addr == Devices[i]->GetAddr()) {
 						vbattLbl->Text = "vbatt: " + vbatt.ToString() + " V";
 						vchargerLbl->Text = charger.ToString();
-						vlna1Lbl->Text=lna1.ToString();
-						vlna2Lbl->Text=lna2.ToString();
-						vcoreLbl->Text=vcore.ToString();
-						vtempLbl->Text=vtemp.ToString();
+						vlna1Lbl->Text = lna1.ToString();
+						vlna2Lbl->Text = lna2.ToString();
+						vcoreLbl->Text = vcore.ToString();
+						vtempLbl->Text = vtemp.ToString();
 					}
 				}
 			}
+			try {
+				ParamReciver->Release();
+			}
+			catch (...) {}
 		}
 		break;
 		case 0x88:	//ответ на запрос о состоянии реле
@@ -877,6 +942,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				if (addr == Devices[i]->GetAddr())
 					Devices[i]->SaveRelayStat(state);
 			RelayStatCheckBox->Checked = state;
+			ParamReciver->Release();
 		}
 		break;
 		case 0x89:	//ответ на управление реле
@@ -898,6 +964,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x02:	//ответ на запрос состояния питания GPS
 		{
 			bool state = rbuf[10];
+			GPSOnOff->Checked = state;
+			ParamReciver->Release();
 #pragma region Old Code
 			//int len = (rbuf[4] << 8) + rbuf[5];	//28
 			//uint8_t hh = (uint8_t)rbuf[6];	//1
@@ -958,6 +1026,27 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		{
 			//0 - nofix, 1 - standart, 2 - Diff., 3 - Estimate
 			uint8_t type = rbuf[10];
+			switch (type) {
+			case 0:
+				GPSStatLbl->Text = "NoFix";
+				break;
+			case 1:
+				GPSStatLbl->Text = "Standart";
+				break;
+			case 2:
+				GPSStatLbl->Text = "Diff.";
+				break;
+			case 3:
+				GPSStatLbl->Text = "Estimate";
+				break;
+			}
+			uint32_t addr = ToInt32FromBuf(rbuf, 2);
+			for (int i = 0; i < Devices->Count; i++) {
+				if (addr == Devices[i]->GetAddr()) {
+					Devices[i]->SetGPSStat(type);
+				}
+			}
+			ParamReciver->Release();
 		}
 		break;
 		case 0x04:	//ответ на запрос данных GPS
@@ -965,11 +1054,11 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			uint8_t hh = rbuf[10];
 			uint8_t mm = rbuf[11];
 			uint8_t ss = rbuf[12];
-			uint8_t lat_sign = rbuf[13];
+			int8_t lat_sign = rbuf[13];
 			uint8_t lat_deg = rbuf[14];
 			uint8_t lat_min = rbuf[15];
 			float lat_sec = GetFloatFromBuf(rbuf, 16);
-			uint8_t lon_sign = rbuf[20];
+			int8_t lon_sign = rbuf[20];
 			uint8_t lon_deg = rbuf[21];
 			uint8_t lon_min = rbuf[22];
 			float lon_sec = GetFloatFromBuf(rbuf, 23);
@@ -977,6 +1066,53 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			float hdop = GetFloatFromBuf(rbuf, 28);
 			float alt = GetFloatFromBuf(rbuf, 32);
 
+			if (lat_sign == 'N')
+				lat_sign = 1;
+			else lat_sign = -1;
+
+			if (lon_sign == 'E')
+				lon_sign = 1;
+			else lon_sign = -1;
+
+			double lat = ((float)lat_deg + ((float)lat_min + lat_sec) / 60.0)*lat_sign,
+				lng = ((float)lon_deg + ((float)lon_min + lon_sec) / 60.0)*lon_sign;
+
+			//if (myPos->bFirstRead) {
+			//	myPos->bFirstRead = false;
+			//	myPos->SetState(lat, lng, HDOP, height);
+			//}
+			//myPos->Correct(lat, lng, HDOP, height);
+			////Test-----------------------------
+			///*{
+			myPosOvrl->Clear();
+			GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::green);
+			marker->ToolTipText = lat.ToString()+","+lng.ToString();
+			myPosOvrl->Markers->Add(marker);
+
+			//GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
+			//circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Red));
+			//circ->Stroke = gcnew Pen(Color::Red, 1);
+			//areaOvrl->Polygons->Add(circ);
+			//}*/
+			//---------------------------------
+			//myPos->GetState(&lat, &lng, &HDOP, &height);
+			toolStripStatusLabel3->Text = "Sat: " + satellites;
+			toolStripStatusLabel3->Visible = true;
+			toolStripStatusLabel4->Text = "HDOP: " + hdop;
+			toolStripStatusLabel4->Visible = true;
+			toolStripStatusLabel5->Text = "H: " + alt + " m";
+			toolStripStatusLabel5->Visible = true;
+			//---------------------------------
+			///*myPosOvrl->Clear();
+			//myPosOvrl->Markers->Add(gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::blue_small));
+			//GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
+			//circ->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(10, Color::Blue));
+			//circ->Stroke = gcnew Pen(Color::Blue, 1);
+			//myPosOvrl->Polygons->Add(circ);*/
+			////sPointReciver->Release();
+			////---------------------------------
+			//my_pos_accepted = true;
+			ParamReciver->Release();
 		}
 		break;
 		case 0x05:	//ответ на переключение антенны
@@ -987,7 +1123,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x06:	//ответ на запрос исп. антенны
 		{
 			bool isExternal = rbuf[10];
-
+			GPSAntenna->Checked = isExternal;
+			ParamReciver->Release();
 		}
 		break;
 		default:
@@ -1145,6 +1282,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			uint8_t count = rbuf[10];
 			if (count > 0) {
 				CurrentActionLbl->Text = "Найденно ретрансляторов: " + count.ToString() + ". Запрос параметров...";
+				PrevCountFindedRepeaters = count;
 				Commands::Class_0x0D::GetRepeatersParam(NULL, count);
 			}
 			else
@@ -1155,6 +1293,11 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		{
 			int len = (rbuf[8] << 8) + rbuf[9];
 			int devices = len / 8;	//количество устройств в буфере
+			if (PrevCountFindedRepeaters != devices) {
+				Sleep(100);
+				Commands::Class_0x0D::GetRepeatersParam(NULL, PrevCountFindedRepeaters);
+				return;
+			}
 			List<Repeater^>^ tempdev = gcnew List<Repeater^>;
 			//парсинг буфера в список у-в
 			for (int i = 0; i < devices; i++) {	//массив у-в в список у-в
@@ -1665,9 +1808,11 @@ System::Void Evrika::mainform::DCGrid_SelectionChanged(System::Object ^ sender, 
 	if ((row < 0) || (Devices->Count == 0) || (row > Devices->Count - 1)) return;
 	if (PrevSelectedRepeaterIndex == row) return;
 	PrevSelectedRepeaterIndex = row;
-	Commands::Class_0x0A::GetRelayState(Devices[row]->GetAddr());
-	Sleep(300);
-	Commands::Class_0x0A::GetVoltage(Devices[row]->GetAddr());
+	RepeaterParamBox->Text = Devices[row]->IdInHex();
+	GetRepParamProgress->Visible = true;
+	GetRepParamProgress->Value = 0;
+	Thread^ temp = gcnew Thread(gcnew ThreadStart(this, &mainform::ParamRequest));
+	temp->Start();
 }
 
 System::Void Evrika::mainform::RelayStatCheckBox_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
@@ -1691,6 +1836,18 @@ System::Void Evrika::mainform::button12_Click(System::Object ^ sender, System::E
 System::Void Evrika::mainform::ResetRepeatersBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Commands::Class_0x0D::GlobalResetRepeaters(NULL);
+}
+
+System::Void Evrika::mainform::GPSOnOff_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
+	Commands::Class_0x0B::SetGPSPowerState(Devices[PrevSelectedRepeaterIndex]->GetAddr(), GPSOnOff->Checked);
+}
+
+System::Void Evrika::mainform::GPSAntenna_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
+	Commands::Class_0x0B::ToggleGPSAntenna(Devices[PrevSelectedRepeaterIndex]->GetAddr(), GPSAntenna->Checked);
 }
 
 Evrika::mainform::MyPosition::MyPosition()

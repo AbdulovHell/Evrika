@@ -138,6 +138,16 @@ namespace Evrika {
 	private: System::Windows::Forms::Label^  vlna2Lbl;
 	private: System::Windows::Forms::Label^  vcoreLbl;
 	private: System::Windows::Forms::Label^  vtempLbl;
+	private: System::Windows::Forms::GroupBox^  RepeaterParamBox;
+	private: System::Windows::Forms::CheckBox^  GPSOnOff;
+	private: System::Windows::Forms::ProgressBar^  GetRepParamProgress;
+	private: System::Windows::Forms::Label^  GPSStatLbl;
+	private: System::Windows::Forms::CheckBox^  GPSAntenna;
+
+
+
+
+
 
 
 	private: System::Windows::Forms::ListBox^  listBox1;
@@ -391,6 +401,9 @@ namespace Evrika {
 		System::String^ Quality(int q);
 		int RangeRandInt(int min, int max);
 		double RangeRandDouble(double min, double max);
+		void ParamRequest();
+		void IncrementProgress();
+		void MakeVisible(bool state);
 
 		Evrika::mapform^ mapform;
 		static Evrika::settings^ settings_window;
@@ -411,6 +424,7 @@ namespace Evrika {
 		GMapOverlay ^mrkrOvrl;
 		Semaphore ^sEnumCom;
 		Semaphore^ sPointReciver;
+		Semaphore^ ParamReciver;
 		GMapOverlay ^areaOvrl;
 		GMapOverlay^ myPosOvrl;
 		bool LastStateIsOpen;
@@ -420,6 +434,7 @@ namespace Evrika {
 		List<TextBox^>^ logs;
 		uint64_t sys_task_counter = 0;
 		int PrevSelectedRepeaterIndex = -1;
+		uint8_t PrevCountFindedRepeaters = 0;
 	private: System::ComponentModel::IContainer^  components;
 
 #pragma region Windows Form Designer generated code
@@ -430,10 +445,6 @@ namespace Evrika {
 			 void InitializeComponent(void)
 			 {
 				 this->components = (gcnew System::ComponentModel::Container());
-				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle3 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-				 System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle4 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 				 this->button1 = (gcnew System::Windows::Forms::Button());
 				 this->listBox1 = (gcnew System::Windows::Forms::ListBox());
 				 this->label1 = (gcnew System::Windows::Forms::Label());
@@ -495,15 +506,21 @@ namespace Evrika {
 				 this->GPS_En = (gcnew System::Windows::Forms::CheckBox());
 				 this->button11 = (gcnew System::Windows::Forms::Button());
 				 this->tabPage2 = (gcnew System::Windows::Forms::TabPage());
-				 this->vcoreLbl = (gcnew System::Windows::Forms::Label());
-				 this->vlna2Lbl = (gcnew System::Windows::Forms::Label());
+				 this->RepeaterParamBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->GPSAntenna = (gcnew System::Windows::Forms::CheckBox());
+				 this->GPSStatLbl = (gcnew System::Windows::Forms::Label());
+				 this->GetRepParamProgress = (gcnew System::Windows::Forms::ProgressBar());
+				 this->GPSOnOff = (gcnew System::Windows::Forms::CheckBox());
+				 this->RelayStatCheckBox = (gcnew System::Windows::Forms::CheckBox());
 				 this->vlna1Lbl = (gcnew System::Windows::Forms::Label());
+				 this->vtempLbl = (gcnew System::Windows::Forms::Label());
 				 this->vchargerLbl = (gcnew System::Windows::Forms::Label());
+				 this->ResetRepeaterBtn = (gcnew System::Windows::Forms::Button());
+				 this->vcoreLbl = (gcnew System::Windows::Forms::Label());
 				 this->vbattLbl = (gcnew System::Windows::Forms::Label());
+				 this->vlna2Lbl = (gcnew System::Windows::Forms::Label());
 				 this->ResetRepeatersBtn = (gcnew System::Windows::Forms::Button());
 				 this->SearchRepeatersBtn = (gcnew System::Windows::Forms::Button());
-				 this->ResetRepeaterBtn = (gcnew System::Windows::Forms::Button());
-				 this->RelayStatCheckBox = (gcnew System::Windows::Forms::CheckBox());
 				 this->DCGrid = (gcnew System::Windows::Forms::DataGridView());
 				 this->dataGridViewTextBoxColumn1 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->dataGridViewTextBoxColumn2 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
@@ -523,7 +540,6 @@ namespace Evrika {
 				 this->sys_task = (gcnew System::Windows::Forms::Timer(this->components));
 				 this->saveFileDialog2 = (gcnew System::Windows::Forms::SaveFileDialog());
 				 this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
-				 this->vtempLbl = (gcnew System::Windows::Forms::Label());
 				 this->groupBox1->SuspendLayout();
 				 this->groupBox2->SuspendLayout();
 				 this->statusStrip1->SuspendLayout();
@@ -532,13 +548,11 @@ namespace Evrika {
 				 this->tabControl1->SuspendLayout();
 				 this->tabPage1->SuspendLayout();
 				 this->tabPage2->SuspendLayout();
+				 this->RepeaterParamBox->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->BeginInit();
 				 this->tabPage3->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView2))->BeginInit();
 				 this->SuspendLayout();
-				 //
-				 //	button1
-				 //
 				 this->button1->Location = System::Drawing::Point(6, 6);
 				 this->button1->Name = L"button1";
 				 this->button1->Size = System::Drawing::Size(169, 43);
@@ -546,27 +560,18 @@ namespace Evrika {
 				 this->button1->Text = L"Ñêðûòü/Ïîêàçàòü êàðòó";
 				 this->button1->UseVisualStyleBackColor = true;
 				 this->button1->Click += gcnew System::EventHandler(this, &mainform::button1_Click);
-				 //
-				 // listBox1
-				 //
 				 this->listBox1->FormattingEnabled = true;
 				 this->listBox1->Location = System::Drawing::Point(180, 6);
 				 this->listBox1->Name = L"listBox1";
 				 this->listBox1->Size = System::Drawing::Size(114, 303);
 				 this->listBox1->TabIndex = 1;
 				 this->listBox1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::listBox1_SelectedIndexChanged);
-				 //
-				 // label1
-				 //
 				 this->label1->AutoSize = true;
 				 this->label1->Location = System::Drawing::Point(6, 16);
 				 this->label1->Name = L"label1";
 				 this->label1->Size = System::Drawing::Size(75, 13);
 				 this->label1->TabIndex = 2;
 				 this->label1->Text = L"Öåíòð êàðòû:";
-				 //
-				 // groupBox1
-				 //
 				 this->groupBox1->Controls->Add(this->label4);
 				 this->groupBox1->Controls->Add(this->textBox1);
 				 this->groupBox1->Controls->Add(this->button2);
@@ -579,26 +584,17 @@ namespace Evrika {
 				 this->groupBox1->TabIndex = 3;
 				 this->groupBox1->TabStop = false;
 				 this->groupBox1->Text = L"groupBox1";
-				 //
-				 // label4
-				 //
 				 this->label4->AutoSize = true;
 				 this->label4->Location = System::Drawing::Point(6, 78);
 				 this->label4->Name = L"label4";
 				 this->label4->Size = System::Drawing::Size(60, 13);
 				 this->label4->TabIndex = 7;
 				 this->label4->Text = L"Ðàäèóñ, ì:";
-				 //
-				 // textBox1
-				 //
 				 this->textBox1->Location = System::Drawing::Point(72, 75);
 				 this->textBox1->Name = L"textBox1";
 				 this->textBox1->Size = System::Drawing::Size(91, 20);
 				 this->textBox1->TabIndex = 6;
 				 this->textBox1->Text = L"1";
-				 //
-				 // button2
-				 //
 				 this->button2->Location = System::Drawing::Point(6, 101);
 				 this->button2->Name = L"button2";
 				 this->button2->Size = System::Drawing::Size(157, 23);
@@ -606,27 +602,18 @@ namespace Evrika {
 				 this->button2->Text = L"Ñîõðàíèòü";
 				 this->button2->UseVisualStyleBackColor = true;
 				 this->button2->Click += gcnew System::EventHandler(this, &mainform::button2_Click);
-				 //
-				 // label3
-				 //
 				 this->label3->AutoSize = true;
 				 this->label3->Location = System::Drawing::Point(6, 56);
 				 this->label3->Name = L"label3";
 				 this->label3->Size = System::Drawing::Size(35, 13);
 				 this->label3->TabIndex = 4;
 				 this->label3->Text = L"label3";
-				 //
-				 // label2
-				 //
 				 this->label2->AutoSize = true;
 				 this->label2->Location = System::Drawing::Point(6, 38);
 				 this->label2->Name = L"label2";
 				 this->label2->Size = System::Drawing::Size(35, 13);
 				 this->label2->TabIndex = 3;
 				 this->label2->Text = L"label2";
-				 //
-				 // groupBox2
-				 //
 				 this->groupBox2->Controls->Add(this->button5);
 				 this->groupBox2->Controls->Add(this->button4);
 				 this->groupBox2->Controls->Add(this->button3);
@@ -639,9 +626,6 @@ namespace Evrika {
 				 this->groupBox2->TabIndex = 4;
 				 this->groupBox2->TabStop = false;
 				 this->groupBox2->Text = L"groupBox2";
-				 //
-				 // button5
-				 //
 				 this->button5->Location = System::Drawing::Point(13, 158);
 				 this->button5->Name = L"button5";
 				 this->button5->Size = System::Drawing::Size(157, 23);
@@ -649,9 +633,6 @@ namespace Evrika {
 				 this->button5->Text = L"Óäàëèòü";
 				 this->button5->UseVisualStyleBackColor = true;
 				 this->button5->Click += gcnew System::EventHandler(this, &mainform::button5_Click);
-				 //
-				 // button4
-				 //
 				 this->button4->Location = System::Drawing::Point(13, 129);
 				 this->button4->Name = L"button4";
 				 this->button4->Size = System::Drawing::Size(157, 23);
@@ -659,9 +640,6 @@ namespace Evrika {
 				 this->button4->Text = L"Òî÷êà";
 				 this->button4->UseVisualStyleBackColor = true;
 				 this->button4->Click += gcnew System::EventHandler(this, &mainform::button4_Click);
-				 //
-				 // button3
-				 //
 				 this->button3->Location = System::Drawing::Point(13, 100);
 				 this->button3->Name = L"button3";
 				 this->button3->Size = System::Drawing::Size(157, 23);
@@ -669,36 +647,24 @@ namespace Evrika {
 				 this->button3->Text = L"Îêðóæíîñòü";
 				 this->button3->UseVisualStyleBackColor = true;
 				 this->button3->Click += gcnew System::EventHandler(this, &mainform::button3_Click);
-				 //
-				 // label7
-				 //
 				 this->label7->AutoSize = true;
 				 this->label7->Location = System::Drawing::Point(10, 74);
 				 this->label7->Name = L"label7";
 				 this->label7->Size = System::Drawing::Size(35, 13);
 				 this->label7->TabIndex = 2;
 				 this->label7->Text = L"label7";
-				 //
-				 // label6
-				 //
 				 this->label6->AutoSize = true;
 				 this->label6->Location = System::Drawing::Point(10, 49);
 				 this->label6->Name = L"label6";
 				 this->label6->Size = System::Drawing::Size(35, 13);
 				 this->label6->TabIndex = 1;
 				 this->label6->Text = L"label6";
-				 //
-				 // label5
-				 //
 				 this->label5->AutoSize = true;
 				 this->label5->Location = System::Drawing::Point(10, 23);
 				 this->label5->Name = L"label5";
 				 this->label5->Size = System::Drawing::Size(35, 13);
 				 this->label5->TabIndex = 0;
 				 this->label5->Text = L"label5";
-				 //
-				 // button6
-				 //
 				 this->button6->Location = System::Drawing::Point(5, 191);
 				 this->button6->Name = L"button6";
 				 this->button6->Size = System::Drawing::Size(169, 23);
@@ -706,9 +672,6 @@ namespace Evrika {
 				 this->button6->Text = L"Î÷èñòèòü êàðòó";
 				 this->button6->UseVisualStyleBackColor = true;
 				 this->button6->Click += gcnew System::EventHandler(this, &mainform::button6_Click);
-				 //
-				 // button9
-				 //
 				 this->button9->Location = System::Drawing::Point(300, 288);
 				 this->button9->Name = L"button9";
 				 this->button9->Size = System::Drawing::Size(75, 21);
@@ -716,9 +679,6 @@ namespace Evrika {
 				 this->button9->Text = L"Triangulate";
 				 this->button9->UseVisualStyleBackColor = true;
 				 this->button9->Click += gcnew System::EventHandler(this, &mainform::button9_Click);
-				 //
-				 // serialPort1
-				 //
 				 this->serialPort1->BaudRate = 115200;
 				 this->serialPort1->ParityReplace = static_cast<System::Byte>(255);
 				 this->serialPort1->PortName = L"COM5";
@@ -728,9 +688,6 @@ namespace Evrika {
 				 this->serialPort1->WriteBufferSize = 512;
 				 this->serialPort1->WriteTimeout = 1000;
 				 this->serialPort1->DataReceived += gcnew System::IO::Ports::SerialDataReceivedEventHandler(this, &mainform::serialPort1_DataReceived);
-				 //
-				 // proglog
-				 //
 				 this->proglog->Location = System::Drawing::Point(1, 324);
 				 this->proglog->Multiline = true;
 				 this->proglog->Name = L"proglog";
@@ -739,9 +696,6 @@ namespace Evrika {
 				 this->proglog->Size = System::Drawing::Size(482, 130);
 				 this->proglog->TabIndex = 13;
 				 this->proglog->Text = L"Ñòàðò...";
-				 //
-				 // statusStrip1
-				 //
 				 this->statusStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(10) {
 					 this->ImageIndication, this->whatCOM,
 						 this->toolStripStatusLabel1, this->get_device_progress, this->toolStripStatusLabel2, this->toolStripStatusLabel3, this->toolStripStatusLabel4,
@@ -752,73 +706,40 @@ namespace Evrika {
 				 this->statusStrip1->Size = System::Drawing::Size(882, 22);
 				 this->statusStrip1->TabIndex = 14;
 				 this->statusStrip1->Text = L"statusStrip1";
-				 //
-				 // ImageIndication
-				 //
 				 this->ImageIndication->DisplayStyle = System::Windows::Forms::ToolStripItemDisplayStyle::Image;
 				 this->ImageIndication->Name = L"ImageIndication";
 				 this->ImageIndication->Size = System::Drawing::Size(0, 17);
-				 //
-				 // whatCOM
-				 //
 				 this->whatCOM->Name = L"whatCOM";
 				 this->whatCOM->Size = System::Drawing::Size(40, 17);
 				 this->whatCOM->Text = L"COM\?";
-				 //
-				 // toolStripStatusLabel1
-				 //
 				 this->toolStripStatusLabel1->Name = L"toolStripStatusLabel1";
 				 this->toolStripStatusLabel1->Size = System::Drawing::Size(10, 17);
 				 this->toolStripStatusLabel1->Text = L"|";
-				 //
-				 // get_device_progress
-				 //
 				 this->get_device_progress->Maximum = 10;
 				 this->get_device_progress->Name = L"get_device_progress";
 				 this->get_device_progress->Size = System::Drawing::Size(100, 16);
 				 this->get_device_progress->Step = 1;
-				 //
-				 // toolStripStatusLabel2
-				 //
 				 this->toolStripStatusLabel2->Name = L"toolStripStatusLabel2";
 				 this->toolStripStatusLabel2->Size = System::Drawing::Size(10, 17);
 				 this->toolStripStatusLabel2->Text = L"|";
-				 //
-				 // toolStripStatusLabel3
-				 //
 				 this->toolStripStatusLabel3->Name = L"toolStripStatusLabel3";
 				 this->toolStripStatusLabel3->Size = System::Drawing::Size(118, 17);
 				 this->toolStripStatusLabel3->Text = L"toolStripStatusLabel3";
 				 this->toolStripStatusLabel3->Visible = false;
-				 //
-				 // toolStripStatusLabel4
-				 //
 				 this->toolStripStatusLabel4->Name = L"toolStripStatusLabel4";
 				 this->toolStripStatusLabel4->Size = System::Drawing::Size(118, 17);
 				 this->toolStripStatusLabel4->Text = L"toolStripStatusLabel4";
 				 this->toolStripStatusLabel4->Visible = false;
-				 //
-				 // toolStripStatusLabel5
-				 //
 				 this->toolStripStatusLabel5->Name = L"toolStripStatusLabel5";
 				 this->toolStripStatusLabel5->Size = System::Drawing::Size(118, 17);
 				 this->toolStripStatusLabel5->Text = L"toolStripStatusLabel5";
 				 this->toolStripStatusLabel5->Visible = false;
-				 //
-				 // toolStripStatusLabel6
-				 //
 				 this->toolStripStatusLabel6->Name = L"toolStripStatusLabel6";
 				 this->toolStripStatusLabel6->Size = System::Drawing::Size(10, 17);
 				 this->toolStripStatusLabel6->Text = L"|";
-				 //
-				 // CurrentActionLbl
-				 //
 				 this->CurrentActionLbl->Name = L"CurrentActionLbl";
 				 this->CurrentActionLbl->Size = System::Drawing::Size(10, 17);
 				 this->CurrentActionLbl->Text = L" ";
-				 //
-				 // menuStrip1
-				 //
 				 this->menuStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(4) {
 					 this->ôàéëToolStripMenuItem,
 						 this->ïîäêëþ÷åíèåToolStripMenuItem, this->êýøToolStripMenuItem, this->settings_menu
@@ -828,9 +749,6 @@ namespace Evrika {
 				 this->menuStrip1->Size = System::Drawing::Size(882, 24);
 				 this->menuStrip1->TabIndex = 16;
 				 this->menuStrip1->Text = L"menuStrip1";
-				 //
-				 // ôàéëToolStripMenuItem
-				 //
 				 this->ôàéëToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {
 					 this->savemap,
 						 this->SaveSessionBtn, this->LoadSessionBtn
@@ -838,30 +756,18 @@ namespace Evrika {
 				 this->ôàéëToolStripMenuItem->Name = L"ôàéëToolStripMenuItem";
 				 this->ôàéëToolStripMenuItem->Size = System::Drawing::Size(48, 20);
 				 this->ôàéëToolStripMenuItem->Text = L"Ôàéë";
-				 //
-				 // savemap
-				 //
 				 this->savemap->Name = L"savemap";
 				 this->savemap->Size = System::Drawing::Size(258, 22);
 				 this->savemap->Text = L"Ñîõðàíèòü êàðòó â *.bmp ...";
 				 this->savemap->Click += gcnew System::EventHandler(this, &mainform::savemap_Click);
-				 //
-				 // SaveSessionBtn
-				 //
 				 this->SaveSessionBtn->Name = L"SaveSessionBtn";
 				 this->SaveSessionBtn->Size = System::Drawing::Size(258, 22);
 				 this->SaveSessionBtn->Text = L"Ñîõðàíèòü òåêóùóþ ñåññèþ...";
 				 this->SaveSessionBtn->Click += gcnew System::EventHandler(this, &mainform::save_events);
-				 //
-				 // LoadSessionBtn
-				 //
 				 this->LoadSessionBtn->Name = L"LoadSessionBtn";
 				 this->LoadSessionBtn->Size = System::Drawing::Size(258, 22);
 				 this->LoadSessionBtn->Text = L"Çàãðóçèòü ñîõðàíåííóþ ñåññèþ...";
 				 this->LoadSessionBtn->Click += gcnew System::EventHandler(this, &mainform::load_session);
-				 //
-				 // ïîäêëþ÷åíèåToolStripMenuItem
-				 //
 				 this->ïîäêëþ÷åíèåToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(2) {
 					 this->ConnectDC,
 						 this->ConnCheck
@@ -869,23 +775,14 @@ namespace Evrika {
 				 this->ïîäêëþ÷åíèåToolStripMenuItem->Name = L"ïîäêëþ÷åíèåToolStripMenuItem";
 				 this->ïîäêëþ÷åíèåToolStripMenuItem->Size = System::Drawing::Size(86, 20);
 				 this->ïîäêëþ÷åíèåToolStripMenuItem->Text = L"Ñîåäèíåíèå";
-				 //
-				 // ConnectDC
-				 //
 				 this->ConnectDC->Name = L"ConnectDC";
 				 this->ConnectDC->Size = System::Drawing::Size(207, 22);
 				 this->ConnectDC->Text = L"Ïåðåïîäêëþ÷åíèå ê ÄÖ";
 				 this->ConnectDC->Click += gcnew System::EventHandler(this, &mainform::ïåðåïîäêëþ÷åíèåÊÄÖToolStripMenuItem_Click);
-				 //
-				 // ConnCheck
-				 //
 				 this->ConnCheck->Name = L"ConnCheck";
 				 this->ConnCheck->Size = System::Drawing::Size(207, 22);
 				 this->ConnCheck->Text = L"Ïðîâåðêà ñîåäèíåíèÿ";
 				 this->ConnCheck->Click += gcnew System::EventHandler(this, &mainform::ïðîâåðêàÑîåäèíåíèÿToolStripMenuItem_Click);
-				 //
-				 // êýøToolStripMenuItem
-				 //
 				 this->êýøToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(2) {
 					 this->ExportMapBtn,
 						 this->ImportMapBtn
@@ -893,36 +790,21 @@ namespace Evrika {
 				 this->êýøToolStripMenuItem->Name = L"êýøToolStripMenuItem";
 				 this->êýøToolStripMenuItem->Size = System::Drawing::Size(50, 20);
 				 this->êýøToolStripMenuItem->Text = L"Êàðòà";
-				 //
-				 // ExportMapBtn
-				 //
 				 this->ExportMapBtn->Name = L"ExportMapBtn";
 				 this->ExportMapBtn->Size = System::Drawing::Size(202, 22);
 				 this->ExportMapBtn->Text = L"Ýêñïîðò ôàéëà êàðòû...";
 				 this->ExportMapBtn->Click += gcnew System::EventHandler(this, &mainform::ExportMapBtn_Click);
-				 //
-				 // ImportMapBtn
-				 //
 				 this->ImportMapBtn->Name = L"ImportMapBtn";
 				 this->ImportMapBtn->Size = System::Drawing::Size(202, 22);
 				 this->ImportMapBtn->Text = L"Èìïîðò ôàéëà êàðòû...";
 				 this->ImportMapBtn->Click += gcnew System::EventHandler(this, &mainform::ImportMapBtn_Click);
-				 //
-				 // setting_menu
-				 //
 				 this->settings_menu->Name = L"settings_menu";
 				 this->settings_menu->Size = System::Drawing::Size(88, 20);
 				 this->settings_menu->Text = L"Íàñòðîéêè...";
 				 this->settings_menu->Click += gcnew System::EventHandler(this, &mainform::íàñòðîéêèToolStripMenuItem_Click);
-				 //
-				 // saveFileDialog1
-				 //
 				 this->saveFileDialog1->DefaultExt = L"bmp";
 				 this->saveFileDialog1->Filter = L"Bitmap|*.bmp|Âñå ôàéëû|*.*";
 				 this->saveFileDialog1->SupportMultiDottedExtensions = true;
-				 //
-				 // RadioTagsGrid
-				 //
 				 this->RadioTagsGrid->AllowUserToAddRows = false;
 				 this->RadioTagsGrid->AllowUserToDeleteRows = false;
 				 this->RadioTagsGrid->AllowUserToResizeRows = false;
@@ -943,47 +825,22 @@ namespace Evrika {
 				 this->RadioTagsGrid->Size = System::Drawing::Size(371, 425);
 				 this->RadioTagsGrid->TabIndex = 17;
 				 this->RadioTagsGrid->CellDoubleClick += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &mainform::open_device);
-				 //
-				 //
-				 //
-				 //dataGridViewCellStyle1->BackColor = System::Drawing::Color::White;
-				 //
-				 // UniqueID
-				 //
-				 this->UniqueID->DefaultCellStyle = dataGridViewCellStyle1;
 				 this->UniqueID->HeaderText = L"Óíèêàëüíûé  ID";
 				 this->UniqueID->Name = L"UniqueID";
 				 this->UniqueID->ReadOnly = true;
 				 this->UniqueID->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // SignalLVL
-				 //
 				 this->SignalLVL->HeaderText = L"Óðîâåíü ñèãíàëà";
 				 this->SignalLVL->Name = L"SignalLVL";
 				 this->SignalLVL->ReadOnly = true;
 				 this->SignalLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 //
-				 //
-				 //dataGridViewCellStyle2->ForeColor = System::Drawing::Color::Green;
-				 //
-				 // QualityLVL
-				 //
-				 this->QualityLVL->DefaultCellStyle = dataGridViewCellStyle2;
 				 this->QualityLVL->HeaderText = L"Êà÷åñòâî ïðèåìà ñèãíàëà";
 				 this->QualityLVL->Name = L"QualityLVL";
 				 this->QualityLVL->ReadOnly = true;
 				 this->QualityLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // BatteryLVL
-				 //
 				 this->BatteryLVL->HeaderText = L"Óðîâåíü çàðÿäà áàòàðåè";
 				 this->BatteryLVL->Name = L"BatteryLVL";
 				 this->BatteryLVL->ReadOnly = true;
 				 this->BatteryLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // button7
-				 //
 				 this->button7->Location = System::Drawing::Point(698, 445);
 				 this->button7->Name = L"button7";
 				 this->button7->Size = System::Drawing::Size(75, 23);
@@ -991,9 +848,6 @@ namespace Evrika {
 				 this->button7->Text = L"button7";
 				 this->button7->UseVisualStyleBackColor = true;
 				 this->button7->Click += gcnew System::EventHandler(this, &mainform::button7_Click_1);
-				 //
-				 // tabControl1
-				 //
 				 this->tabControl1->Controls->Add(this->tabPage1);
 				 this->tabControl1->Controls->Add(this->tabPage2);
 				 this->tabControl1->Controls->Add(this->tabPage3);
@@ -1004,9 +858,6 @@ namespace Evrika {
 				 this->tabControl1->Size = System::Drawing::Size(882, 547);
 				 this->tabControl1->TabIndex = 19;
 				 this->tabControl1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::tabControl1_SelectedIndexChanged);
-				 //
-				 // tabPage1
-				 //
 				 this->tabPage1->Controls->Add(this->button10);
 				 this->tabPage1->Controls->Add(this->label10);
 				 this->tabPage1->Controls->Add(this->A_text);
@@ -1029,9 +880,6 @@ namespace Evrika {
 				 this->tabPage1->TabIndex = 0;
 				 this->tabPage1->Text = L"Óïðàâëåíèå";
 				 this->tabPage1->UseVisualStyleBackColor = true;
-				 //
-				 // button10
-				 //
 				 this->button10->Location = System::Drawing::Point(78, 288);
 				 this->button10->Name = L"button10";
 				 this->button10->Size = System::Drawing::Size(75, 23);
@@ -1039,52 +887,34 @@ namespace Evrika {
 				 this->button10->Text = L"Ñáðîñ";
 				 this->button10->UseVisualStyleBackColor = true;
 				 this->button10->Click += gcnew System::EventHandler(this, &mainform::button10_Click);
-				 //
-				 // label10
-				 //
 				 this->label10->AutoSize = true;
 				 this->label10->Location = System::Drawing::Point(310, 196);
 				 this->label10->Name = L"label10";
 				 this->label10->Size = System::Drawing::Size(41, 13);
 				 this->label10->TabIndex = 22;
 				 this->label10->Text = L"label10";
-				 //
-				 // A_text
-				 //
 				 this->A_text->Location = System::Drawing::Point(329, 245);
 				 this->A_text->Name = L"A_text";
 				 this->A_text->Size = System::Drawing::Size(46, 20);
 				 this->A_text->TabIndex = 21;
 				 this->A_text->Text = L"-31";
-				 //
-				 // label9
-				 //
 				 this->label9->AutoSize = true;
 				 this->label9->Location = System::Drawing::Point(310, 248);
 				 this->label9->Name = L"label9";
 				 this->label9->Size = System::Drawing::Size(14, 13);
 				 this->label9->TabIndex = 20;
 				 this->label9->Text = L"A";
-				 //
-				 // n_text
-				 //
 				 this->n_text->Location = System::Drawing::Point(329, 218);
 				 this->n_text->Name = L"n_text";
 				 this->n_text->Size = System::Drawing::Size(46, 20);
 				 this->n_text->TabIndex = 19;
 				 this->n_text->Text = L"5";
-				 //
-				 // label8
-				 //
 				 this->label8->AutoSize = true;
 				 this->label8->Location = System::Drawing::Point(310, 220);
 				 this->label8->Name = L"label8";
 				 this->label8->Size = System::Drawing::Size(13, 13);
 				 this->label8->TabIndex = 18;
 				 this->label8->Text = L"n";
-				 //
-				 // GPS_En
-				 //
 				 this->GPS_En->AutoSize = true;
 				 this->GPS_En->Location = System::Drawing::Point(6, 220);
 				 this->GPS_En->Name = L"GPS_En";
@@ -1093,9 +923,6 @@ namespace Evrika {
 				 this->GPS_En->Text = L"GPS";
 				 this->GPS_En->UseVisualStyleBackColor = true;
 				 this->GPS_En->CheckedChanged += gcnew System::EventHandler(this, &mainform::checkBox3_CheckedChanged);
-				 //
-				 // button11
-				 //
 				 this->button11->Location = System::Drawing::Point(6, 243);
 				 this->button11->Name = L"button11";
 				 this->button11->Size = System::Drawing::Size(73, 23);
@@ -1103,19 +930,9 @@ namespace Evrika {
 				 this->button11->Text = L"Get position";
 				 this->button11->UseVisualStyleBackColor = true;
 				 this->button11->Click += gcnew System::EventHandler(this, &mainform::button11_Click);
-				 //
-				 // tabPage2
-				 //
-				 this->tabPage2->Controls->Add(this->vtempLbl);
-				 this->tabPage2->Controls->Add(this->vcoreLbl);
-				 this->tabPage2->Controls->Add(this->vlna2Lbl);
-				 this->tabPage2->Controls->Add(this->vlna1Lbl);
-				 this->tabPage2->Controls->Add(this->vchargerLbl);
-				 this->tabPage2->Controls->Add(this->vbattLbl);
+				 this->tabPage2->Controls->Add(this->RepeaterParamBox);
 				 this->tabPage2->Controls->Add(this->ResetRepeatersBtn);
 				 this->tabPage2->Controls->Add(this->SearchRepeatersBtn);
-				 this->tabPage2->Controls->Add(this->ResetRepeaterBtn);
-				 this->tabPage2->Controls->Add(this->RelayStatCheckBox);
 				 this->tabPage2->Controls->Add(this->DCGrid);
 				 this->tabPage2->Controls->Add(this->Get_Dev);
 				 this->tabPage2->Controls->Add(this->button8);
@@ -1128,95 +945,117 @@ namespace Evrika {
 				 this->tabPage2->TabIndex = 1;
 				 this->tabPage2->Text = L"Óñòðîéñòâà";
 				 this->tabPage2->UseVisualStyleBackColor = true;
-				 //
-				 // vcoreLbl
-				 //
-				 this->vcoreLbl->AutoSize = true;
-				 this->vcoreLbl->Location = System::Drawing::Point(360, 457);
-				 this->vcoreLbl->Name = L"vcoreLbl";
-				 this->vcoreLbl->Size = System::Drawing::Size(48, 13);
-				 this->vcoreLbl->TabIndex = 30;
-				 this->vcoreLbl->Text = L"vcoreLbl";
-				 //
-				 // vlna2Lbl
-				 //
-				 this->vlna2Lbl->AutoSize = true;
-				 this->vlna2Lbl->Location = System::Drawing::Point(360, 438);
-				 this->vlna2Lbl->Name = L"vlna2Lbl";
-				 this->vlna2Lbl->Size = System::Drawing::Size(47, 13);
-				 this->vlna2Lbl->TabIndex = 29;
-				 this->vlna2Lbl->Text = L"vlna2Lbl";
-				 //
-				 // vlna1Lbl
-				 //
-				 this->vlna1Lbl->AutoSize = true;
-				 this->vlna1Lbl->Location = System::Drawing::Point(244, 479);
-				 this->vlna1Lbl->Name = L"vlna1Lbl";
-				 this->vlna1Lbl->Size = System::Drawing::Size(47, 13);
-				 this->vlna1Lbl->TabIndex = 28;
-				 this->vlna1Lbl->Text = L"vlna1Lbl";
-				 //
-				 // vchargerLbl
-				 //
-				 this->vchargerLbl->AutoSize = true;
-				 this->vchargerLbl->Location = System::Drawing::Point(244, 457);
-				 this->vchargerLbl->Name = L"vchargerLbl";
-				 this->vchargerLbl->Size = System::Drawing::Size(63, 13);
-				 this->vchargerLbl->TabIndex = 27;
-				 this->vchargerLbl->Text = L"vchargerLbl";
-				 //
-				 // vbattLbl
-				 //
-				 this->vbattLbl->AutoSize = true;
-				 this->vbattLbl->Location = System::Drawing::Point(244, 438);
-				 this->vbattLbl->Name = L"vbattLbl";
-				 this->vbattLbl->Size = System::Drawing::Size(45, 13);
-				 this->vbattLbl->TabIndex = 26;
-				 this->vbattLbl->Text = L"vbattLbl";
-				 //
-				 // ResetRepeatersBtn
-				 //
-				 this->ResetRepeatersBtn->Location = System::Drawing::Point(89, 492);
-				 this->ResetRepeatersBtn->Name = L"ResetRepeatersBtn";
-				 this->ResetRepeatersBtn->Size = System::Drawing::Size(75, 23);
-				 this->ResetRepeatersBtn->TabIndex = 25;
-				 this->ResetRepeatersBtn->Text = L"button13";
-				 this->ResetRepeatersBtn->UseVisualStyleBackColor = true;
-				 this->ResetRepeatersBtn->Click += gcnew System::EventHandler(this, &mainform::ResetRepeatersBtn_Click);
-				 //
-				 // SearchRepeatersBtn
-				 //
-				 this->SearchRepeatersBtn->Location = System::Drawing::Point(8, 492);
-				 this->SearchRepeatersBtn->Name = L"SearchRepeatersBtn";
-				 this->SearchRepeatersBtn->Size = System::Drawing::Size(75, 23);
-				 this->SearchRepeatersBtn->TabIndex = 24;
-				 this->SearchRepeatersBtn->Text = L"button12";
-				 this->SearchRepeatersBtn->UseVisualStyleBackColor = true;
-				 this->SearchRepeatersBtn->Click += gcnew System::EventHandler(this, &mainform::button12_Click);
-				 //
-				 // ResetRepeaterBtn
-				 //
-				 this->ResetRepeaterBtn->Location = System::Drawing::Point(8, 457);
-				 this->ResetRepeaterBtn->Name = L"ResetRepeaterBtn";
-				 this->ResetRepeaterBtn->Size = System::Drawing::Size(75, 23);
-				 this->ResetRepeaterBtn->TabIndex = 23;
-				 this->ResetRepeaterBtn->Text = L"Ñáðîñ";
-				 this->ResetRepeaterBtn->UseVisualStyleBackColor = true;
-				 this->ResetRepeaterBtn->Click += gcnew System::EventHandler(this, &mainform::ResetRepeaterBtn_Click);
-				 //
-				 // RelayStatCheckBox
-				 //
+				 this->RepeaterParamBox->Controls->Add(this->GPSAntenna);
+				 this->RepeaterParamBox->Controls->Add(this->GPSStatLbl);
+				 this->RepeaterParamBox->Controls->Add(this->GetRepParamProgress);
+				 this->RepeaterParamBox->Controls->Add(this->GPSOnOff);
+				 this->RepeaterParamBox->Controls->Add(this->RelayStatCheckBox);
+				 this->RepeaterParamBox->Controls->Add(this->vlna1Lbl);
+				 this->RepeaterParamBox->Controls->Add(this->vtempLbl);
+				 this->RepeaterParamBox->Controls->Add(this->vchargerLbl);
+				 this->RepeaterParamBox->Controls->Add(this->ResetRepeaterBtn);
+				 this->RepeaterParamBox->Controls->Add(this->vcoreLbl);
+				 this->RepeaterParamBox->Controls->Add(this->vbattLbl);
+				 this->RepeaterParamBox->Controls->Add(this->vlna2Lbl);
+				 this->RepeaterParamBox->Location = System::Drawing::Point(3, 383);
+				 this->RepeaterParamBox->Name = L"RepeaterParamBox";
+				 this->RepeaterParamBox->Size = System::Drawing::Size(491, 135);
+				 this->RepeaterParamBox->TabIndex = 32;
+				 this->RepeaterParamBox->TabStop = false;
+				 this->RepeaterParamBox->Text = L"RepeaterParamBox";
+				 this->GPSAntenna->AutoSize = true;
+				 this->GPSAntenna->Location = System::Drawing::Point(191, 71);
+				 this->GPSAntenna->Name = L"GPSAntenna";
+				 this->GPSAntenna->Size = System::Drawing::Size(140, 17);
+				 this->GPSAntenna->TabIndex = 35;
+				 this->GPSAntenna->Text = L"Âíåøíÿÿ àíòåííà GPS";
+				 this->GPSAntenna->UseVisualStyleBackColor = true;
+				 this->GPSAntenna->CheckedChanged += gcnew System::EventHandler(this, &mainform::GPSAntenna_CheckedChanged);
+				 this->GPSStatLbl->AutoSize = true;
+				 this->GPSStatLbl->Location = System::Drawing::Point(106, 72);
+				 this->GPSStatLbl->Name = L"GPSStatLbl";
+				 this->GPSStatLbl->Size = System::Drawing::Size(41, 13);
+				 this->GPSStatLbl->TabIndex = 34;
+				 this->GPSStatLbl->Text = L"label11";
+				 this->GetRepParamProgress->Location = System::Drawing::Point(6, 106);
+				 this->GetRepParamProgress->Maximum = 6;
+				 this->GetRepParamProgress->Name = L"GetRepParamProgress";
+				 this->GetRepParamProgress->Size = System::Drawing::Size(100, 23);
+				 this->GetRepParamProgress->Step = 1;
+				 this->GetRepParamProgress->TabIndex = 33;
+				 this->GPSOnOff->AutoSize = true;
+				 this->GPSOnOff->Location = System::Drawing::Point(6, 71);
+				 this->GPSOnOff->Name = L"GPSOnOff";
+				 this->GPSOnOff->Size = System::Drawing::Size(94, 17);
+				 this->GPSOnOff->TabIndex = 32;
+				 this->GPSOnOff->Text = L"Ïèòàíèå GPS";
+				 this->GPSOnOff->UseVisualStyleBackColor = true;
+				 this->GPSOnOff->CheckedChanged += gcnew System::EventHandler(this, &mainform::GPSOnOff_CheckedChanged);
 				 this->RelayStatCheckBox->AutoSize = true;
-				 this->RelayStatCheckBox->Location = System::Drawing::Point(8, 434);
+				 this->RelayStatCheckBox->Location = System::Drawing::Point(6, 19);
 				 this->RelayStatCheckBox->Name = L"RelayStatCheckBox";
 				 this->RelayStatCheckBox->Size = System::Drawing::Size(164, 17);
 				 this->RelayStatCheckBox->TabIndex = 22;
 				 this->RelayStatCheckBox->Text = L"Ñîñòîÿíèå ðåëå (çàìêíóòî)";
 				 this->RelayStatCheckBox->UseVisualStyleBackColor = true;
 				 this->RelayStatCheckBox->CheckedChanged += gcnew System::EventHandler(this, &mainform::RelayStatCheckBox_CheckedChanged);
-				 //
-				 // DCGrid
-				 //
+				 this->vlna1Lbl->AutoSize = true;
+				 this->vlna1Lbl->Location = System::Drawing::Point(241, 52);
+				 this->vlna1Lbl->Name = L"vlna1Lbl";
+				 this->vlna1Lbl->Size = System::Drawing::Size(47, 13);
+				 this->vlna1Lbl->TabIndex = 28;
+				 this->vlna1Lbl->Text = L"vlna1Lbl";
+				 this->vtempLbl->AutoSize = true;
+				 this->vtempLbl->Location = System::Drawing::Point(357, 52);
+				 this->vtempLbl->Name = L"vtempLbl";
+				 this->vtempLbl->Size = System::Drawing::Size(50, 13);
+				 this->vtempLbl->TabIndex = 31;
+				 this->vtempLbl->Text = L"vtempLbl";
+				 this->vchargerLbl->AutoSize = true;
+				 this->vchargerLbl->Location = System::Drawing::Point(241, 35);
+				 this->vchargerLbl->Name = L"vchargerLbl";
+				 this->vchargerLbl->Size = System::Drawing::Size(63, 13);
+				 this->vchargerLbl->TabIndex = 27;
+				 this->vchargerLbl->Text = L"vchargerLbl";
+				 this->ResetRepeaterBtn->Location = System::Drawing::Point(6, 42);
+				 this->ResetRepeaterBtn->Name = L"ResetRepeaterBtn";
+				 this->ResetRepeaterBtn->Size = System::Drawing::Size(75, 23);
+				 this->ResetRepeaterBtn->TabIndex = 23;
+				 this->ResetRepeaterBtn->Text = L"Ñáðîñ";
+				 this->ResetRepeaterBtn->UseVisualStyleBackColor = true;
+				 this->ResetRepeaterBtn->Click += gcnew System::EventHandler(this, &mainform::ResetRepeaterBtn_Click);
+				 this->vcoreLbl->AutoSize = true;
+				 this->vcoreLbl->Location = System::Drawing::Point(357, 35);
+				 this->vcoreLbl->Name = L"vcoreLbl";
+				 this->vcoreLbl->Size = System::Drawing::Size(48, 13);
+				 this->vcoreLbl->TabIndex = 30;
+				 this->vcoreLbl->Text = L"vcoreLbl";
+				 this->vbattLbl->AutoSize = true;
+				 this->vbattLbl->Location = System::Drawing::Point(241, 16);
+				 this->vbattLbl->Name = L"vbattLbl";
+				 this->vbattLbl->Size = System::Drawing::Size(45, 13);
+				 this->vbattLbl->TabIndex = 26;
+				 this->vbattLbl->Text = L"vbattLbl";
+				 this->vlna2Lbl->AutoSize = true;
+				 this->vlna2Lbl->Location = System::Drawing::Point(357, 16);
+				 this->vlna2Lbl->Name = L"vlna2Lbl";
+				 this->vlna2Lbl->Size = System::Drawing::Size(47, 13);
+				 this->vlna2Lbl->TabIndex = 29;
+				 this->vlna2Lbl->Text = L"vlna2Lbl";
+				 this->ResetRepeatersBtn->Location = System::Drawing::Point(156, 354);
+				 this->ResetRepeatersBtn->Name = L"ResetRepeatersBtn";
+				 this->ResetRepeatersBtn->Size = System::Drawing::Size(175, 23);
+				 this->ResetRepeatersBtn->TabIndex = 25;
+				 this->ResetRepeatersBtn->Text = L"Ñáðîñ âñåõ ðåòðàíñëÿòîðîâ";
+				 this->ResetRepeatersBtn->UseVisualStyleBackColor = true;
+				 this->ResetRepeatersBtn->Click += gcnew System::EventHandler(this, &mainform::ResetRepeatersBtn_Click);
+				 this->SearchRepeatersBtn->Location = System::Drawing::Point(3, 354);
+				 this->SearchRepeatersBtn->Name = L"SearchRepeatersBtn";
+				 this->SearchRepeatersBtn->Size = System::Drawing::Size(147, 23);
+				 this->SearchRepeatersBtn->TabIndex = 24;
+				 this->SearchRepeatersBtn->Text = L"Ïîèñê ðåòðàíñëÿòîðîâ";
+				 this->SearchRepeatersBtn->UseVisualStyleBackColor = true;
+				 this->SearchRepeatersBtn->Click += gcnew System::EventHandler(this, &mainform::button12_Click);
 				 this->DCGrid->AllowUserToAddRows = false;
 				 this->DCGrid->AllowUserToDeleteRows = false;
 				 this->DCGrid->AllowUserToResizeRows = false;
@@ -1234,57 +1073,29 @@ namespace Evrika {
 				 this->DCGrid->ReadOnly = true;
 				 this->DCGrid->RowHeadersVisible = false;
 				 this->DCGrid->SelectionMode = System::Windows::Forms::DataGridViewSelectionMode::CellSelect;
-				 this->DCGrid->Size = System::Drawing::Size(491, 425);
+				 this->DCGrid->Size = System::Drawing::Size(491, 345);
 				 this->DCGrid->TabIndex = 21;
 				 this->DCGrid->SelectionChanged += gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
-				 //
-				 //
-				 //
-				 //dataGridViewCellStyle3->BackColor = System::Drawing::Color::White;
-				 //
-				 // dataGridViewTextBoxColumn1
-				 //
-				 this->dataGridViewTextBoxColumn1->DefaultCellStyle = dataGridViewCellStyle3;
 				 this->dataGridViewTextBoxColumn1->HeaderText = L"Àäðåñ";
 				 this->dataGridViewTextBoxColumn1->Name = L"dataGridViewTextBoxColumn1";
 				 this->dataGridViewTextBoxColumn1->ReadOnly = true;
 				 this->dataGridViewTextBoxColumn1->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // dataGridViewTextBoxColumn2
-				 //
 				 this->dataGridViewTextBoxColumn2->HeaderText = L"Óðîâåíü ñèãíàëà";
 				 this->dataGridViewTextBoxColumn2->Name = L"dataGridViewTextBoxColumn2";
 				 this->dataGridViewTextBoxColumn2->ReadOnly = true;
 				 this->dataGridViewTextBoxColumn2->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 //
-				 //
-				 //dataGridViewCellStyle4->ForeColor = System::Drawing::Color::Green;
-				 //
-				 // dataGridViewTextBoxColumn3
-				 //
-				 this->dataGridViewTextBoxColumn3->DefaultCellStyle = dataGridViewCellStyle4;
 				 this->dataGridViewTextBoxColumn3->HeaderText = L"Êà÷åñòâî ïðèåìà ñèãíàëà";
 				 this->dataGridViewTextBoxColumn3->Name = L"dataGridViewTextBoxColumn3";
 				 this->dataGridViewTextBoxColumn3->ReadOnly = true;
 				 this->dataGridViewTextBoxColumn3->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // dataGridViewTextBoxColumn4
-				 //
 				 this->dataGridViewTextBoxColumn4->HeaderText = L"Óðîâåíü çàðÿäà áàòàðåè";
 				 this->dataGridViewTextBoxColumn4->Name = L"dataGridViewTextBoxColumn4";
 				 this->dataGridViewTextBoxColumn4->ReadOnly = true;
 				 this->dataGridViewTextBoxColumn4->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // WorkMode
-				 //
 				 this->WorkMode->HeaderText = L"Ðåæèì ðàáîòû";
 				 this->WorkMode->Name = L"WorkMode";
 				 this->WorkMode->ReadOnly = true;
 				 this->WorkMode->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 //
-				 // Get_Dev
-				 //
 				 this->Get_Dev->AutoSize = true;
 				 this->Get_Dev->Location = System::Drawing::Point(609, 451);
 				 this->Get_Dev->Name = L"Get_Dev";
@@ -1293,9 +1104,6 @@ namespace Evrika {
 				 this->Get_Dev->Text = L"Get devices";
 				 this->Get_Dev->UseVisualStyleBackColor = true;
 				 this->Get_Dev->CheckedChanged += gcnew System::EventHandler(this, &mainform::checkBox2_CheckedChanged);
-				 //
-				 // button8
-				 //
 				 this->button8->Location = System::Drawing::Point(698, 474);
 				 this->button8->Name = L"button8";
 				 this->button8->Size = System::Drawing::Size(75, 23);
@@ -1303,9 +1111,6 @@ namespace Evrika {
 				 this->button8->Text = L"button8";
 				 this->button8->UseVisualStyleBackColor = true;
 				 this->button8->Click += gcnew System::EventHandler(this, &mainform::button8_Click_1);
-				 //
-				 // tabPage3
-				 //
 				 this->tabPage3->Controls->Add(this->dataGridView2);
 				 this->tabPage3->Location = System::Drawing::Point(4, 22);
 				 this->tabPage3->Name = L"tabPage3";
@@ -1314,9 +1119,6 @@ namespace Evrika {
 				 this->tabPage3->TabIndex = 2;
 				 this->tabPage3->Text = L"Ñîáûòèÿ";
 				 this->tabPage3->UseVisualStyleBackColor = true;
-				 //
-				 // dataGridView2
-				 //
 				 this->dataGridView2->AllowUserToAddRows = false;
 				 this->dataGridView2->AllowUserToDeleteRows = false;
 				 this->dataGridView2->AllowUserToResizeRows = false;
@@ -1336,79 +1138,40 @@ namespace Evrika {
 				 this->dataGridView2->RowHeadersVisible = false;
 				 this->dataGridView2->Size = System::Drawing::Size(868, 515);
 				 this->dataGridView2->TabIndex = 0;
-				 //
-				 // Column1
-				 //
 				 this->Column1->HeaderText = L"Óíèêàëüíûé ID";
 				 this->Column1->Name = L"Column1";
 				 this->Column1->ReadOnly = true;
-				 //
-				 // Column3
-				 //
 				 this->Column3->HeaderText = L"Óðîâåíü ñèãíàëà";
 				 this->Column3->Name = L"Column3";
 				 this->Column3->ReadOnly = true;
-				 //
-				 // Column4
-				 //
 				 this->Column4->HeaderText = L"Óðîâåíü çàðÿäà áàòàðåè";
 				 this->Column4->Name = L"Column4";
 				 this->Column4->ReadOnly = true;
-				 //
-				 // Column5
-				 //
 				 this->Column5->HeaderText = L"Ðåæèì ðàáîòû";
 				 this->Column5->Name = L"Column5";
 				 this->Column5->ReadOnly = true;
-				 //
-				 // Column6
-				 //
 				 this->Column6->HeaderText = L"Ñîáûòèå";
 				 this->Column6->Name = L"Column6";
 				 this->Column6->ReadOnly = true;
-				 //
-				 // Column7
-				 //
 				 this->Column7->HeaderText = L"Äàòà/âðåìÿ";
 				 this->Column7->Name = L"Column7";
 				 this->Column7->ReadOnly = true;
-				 //
-				 // sys_task
-				 //
 				 this->sys_task->Enabled = true;
 				 this->sys_task->Interval = 200;
 				 this->sys_task->Tick += gcnew System::EventHandler(this, &mainform::sys_task_Tick);
-				 //
-				 // saveFileDialog2
-				 //
 				 this->saveFileDialog2->DefaultExt = L"esf";
 				 this->saveFileDialog2->Filter = L"Evrika session file|*.esf|Âñå ôàéëû|*.*";
 				 this->saveFileDialog2->SupportMultiDottedExtensions = true;
-				 //
-				 // openFileDialog1
-				 //
 				 this->openFileDialog1->DefaultExt = L"esf";
 				 this->openFileDialog1->Filter = L"Evrika session file|*.esf";
 				 this->openFileDialog1->SupportMultiDottedExtensions = true;
-				 //
-				 // vtempLbl
-				 //
-				 this->vtempLbl->AutoSize = true;
-				 this->vtempLbl->Location = System::Drawing::Point(360, 479);
-				 this->vtempLbl->Name = L"vtempLbl";
-				 this->vtempLbl->Size = System::Drawing::Size(41, 13);
-				 this->vtempLbl->TabIndex = 31;
-				 this->vtempLbl->Text = L"vtempLbl";
-				 //
-				 // mainform
-				 //
 				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 				 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 				 this->ClientSize = System::Drawing::Size(882, 593);
-				 this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::Fixed3D;
 				 this->Controls->Add(this->tabControl1);
 				 this->Controls->Add(this->statusStrip1);
 				 this->Controls->Add(this->menuStrip1);
+				 this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::Fixed3D;
 				 this->MainMenuStrip = this->menuStrip1;
 				 this->MaximizeBox = false;
 				 this->Name = L"mainform";
@@ -1428,11 +1191,14 @@ namespace Evrika {
 				 this->tabPage1->PerformLayout();
 				 this->tabPage2->ResumeLayout(false);
 				 this->tabPage2->PerformLayout();
+				 this->RepeaterParamBox->ResumeLayout(false);
+				 this->RepeaterParamBox->PerformLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->EndInit();
 				 this->tabPage3->ResumeLayout(false);
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView2))->EndInit();
 				 this->ResumeLayout(false);
 				 this->PerformLayout();
+
 			 }
 #pragma endregion
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e);
@@ -1468,5 +1234,7 @@ namespace Evrika {
 	private: System::Void ResetRepeaterBtn_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button12_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void ResetRepeatersBtn_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void GPSOnOff_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void GPSAntenna_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	};
 }
