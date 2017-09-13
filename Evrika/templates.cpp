@@ -81,12 +81,19 @@ namespace Evrika {
 		seconds = _td->seconds;
 	}
 
-	double CyclesToMeters(int cycles) {
+	double CyclesToMeters(uint32_t cycles) {
 		double m = 0;
 		const double cycle = 0.010;
 		double t = cycles*cycle;
 		uint32_t c = 300;
 		m = (double)c*t;
+		return m;
+	}
+	double TimeToMeters(double time_ns)
+	{
+		double m = 0;
+		double c = 0.3;
+		m = (double)c*time_ns;
 		return m;
 	}
 	double dBToW(double lvl, double offset) {
@@ -102,11 +109,22 @@ namespace Evrika {
 		m = pow(m, 0.25);
 		return m;
 	}
-	double ConvertToMeters(double RSSI, double n, double A) {
+	double ConvertToMeters(double RSSI, double n, double RSSI_In_1_m) {
 		double m = 0;
-		m = (-RSSI - A) / (10 * n);
+		m = (- RSSI - RSSI_In_1_m) / (10 * n);
 		m = pow(10, m);
 		return m;
+	}
+	double LinCycleToMeters(uint32_t cycles, uint8_t bitrate)
+	{
+		switch (bitrate) {
+		case 3:
+			return 333;
+		case 2:
+			return (cycles - 268542) / 1.24;
+		default:
+			return 0;
+		}
 	}
 	//CK_A[size-2],CK_B[size-1]
 	void CalcSum(cli::array<unsigned char>^ buf, size_t size) {

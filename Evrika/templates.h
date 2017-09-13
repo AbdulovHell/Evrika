@@ -1,7 +1,22 @@
 namespace Evrika {
 	using namespace System;
+	using namespace System::Collections::Generic;
 
 	ref class TimeAndDate;
+	ref class RadioTag;
+
+	double CyclesToMeters(uint32_t cycles);
+	double TimeToMeters(double time);
+	double dBToW(double lvl, double offset);
+	double SignalLvlToMeters(double lvl, double tdB);
+	double ConvertToMeters(double RSSI, double n, double RSSI_In_1_m);
+	double LinCycleToMeters(uint32_t cycles, uint8_t bitrate);
+	//CK_A[size-2],CK_B[size-1]
+	void CalcSum(cli::array<unsigned char>^, size_t);
+	void PasteInBuffer(cli::array<unsigned char>^, size_t, uint32_t);
+	double GetDoubleFromBuf(cli::array<wchar_t>^, size_t offset);
+	float GetFloatFromBuf(cli::array<wchar_t>^, size_t offset);
+	uint32_t ToInt32FromBuf(cli::array<wchar_t>^, size_t offset);
 
 	public ref class Device {
 		uint32_t Addr;
@@ -20,9 +35,12 @@ namespace Evrika {
 			Addr = _addr;
 			Processed = false;
 			missing_counter = 0;
+			vbatt = 0;
+			rssi = 0;
+			lqi = 0;
 		}
 
-		void Fill(float _vbatt,int8_t _rssi,int8_t _lqi) {
+		virtual void Fill(float _vbatt, int8_t _rssi, int8_t _lqi) {
 			vbatt = _vbatt;
 			rssi = _rssi;
 			lqi = _lqi;
@@ -35,7 +53,7 @@ namespace Evrika {
 		int8_t GetSignalLvl() { return rssi; }
 		int8_t GetSignalQuality() { return lqi; }
 		float GetBatteryLvl() { return vbatt; }
-		void copy(Device^ dev) {
+		virtual void copy(Device^ dev) {
 			Addr = dev->Addr;
 			rssi = dev->rssi;
 			lqi = dev->lqi;
@@ -44,14 +62,20 @@ namespace Evrika {
 			Processed = dev->Processed;
 			missing_counter = dev->missing_counter;
 		}
+		virtual int GetDevType() {
+			return 0;
+		}
 	};
 
 	public ref class Repeater : public Device {
 		uint8_t gps_stat;
 	public:
 		bool isLocal;
+		double Lat = 0;
+		double Lon = 0;
+		List<RadioTag^>^ RadioTags;
 
-		Repeater(uint32_t _addr, bool local) : Device(_addr) { isLocal = local; }
+		Repeater(uint32_t _addr, bool local) : Device(_addr) { isLocal = local; RadioTags = gcnew List<RadioTag^>; }
 
 		void GetInfo();
 		void SetGPSStat(uint8_t _gps_stat) { gps_stat = _gps_stat; }
@@ -61,6 +85,9 @@ namespace Evrika {
 			isLocal = rep->isLocal;
 			Device::copy(rep);
 		}
+		virtual int GetDevType() override {
+			return 1;
+		}
 	};
 
 	public ref class RadioTag : public Device {
@@ -69,13 +96,32 @@ namespace Evrika {
 		float adaptive_time;
 		uint8_t adaptive_bitrate;
 	public:
-		RadioTag(uint32_t _addr) : Device(_addr) {}
+		bool ping;
 
-		void Fill(uint32_t _time,int8_t _adaptive_rssi,float _adaptive_time,uint8_t _adaptive_bitrate) {
+		RadioTag(uint32_t _addr) : Device(_addr) { ping = false; }
+
+		virtual void Fill(uint32_t _time, int8_t _adaptive_rssi, float _adaptive_time, uint8_t _adaptive_bitrate) {
 			time = _time;
 			adaptive_rssi = _adaptive_rssi;
 			adaptive_time = _adaptive_time;
 			adaptive_bitrate = _adaptive_bitrate;
+		}
+
+		virtual void copy(RadioTag^ dev) {
+			time = dev->time;
+			adaptive_rssi = dev->adaptive_rssi;
+			adaptive_time = dev->adaptive_time;
+			adaptive_bitrate = dev->adaptive_bitrate;
+			Device::copy(dev);
+		}
+		virtual int GetDevType() override {
+			return 2;
+		}
+		double GetDistance() {
+			return ConvertToMeters(adaptive_rssi, 1.7, 26);
+		}
+		double GetDistance(double n,double SignalLvlAt1m) {
+			return ConvertToMeters(adaptive_rssi, n, SignalLvlAt1m);
 		}
 	};
 
@@ -109,7 +155,9 @@ namespace Evrika {
 		enum class EventCode : int {
 			EMPTY = 0,
 			DEV_CONNECTED = 1,
-			DEV_DISCONNECTED = 2
+			DEV_DISCONNECTED = 2,
+			SIGNAL_FOUND = 3,
+			SIGNAL_LOST = 4
 		};
 
 		TimeAndDate^ td;
@@ -120,8 +168,12 @@ namespace Evrika {
 		String^ toStr(EventCode _eCode) {
 			switch (_eCode) {
 			case EventCode::DEV_CONNECTED:
-				return "Устройство найдено";
+				return "Соединение установлено";
 			case EventCode::DEV_DISCONNECTED:
+				return "Соединение потеряно";
+			case EventCode::SIGNAL_FOUND:
+				return "Устройство обнаружено";
+			case EventCode::SIGNAL_LOST:
 				return "Сигнал потерян";
 			default:
 				return "Unresolved";
@@ -141,7 +193,8 @@ namespace Evrika {
 		//this td, in dev&event
 		Event(Device^ _device, EventCode _eCode) {
 			td = gcnew TimeAndDate();
-			device = gcnew Device(NULL);
+			device = gcnew Device(_device->GetAddr());
+			device->copy(_device);
 			//device->copy(_device);
 			td->GetCurrentTimeAndDate();
 			eCode = _eCode;
@@ -149,7 +202,8 @@ namespace Evrika {
 		}
 		Event(Device^ _device, TimeAndDate^ _td, EventCode _eCode) {
 			td = gcnew TimeAndDate();
-			device = gcnew Device(NULL);
+			device = gcnew Device(_device->GetAddr());
+			device->copy(_device);
 			//device->copy(_device);
 			td->copy(_td);
 			eCode = _eCode;
@@ -264,15 +318,4 @@ namespace Evrika {
 			static void GlobalResetRepeaters(uint32_t Addr);
 		};
 	};
-
-	double CyclesToMeters(int);
-	double dBToW(double lvl, double offset);
-	double SignalLvlToMeters(double lvl, double tdB);
-	double ConvertToMeters(double RSSI, double n, double A);
-	//CK_A[size-2],CK_B[size-1]
-	void CalcSum(cli::array<unsigned char>^, size_t);
-	void PasteInBuffer(cli::array<unsigned char>^, size_t, uint32_t);
-	double GetDoubleFromBuf(cli::array<wchar_t>^, size_t offset);
-	float GetFloatFromBuf(cli::array<wchar_t>^, size_t offset);
-	uint32_t ToInt32FromBuf(cli::array<wchar_t>^, size_t offset);
 }

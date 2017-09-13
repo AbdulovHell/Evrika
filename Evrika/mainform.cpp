@@ -138,10 +138,9 @@ Evrika::mainform::mainform(void)
 	lbl->Invoke(gcnew Action<String^>(&loading_page::change_lbl), "Подготовка программы...");
 	pbar->Invoke(gcnew Action<int>(&loading_page::change_bar), 5);
 
-	lCoordsCount = 0;
+	//lCoordsCount = 0;
 	MyCoords = gcnew List< geoPoint^ >(20);
 	Devices = gcnew List<Repeater^>(20);
-	RadioTags = gcnew List<RadioTag^>(20);
 	Events = gcnew List<Event^>(50);
 	logs = gcnew List<TextBox^>;
 	//PropWindows = gcnew List<device_prop^>;
@@ -151,6 +150,8 @@ Evrika::mainform::mainform(void)
 	sEnumCom = gcnew Semaphore(0, 3);
 	sPointReciver = gcnew Semaphore(0, 3);
 	ParamReciver = gcnew Semaphore(0, 3);
+	RadioTagUpdateEnabledSemaphore = gcnew Semaphore(0, 3);
+	RadioTagUpdateParam = gcnew Semaphore(0, 3);
 	listBox1->Items->Clear();
 	mrkrOvrl = mapform->mrkrOvrl;
 	areaOvrl = mapform->areaOvrl;
@@ -509,12 +510,12 @@ void Evrika::mainform::ParseToPoint(cli::array<wchar_t>^ buf)
 	//save
 
 	MyCoords->Add(gcnew geoPoint(lat, lon, dist, "ID: 1234"));
-	listBox1->Items->Add(MyCoords[lCoordsCount]->get_name());
-	lCoordsCount++;
+	listBox1->Items->Add(MyCoords[MyCoords->Count - 1]->get_name());
+	//lCoordsCount++;
 
-	if (lCoordsCount > 8) {
+	if (MyCoords->Count > 8) {
 		MyCoords->RemoveAt(0);
-		lCoordsCount--;
+		//lCoordsCount--;
 		listBox1->Items->RemoveAt(0);
 	}
 }
@@ -539,6 +540,7 @@ void Evrika::mainform::CheckComConn()
 			if (serialPort1->IsOpen)
 				serialPort1->Close();
 			LastStateIsOpen = false;
+			Events->Add(gcnew Event(Devices[0], Event::EventCode::DEV_DISCONNECTED));
 		}
 
 	}
@@ -633,7 +635,7 @@ double Evrika::mainform::RangeRandDouble(double min, double max)
 
 void Evrika::mainform::ParamRequest()
 {
-	uint32_t addr = Devices[PrevSelectedRepeaterIndex]->GetAddr();
+	uint32_t addr = SelectedDevice->GetAddr();
 	int attempts = 0;
 	do {
 		Commands::Class_0x0A::GetRelayState(addr);
@@ -670,7 +672,7 @@ void Evrika::mainform::ParamRequest()
 	} while (!ParamReciver->WaitOne(1500));
 	this->Invoke(gcnew Action(this, &mainform::IncrementProgress));	//5
 	attempts = 0;
-	if (Devices[PrevSelectedRepeaterIndex]->IfKnownPos()) {
+	if (SelectedDevice->IfKnownPos()) {
 		do {
 			Commands::Class_0x0B::GetGPSPosition(addr);
 			attempts++;
@@ -691,6 +693,25 @@ void Evrika::mainform::MakeVisible(bool state)
 	GetRepParamProgress->Visible = state;
 }
 
+void Evrika::mainform::GetTagParam()
+{
+	while (true) {
+		if (!RadioTagAutoUpdateEnabled) {
+			RadioTagUpdateEnabledSemaphore->WaitOne();
+		}
+		Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
+		//CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "...";
+		Invoke(gcnew Action<String^>(this, &mainform::SetCurrentActionLblText), gcnew String("Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "..."));
+		RadioTagUpdateParam->WaitOne(6000);
+		Sleep(1000);
+	}
+}
+
+void Evrika::mainform::SetCurrentActionLblText(String ^ str)
+{
+	CurrentActionLbl->Text = str;
+}
+
 void Evrika::mainform::SetTimer(bool en)
 {
 	sys_task->Enabled = en;
@@ -709,13 +730,13 @@ void Evrika::mainform::WriteLog(String ^ message)
 	}
 }
 
-void Evrika::mainform::AddNewPoint(float m)
+void Evrika::mainform::AddNewPoint(double lat, double lng, double m)
 {
-	if (!my_pos_accepted) return;
-	double lat = 0, lng = 0, r_m = m;
-	myPos->GetPos(&lat, &lng);
-	label10->Text = r_m.ToString();
-	MyCoords->Add(gcnew geoPoint(lat, lng, r_m));
+	//if (!my_pos_accepted) return;
+	//double lat = 0, lng = 0, r_m = m;
+	//myPos->GetPos(&lat, &lng);
+	//label10->Text = r_m.ToString();
+	MyCoords->Add(gcnew geoPoint(lat, lng, m));
 	if (MyCoords->Count > 8)
 		MyCoords->RemoveAt(0);
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
@@ -748,7 +769,7 @@ bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//базовая проверка
 
 	int len = (rbuf[8] << 8) + rbuf[9];
-
+	if (len > 512) return false;
 	uint8_t mCK_A = (uint8_t)rbuf[9 + len + 1], mCK_B = (uint8_t)rbuf[9 + len + 2];
 	uint8_t cCK_A = 0, cCK_B = 0;
 	for (int i = 2; i < (9 + len + 1); i++) {
@@ -761,59 +782,81 @@ bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 
 void Evrika::mainform::UpdateRadioTagsList()
 {
-	//RadioTagsGrid->Rows->Clear();
-	//for (int i = 0; i < Devices->Count; i++) {
-	//	RadioTagsGrid->Rows->Add(1);
-	//	if (Devices[i]->missing_counter == 0)
-	//		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
-	//	else
-	//		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
-	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = Devices[i]->signal_lvl;	//sgnl lvl
-	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = Devices[i]->signal_quality;	//quality
-	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = Devices[i]->battery_lvl;	//batt lvl
-	//	RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = Devices[i]->work_mode;	//mode
-	//}
+	this->RadioTagsGrid->SelectionChanged -= gcnew System::EventHandler(this, &mainform::RadioTagsGrid_SelectionChanged);
+	int TempRow = -1;
+	int TempColumn = -1;
+	if (RadioTagsGrid->SelectedCells->Count) {
+		TempRow = RadioTagsGrid->SelectedCells[0]->RowIndex;
+		TempColumn = RadioTagsGrid->SelectedCells[0]->ColumnIndex;
+	}
+	//Очистка сетки
+	RadioTagsGrid->Rows->Clear();
+	for (int i = 0; i < SelectedDevice->RadioTags->Count; i++) {
+		//добавляем новую строку
+		RadioTagsGrid->Rows->Add(1);
+		//столбец адреса
+		if (SelectedDevice->RadioTags[i]->missing_counter == 0)
+			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = SelectedDevice->RadioTags[i]->IdInHex();	//id
+		else
+			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = SelectedDevice->RadioTags[i]->IdInHex() + " (!)";	//id
+		//столбец уровня сигнала
+		int8_t rssi = SelectedDevice->RadioTags[i]->GetSignalLvl();
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = rssi.ToString();
+		if (rssi < 100) {
+			if (rssi < Evrika::settings::GetMySettingP()->signlLvl[0]) {
+				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
+			}
+			else if (rssi < Evrika::settings::GetMySettingP()->signlLvl[1]) {
+				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
+			}
+			else {
+				RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
+			}
+		}
+		//столбец качества приема сигнала
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = SelectedDevice->RadioTags[i]->GetSignalQuality().ToString();
+		//уровень заряда батареи, В
+		float vbatt = SelectedDevice->RadioTags[i]->GetBatteryLvl();
+		RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = vbatt.ToString();
+		if (vbatt) {
+			if (vbatt < Evrika::settings::GetMySettingP()->voltLvl[0]) {
+				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
+			}
+			else if (vbatt < Evrika::settings::GetMySettingP()->voltLvl[1]) {
+				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
+			}
+			else {
+				RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
+			}
+		}
+		//режим работы TODO: возможно, режим метки и режим пеленгации
+		if (SelectedDevice->RadioTags[i]->ping)
+			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = "";
+		else
+			RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = "Метка";
+	}
+	if (TempColumn != -1 && TempRow != -1) {
+		try {
+			this->RadioTagsGrid->CurrentCell = this->RadioTagsGrid[TempColumn, TempRow];
+		}
+		catch (...) {
 
-	//for (int i = 0; i < RadioTagsGrid->RowCount; i++) {
-	//	double tempval = 0;
-	//	int templvl = 100;
-	//	//try {
-	//	tempval = double(RadioTagsGrid->Rows[i]->Cells[3]->Value);
-	//	//}
-	//	//catch (...) {}
-	//	if (tempval) {
-	//		if (tempval < Evrika::settings::GetMySettingP()->voltLvl[0]) {
-	//			RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
-	//		}
-	//		else if (tempval < Evrika::settings::GetMySettingP()->voltLvl[1]) {
-	//			RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
-	//		}
-	//		else {
-	//			RadioTagsGrid->Rows[i]->Cells[3]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
-	//		}
-	//	}
-
-	//	//try {
-	//	templvl = (int)(RadioTagsGrid->Rows[i]->Cells[1]->Value);
-	//	//}
-	//	//catch (...) {}
-	//	if (templvl < 100) {
-	//		if (templvl < Evrika::settings::GetMySettingP()->signlLvl[0]) {
-	//			RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
-	//		}
-	//		else if (templvl < Evrika::settings::GetMySettingP()->signlLvl[1]) {
-	//			RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
-	//		}
-	//		else {
-	//			RadioTagsGrid->Rows[i]->Cells[1]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
-	//		}
-	//	}
-	//}
+		}
+	}
+	this->RadioTagsGrid->SelectionChanged += gcnew System::EventHandler(this, &mainform::RadioTagsGrid_SelectionChanged);
+	RadioTagsGrid_SelectionChanged(this, gcnew EventArgs());
+	//DCGrid_SelectionChanged(this, gcnew EventArgs());
 }
 
 void Evrika::mainform::UpdateRepeatersList()
 {
 	this->DCGrid->SelectionChanged -= gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
+	int TempRow = -1;
+	int TempColumn = -1;
+	if (DCGrid->SelectedCells->Count) {
+		TempRow = DCGrid->SelectedCells[0]->RowIndex;
+		TempColumn = DCGrid->SelectedCells[0]->ColumnIndex;
+	}
 	//Очистка сетки
 	DCGrid->Rows->Clear();
 	for (int i = 0; i < Devices->Count; i++) {
@@ -860,23 +903,32 @@ void Evrika::mainform::UpdateRepeatersList()
 		else
 			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[4]->Value = "Ретранслятор";
 	}
+	if (TempColumn != -1 && TempRow != -1) {
+		try {
+			this->DCGrid->CurrentCell = this->DCGrid[TempColumn, TempRow];
+		}
+		catch (...) {
+
+		}
+	}
 	this->DCGrid->SelectionChanged += gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
 	DCGrid_SelectionChanged(this, gcnew EventArgs());
 }
 
-void Evrika::mainform::update_event_list()
+void Evrika::mainform::UpdateEventList()
 {
-	//dataGridView2->Rows->Clear();
-	//for (int i = 0; i < Events->Count; i++) {
-	//	dataGridView2->Rows->Add(1);
+	EventsGrid->Rows->Clear();
+	for (int i = 0; i < Events->Count; i++) {
+		EventsGrid->Rows->Add(1);
 
-	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[0]->Value = Events[i]->device->IdInHex();	//id
-	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[1]->Value = Events[i]->device->signal_lvl;	//sgnl lvl
-	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[2]->Value = Events[i]->device->battery_lvl;	//batt lvl
-	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[3]->Value = Events[i]->device->work_mode;	//mode
-	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[4]->Value = Events[i]->sEvent;	//event type
-	//	dataGridView2->Rows[dataGridView2->RowCount - 1]->Cells[5]->Value = Events[i]->td->ToSysString();	//dt
-	//}
+		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[0]->Value = Events[i]->device->IdInHex();	//id
+		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[1]->Value = Events[i]->device->GetSignalLvl();	//sgnl lvl
+		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[2]->Value = Events[i]->device->GetBatteryLvl();	//batt lvl
+		int type = Events[i]->device->GetDevType();
+		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[3]->Value = type;	//mode
+		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[4]->Value = Events[i]->sEvent;	//event type
+		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[5]->Value = Events[i]->td->ToSysString();	//dt
+	}
 }
 
 void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
@@ -900,6 +952,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			Devices->Add(gcnew Repeater(addr, true));
 			Commands::Class_0x0A::GetVoltage(Devices[0]->GetAddr());
 			UpdateRepeatersList();
+			Events->Add(gcnew Event(Devices[0], Event::EventCode::DEV_CONNECTED));
+			UpdateEventList();
 		}
 		break;
 		case 0x02:	//ответ на запрос напряжений
@@ -912,22 +966,20 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			float vcore = GetFloatFromBuf(rbuf, 26);
 			float vtemp = GetFloatFromBuf(rbuf, 30);
 
-			if (Devices[0]->GetAddr() == addr) {
-				Devices[0]->Fill(vbatt, 0, 0);
-				UpdateRepeatersList();
-			}
-			else {
-				for (int i = 1; i < Devices->Count; i++) {
-					if (addr == Devices[i]->GetAddr()) {
-						vbattLbl->Text = "vbatt: " + vbatt.ToString() + " V";
-						vchargerLbl->Text = charger.ToString();
-						vlna1Lbl->Text = lna1.ToString();
-						vlna2Lbl->Text = lna2.ToString();
-						vcoreLbl->Text = vcore.ToString();
-						vtempLbl->Text = vtemp.ToString();
-					}
+			for (int i = 0; i < Devices->Count; i++) {
+				if (addr == Devices[i]->GetAddr()) {
+					Devices[i]->Fill(vbatt, Devices[i]->GetSignalLvl(), Devices[i]->GetSignalQuality());
+					vbattLbl->Text = "vbatt: " + vbatt.ToString() + " V";
+					vchargerLbl->Text = "vcharger: " + charger.ToString() + " V";
+					vlna1Lbl->Text = "vlna1: " + lna1.ToString() + " V";
+					vlna2Lbl->Text = "vlna2: " + lna2.ToString() + " V";
+					vcoreLbl->Text = "vcore: " + vcore.ToString() + " V";
+					vtempLbl->Text = "vtemp: " + vtemp.ToString() + " V";
+					UpdateRepeatersList();
+					break;
 				}
 			}
+
 			try {
 				ParamReciver->Release();
 			}
@@ -1076,7 +1128,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 
 			double lat = ((float)lat_deg + ((float)lat_min + lat_sec) / 60.0)*lat_sign,
 				lng = ((float)lon_deg + ((float)lon_min + lon_sec) / 60.0)*lon_sign;
-
+			SelectedDevice->Lat = lat;
+			SelectedDevice->Lon = lng;
 			//if (myPos->bFirstRead) {
 			//	myPos->bFirstRead = false;
 			//	myPos->SetState(lat, lng, HDOP, height);
@@ -1086,7 +1139,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			///*{
 			myPosOvrl->Clear();
 			GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(PointLatLng(lat, lng), Markers::GMarkerGoogleType::green);
-			marker->ToolTipText = lat.ToString()+","+lng.ToString();
+			marker->ToolTipText = lat.ToString() + "," + lng.ToString();
 			myPosOvrl->Markers->Add(marker);
 
 			//GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::CreateCircle(PointLatLng(lat, lng), HDOP), "circ");
@@ -1137,6 +1190,14 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x01:	//ответ на запуск цикла пробуждения меток
 		{
 			uint8_t count = rbuf[10];
+			if (count > 0) {
+				CurrentActionLbl->Text = "Найдено радиометок: " + count.ToString() + ". Запрос параметров...";
+				PrevCountFindedRadioTags = count;
+				Sleep(200);
+				Commands::Class_0x0C::GetRadioTagsParam(SelectedDevice->GetAddr(), count);
+			}
+			else
+				CurrentActionLbl->Text = "Найдено радиометок: " + count.ToString() + ".";
 #pragma region Old Code
 			//int len = (rbuf[4] << 8) + rbuf[5];
 			//int devices = (len - 0) / 8;	//количество устройств в буфере
@@ -1196,14 +1257,69 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x02:	//ответ на запрос параметров радиометок
 		{
-			uint16_t len = rbuf[8] + rbuf[9] << 8;
-			uint32_t addr = rbuf[10] + rbuf[11] << 8 + rbuf[12] << 16 + rbuf[13] << 24;
-			int8_t rssi = rbuf[14];
-			int8_t lqi = rbuf[15];
-			uint8_t vbatt = rbuf[16];
-			int8_t a_rssi = rbuf[17];
-			uint8_t bitrate = rbuf[18];
-			//rbuf[19]
+			uint16_t len = rbuf[9] + (rbuf[8] << 8);
+			int devices = len / 10;	//количество устройств в буфере
+			if (PrevCountFindedRadioTags != devices) {
+				Sleep(100);
+				Commands::Class_0x0C::GetRadioTagsParam(SelectedDevice->GetAddr(), PrevCountFindedRadioTags);
+				return;
+			}
+			List<RadioTag^>^ tempdev = gcnew List<RadioTag^>;
+			//парсинг буфера в список у-в
+			for (int i = 0; i < devices; i++) {	//массив у-в в список у-в
+				uint32_t addr = ToInt32FromBuf(rbuf, 10 + 10 * i);
+				int8_t rssi = rbuf[14 + 10 * i];
+				int8_t lqi = rbuf[15 + 10 * i];
+				float vbatt = (rbuf[16 + 10 * i] >> 4) + (rbuf[16 + 10 * i] & 0xF) / 10.0;
+				int8_t a_rssi = rbuf[17 + 10 * i];
+				uint8_t bitrate = rbuf[18 + 10 * i];
+
+				tempdev->Add(gcnew RadioTag(addr));
+				tempdev[i]->Fill(vbatt, rssi, lqi);
+				tempdev[i]->Fill(NULL, a_rssi, NULL, bitrate);
+			}
+			//сброс флагов обработки у-в, уже наход в памяти
+			for (int i = 0; i < SelectedDevice->RadioTags->Count; i++) SelectedDevice->RadioTags[i]->Processed = false;
+			//сравнение и обновление у-в, которые уже были в памяти
+			for (int i = 0; i < SelectedDevice->RadioTags->Count; i++) {
+				for (int j = 0; j < tempdev->Count; j++) {
+					if (SelectedDevice->RadioTags[i]->GetAddr() == tempdev[j]->GetAddr()) {
+						SelectedDevice->RadioTags[i]->copy(tempdev[j]);
+						SelectedDevice->RadioTags[i]->Processed = true;
+						SelectedDevice->RadioTags[i]->missing_counter = 0;
+						tempdev->RemoveAt(j);
+					}
+				}
+			}
+			//обработка "устаревших" у-в
+			for (int i = 0; i < SelectedDevice->RadioTags->Count; i++) {
+				if (SelectedDevice->RadioTags[i]->Processed == false) {
+					if (SelectedDevice->RadioTags[i]->missing_counter > 3) {
+						//generate_event_disconnect
+						Events->Add(gcnew Event(SelectedDevice->RadioTags[i], Event::EventCode::SIGNAL_LOST));
+						UpdateEventList();
+						SelectedDevice->RadioTags->RemoveAt(i);
+					}
+					else
+						SelectedDevice->RadioTags[i]->missing_counter++;
+				}
+			}
+			//обработка "новых" у-в
+			for (int i = 0; i < tempdev->Count; i++) {
+				//generate_newdev_event
+				Events->Add(gcnew Event(tempdev[i], Event::EventCode::SIGNAL_FOUND));
+				UpdateEventList();
+				SelectedDevice->RadioTags->Add(tempdev[i]);
+				tempdev->RemoveAt(i);
+				i--;
+			}
+			/*if (RadioTags->Count > 1)
+				this->device_get = true;
+			else
+				device_get = false;*/
+				//обновление списка у-в
+			UpdateRadioTagsList();
+			CurrentActionLbl->Text += " Готово.";
 #pragma region Old code time meas
 			////invoke в device_prop
 			//int size = (rbuf[4] << 8) + rbuf[5];
@@ -1238,31 +1354,105 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 
 		}
 		break;
+		case 0x05:
+		{
+			CurrentActionLbl->Text += " Получение параметров...";
+			Sleep(100);
+			Commands::Class_0x0C::GetRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
+		}
+		break;
 		case 0x06:	//базовая информация о метке
 		{
-			//Device^ tempdev;
 			//парсинг буфера в список у-в
-			uint32_t addr = rbuf[10] + (rbuf[11] << 8) + (rbuf[12] << 16) + (rbuf[13] << 24);
+			uint32_t addr = ToInt32FromBuf(rbuf, 10);
 			int8_t rssi = rbuf[14];
-			uint32_t time = rbuf[15] + rbuf[16] << 8 + rbuf[17] << 16 + rbuf[18] << 24;
+			int64_t time = ToInt32FromBuf(rbuf, 15) - 2250000;
 			int8_t lqi = rbuf[19];
-			uint8_t vbatt = rbuf[20];
+			float vbatt = (rbuf[20] >> 4) + (rbuf[20] & 0xF) / 10.0;
 			int8_t a_rssi = rbuf[21];
 			float a_time = GetFloatFromBuf(rbuf, 22);
 			uint8_t bitrate = rbuf[26];
-			//double volt = raw_v >> 4;
-			//volt += ((double)(raw_v & 0xF)) / 10.0;
-			//tempdev = gcnew Device(addr, (char)rbuf[10], rbuf[11], volt, rbuf[13], NULL);
-			//сравнение и обновление у-в, которые уже были в памяти
-			//for (int i = 0; i < Devices->Count; i++)
-			//	if (Devices[i]->unique_id == tempdev->unique_id)
-			//		Devices[i]->copy(tempdev);
-			//обновление окон св-в
-			//update_prop_windows();
-			//маякнуть окну св-в об изменении статов
-			//device_prop::sMeasDist->Release();
-			//обновление списка у-в
-			//update_device_list();
+
+			int64_t delta_time = 0;
+			int64_t delta_atime = 0;
+			//double a = TimeToMeters(10);
+			if (first) {
+				min_time = time;
+				max_time = time;
+				first = 0;
+				min_atime = a_time;
+				max_atime = a_time;
+			}
+			else {
+				if (time > max_time)
+					max_time = time;
+				if (time < min_time)
+					min_time = time;
+
+				if (a_time > max_atime)
+					max_atime = a_time;
+				if (a_time < min_atime)
+					min_atime = a_time;
+			}
+			try {
+				delta_time = max_time / (max_time - min_time);
+				delta_atime = max_atime / (max_atime - min_atime);
+			}
+			catch (...) {}
+			label12->Text = delta_time.ToString() + " " + delta_atime.ToString();
+			for (int i = 0; i < SelectedDevice->RadioTags->Count; i++) {
+				if (SelectedDevice->RadioTags[i]->GetAddr() == addr) {
+					SelectedDevice->RadioTags[i]->Fill(time, a_rssi, a_time, bitrate);
+					SelectedDevice->RadioTags[i]->Fill(vbatt, rssi, lqi);
+					//time
+					//double m = CyclesToMeters(time);
+					//TimeLbl->Text = time.ToString() + " cycles. " + m.ToString() + " m." + a_time.ToString() + " cycles. " + CyclesToMeters(a_time).ToString() + " m.";
+					//TimeLbl->Text = a_time.ToString() + " cycles. " + LinCycleToMeters(a_time, bitrate).ToString() + " m.";
+					if (bitrate == 2) {
+						a_time -= 268542;
+						if (i2 == 10) {
+							//label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString()+" " + LinCycleToMeters(mid2/10, bitrate).ToString() + " m.";
+							label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString() + " " + TimeToMeters(mid2).ToString() + " m.";
+							i2 = 0;
+							mid2 = 0;
+							temp2 = 0;
+						}
+						else {
+							//temp2 += LinCycleToMeters(a_time, bitrate);
+							temp2 += TimeToMeters(a_time * 10);
+							mid2 += a_time;
+							i2++;
+						}
+					}
+					if (bitrate == 3) {	//210184
+						a_time -= 210184;
+						if (i3 == 10) {
+							//label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + LinCycleToMeters(mid3/10, bitrate).ToString() + " m.";
+							label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + TimeToMeters(mid3).ToString() + " m.";
+							i3 = 0;
+							mid3 = 0;
+							temp3 = 0;
+						}
+						else {
+							//temp3 += LinCycleToMeters(a_time, bitrate);
+							temp3 += TimeToMeters(a_time * 10);
+							mid3 += a_time;
+							i3++;
+						}
+					}
+					TimeLbl->Text = a_time.ToString() + " cycles. " + TimeToMeters(a_time * 10).ToString() + " m.";
+					//rssi
+					ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, double::Parse(textBox2->Text), double::Parse(textBox3->Text)).ToString() + " m.";
+					//ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, 3, 20.0).ToString() + " m.";
+					//bitrate
+					BitrateLbl->Text = bitrate.ToString();
+				}
+			}
+			UpdateRadioTagsList();
+			CurrentActionLbl->Text += " Готово.";
+			if (RadioTagAutoUpdateEnabled && RadioTagAutoUpdateThrd != nullptr) {
+				RadioTagUpdateParam->Release();
+			}
 		}
 		break;
 		case 0x07: //ответ на сброс СС1101 к перв. уст.
@@ -1281,12 +1471,12 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		{
 			uint8_t count = rbuf[10];
 			if (count > 0) {
-				CurrentActionLbl->Text = "Найденно ретрансляторов: " + count.ToString() + ". Запрос параметров...";
+				CurrentActionLbl->Text = "Найдено ретрансляторов: " + count.ToString() + ". Запрос параметров...";
 				PrevCountFindedRepeaters = count;
 				Commands::Class_0x0D::GetRepeatersParam(NULL, count);
 			}
 			else
-				CurrentActionLbl->Text = "Найденно ретрансляторов: " + count.ToString() + ".";
+				CurrentActionLbl->Text = "Найдено ретрансляторов: " + count.ToString() + ".";
 		}
 		break;
 		case 0x02:	//ответ на запрос параметров ретрансл.
@@ -1327,8 +1517,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				if (Devices[i]->Processed == false) {
 					if (Devices[i]->missing_counter > 3) {
 						//generate_event_disconnect
-						Events->Add(gcnew Event(Devices[i], Event::EventCode::DEV_DISCONNECTED));
-						update_event_list();
+						Events->Add(gcnew Event(Devices[i], Event::EventCode::SIGNAL_LOST));
+						UpdateEventList();
 						Devices->RemoveAt(i);
 					}
 					else
@@ -1338,8 +1528,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			//обработка "новых" у-в
 			for (int i = 0; i < tempdev->Count; i++) {
 				//generate_newdev_event
-				Events->Add(gcnew Event(tempdev[i], Event::EventCode::DEV_CONNECTED));
-				update_event_list();
+				Events->Add(gcnew Event(tempdev[i], Event::EventCode::SIGNAL_FOUND));
+				UpdateEventList();
 				Devices->Add(tempdev[i]);
 				tempdev->RemoveAt(i);
 			}
@@ -1378,14 +1568,14 @@ System::Void Evrika::mainform::button1_Click(System::Object ^ sender, System::Ev
 System::Void Evrika::mainform::button2_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	//MyCoords[lCoordsCount] = gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString());
-	MyCoords->Add(gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString()));
-	listBox1->Items->Add(MyCoords[lCoordsCount]->get_name());
-	lCoordsCount++;
+	MyCoords->Add(gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + (MyCoords->Count).ToString()));
+	listBox1->Items->Add(MyCoords[MyCoords->Count - 1]->get_name());
+	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 }
 
 System::Void Evrika::mainform::listBox1_SelectedIndexChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
-	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
+	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>MyCoords->Count - 1) return;
 	groupBox2->Text = MyCoords[listBox1->SelectedIndex]->get_name();
 	label5->Text = "R: " + MyCoords[listBox1->SelectedIndex]->get_r().ToString();
 	label6->Text = "Lat: " + MyCoords[listBox1->SelectedIndex]->get_lat().ToString();
@@ -1394,22 +1584,23 @@ System::Void Evrika::mainform::listBox1_SelectedIndexChanged(System::Object ^ se
 
 System::Void Evrika::mainform::button5_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
-	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
-	delete MyCoords[listBox1->SelectedIndex];
-	for (int i = listBox1->SelectedIndex; i < lCoordsCount - 1; i++) {
+	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>MyCoords->Count - 1) return;
+	MyCoords->RemoveAt(listBox1->SelectedIndex);
+	/*for (int i = listBox1->SelectedIndex; i < MyCoords->Count-1; i++) {
 		MyCoords[i] = MyCoords[i + 1];
-	}
-	lCoordsCount--;
+	}*/
+	//lCoordsCount--;
 	listBox1->Items->Clear();
-	for (int i = 0; i < lCoordsCount; i++) {
+	for (int i = 0; i < MyCoords->Count; i++) {
 		listBox1->Items->Add(MyCoords[i]->get_name());
 	}
+	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 }
 
 System::Void Evrika::mainform::button3_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	//draw area point
-	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>lCoordsCount - 1) return;
+	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>MyCoords->Count - 1) return;
 	GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[listBox1->SelectedIndex]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
 	mrkrOvrl->Markers->Add(marker);
 
@@ -1462,28 +1653,6 @@ System::Void Evrika::mainform::savemap_Click(System::Object ^ sender, System::Ev
 	//a.add_events();
 }
 
-System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::EventArgs ^ e)
-{
-	//RadioTagsGrid->Rows[0]->Cells[0]->Value = "abc";
-	//RadioTagsGrid->Rows->Add(1);
-	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[0]->Value = "1";	//id
-	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[1]->Value = "2";	//temp id
-	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[2]->Value = RangeRandInt(-127, 10);	//sgnl lvl
-	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[3]->Value = Quality(RangeRandInt(0, 7));	//quality
-	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[4]->Value = RangeRandDouble(2.5, 4.5);	//batt lvl
-	//RadioTagsGrid->Rows[RadioTagsGrid->RowCount - 1]->Cells[5]->Value = "0";	//mode
-
-
-	try {
-		serialPort1->Open();
-		serialPort1->WriteLine("WAKE\r");
-
-	}
-	catch (IO::IOException ^ioexception) {
-		proglog->AppendText("\r\n" + ioexception->Message);
-	}
-}
-
 System::Void Evrika::mainform::настройкиToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	settings_window->Show();
@@ -1508,45 +1677,6 @@ System::Void Evrika::mainform::tabControl1_SelectedIndexChanged(System::Object ^
 	this->Refresh();
 }
 
-System::Void Evrika::mainform::button8_Click_1(System::Object ^ sender, System::EventArgs ^ e)
-{
-	for (int i = 0; i < RadioTagsGrid->RowCount; i++) {
-		double tempval = 0;
-		int templvl = 100;
-		//try {
-		tempval = double(RadioTagsGrid->Rows[i]->Cells[4]->Value);
-		//}
-		//catch (...) {}
-		if (tempval) {
-			if (tempval < Evrika::settings::GetMySettingP()->voltLvl[0]) {
-				RadioTagsGrid->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[0];
-			}
-			else if (tempval < Evrika::settings::GetMySettingP()->voltLvl[1]) {
-				RadioTagsGrid->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[1];
-			}
-			else {
-				RadioTagsGrid->Rows[i]->Cells[4]->Style->BackColor = Evrika::settings::GetMySettingP()->voltCol[2];
-			}
-		}
-
-		//try {
-		templvl = (int)(RadioTagsGrid->Rows[i]->Cells[2]->Value);
-		//}
-		//catch (...) {}
-		if (templvl < 100) {
-			if (templvl < Evrika::settings::GetMySettingP()->signlLvl[0]) {
-				RadioTagsGrid->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[0];
-			}
-			else if (templvl < Evrika::settings::GetMySettingP()->signlLvl[1]) {
-				RadioTagsGrid->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[1];
-			}
-			else {
-				RadioTagsGrid->Rows[i]->Cells[2]->Style->BackColor = Evrika::settings::GetMySettingP()->SignlLvlCol[2];
-			}
-		}
-	}
-}
-
 System::Void Evrika::mainform::serialPort1_DataReceived(System::Object ^ sender, System::IO::Ports::SerialDataReceivedEventArgs ^ e)
 {
 	cli::array<wchar_t>^ rbuf = gcnew cli::array<wchar_t>(512);
@@ -1560,12 +1690,6 @@ System::Void Evrika::mainform::serialPort1_DataReceived(System::Object ^ sender,
 
 	}
 	//serialPort1->Close();
-}
-
-System::Void Evrika::mainform::checkBox2_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
-{
-	if (Get_Dev->Checked)
-		get_device_progress->Value = 0;
 }
 
 System::Void Evrika::mainform::open_device(System::Object ^ sender, System::Windows::Forms::DataGridViewCellEventArgs ^ e)
@@ -1582,90 +1706,91 @@ System::Void Evrika::mainform::open_device(System::Object ^ sender, System::Wind
 
 System::Void Evrika::mainform::save_events(System::Object ^ sender, System::EventArgs ^ e)
 {
-	//TimeAndDate dt;
-	//dt.GetCurrentTimeAndDate();
-	//String^ datatime = dt.ToSysString();
-	//saveFileDialog2->FileName = "Evrika_session_" + datatime;
-	//saveFileDialog2->ShowDialog();
+	TimeAndDate dt;
+	dt.GetCurrentTimeAndDate();
+	String^ datatime = dt.ToSysString();
+	saveFileDialog2->FileName = "Evrika_session_" + datatime;
+	saveFileDialog2->ShowDialog();
 
-	//EvLog::EventLog eLog;
-	//for (int i = 0; i < Events->Count; i++) {
-	//	EvLog::Event* tempevent = eLog.add_events();
+	EvLog::EventLog eLog;
+	for (int i = 0; i < Events->Count; i++) {
+		EvLog::Event* tempevent = eLog.add_events();
 
-	//	EvLog::Device* dev = new EvLog::Device();
+		EvLog::Device* dev = new EvLog::Device();
 
-	//	dev->set_battery_lvl(Events[i]->device->battery_lvl);
-	//	dev->set_signal_lvl(Events[i]->device->signal_lvl);
-	//	dev->set_signal_quality(Events[i]->device->signal_quality);
-	//	dev->set_unique_id(Events[i]->device->unique_id);
-	//	dev->set_work_mode(Events[i]->device->work_mode);
+		dev->set_battery_lvl(Events[i]->device->GetBatteryLvl());
+		dev->set_signal_lvl(Events[i]->device->GetSignalLvl());
+		dev->set_signal_quality(Events[i]->device->GetSignalQuality());
+		dev->set_unique_id(Events[i]->device->GetAddr());
+		dev->set_work_mode(Events[i]->device->GetDevType());
 
-	//	dev->set_allocated_pmode1(new EvLog::Device_mode1());
-	//	dev->set_allocated_pmode2(new EvLog::Device_mode2());
-	//	dev->set_allocated_pmode3(new EvLog::Device_mode3());
-	//	dev->set_allocated_pmode4(new EvLog::Device_mode4());
+		dev->set_allocated_pmode1(new EvLog::Device_mode1());
+		dev->set_allocated_pmode2(new EvLog::Device_mode2());
+		dev->set_allocated_pmode3(new EvLog::Device_mode3());
+		dev->set_allocated_pmode4(new EvLog::Device_mode4());
 
-	//	tempevent->set_allocated_dev(dev);
+		tempevent->set_allocated_dev(dev);
 
-	//	EvLog::TD* td = new EvLog::TD();
+		EvLog::TD* td = new EvLog::TD();
 
-	//	td->set_day(Events[i]->td->day);
-	//	td->set_month(Events[i]->td->month);
-	//	td->set_year(Events[i]->td->year);
-	//	td->set_hour(Events[i]->td->hours);
-	//	td->set_minute(Events[i]->td->minutes);
-	//	td->set_second(Events[i]->td->seconds);
+		td->set_day(Events[i]->td->day);
+		td->set_month(Events[i]->td->month);
+		td->set_year(Events[i]->td->year);
+		td->set_hour(Events[i]->td->hours);
+		td->set_minute(Events[i]->td->minutes);
+		td->set_second(Events[i]->td->seconds);
 
-	//	tempevent->set_allocated_td(td);
+		tempevent->set_allocated_td(td);
 
-	//	tempevent->set_ecode((UINT32)Events[i]->eCode);
+		tempevent->set_ecode((UINT32)Events[i]->eCode);
 
-	//	//delete dev;
-	//	//delete td;
-	//}
-	//ofstream fs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(saveFileDialog2->FileName), ios::out | ios::trunc | ios::binary);
-	//int b = eLog.ByteSize();
-	//void *output = malloc(b);
-	//if (!eLog.SerializeToArray(output, b)) {
-	//	//WriteLog("Error loading settings.");
-	//}
-	//fs.write((char*)output, b);
-	//fs.close();
-	//delete output;
-	////saveFileDialog2->FileName; путь
+		//delete dev;
+		//delete td;
+	}
+	ofstream fs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(saveFileDialog2->FileName), ios::out | ios::trunc | ios::binary);
+	int b = eLog.ByteSize();
+	void *output = malloc(b);
+	if (!eLog.SerializeToArray(output, b)) {
+		//WriteLog("Error loading settings.");
+	}
+	fs.write((char*)output, b);
+	fs.close();
+	delete output;
+	//saveFileDialog2->FileName; путь
 }
 
 System::Void Evrika::mainform::load_session(System::Object ^ sender, System::EventArgs ^ e)
 {
-	//openFileDialog1->ShowDialog();
+	openFileDialog1->ShowDialog();
 
-	//ifstream ifs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), ios::in | ios::binary);
+	ifstream ifs((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), ios::in | ios::binary);
 
-	//struct stat fi;
-	//stat((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), &fi);
-	//int filesize = fi.st_size;
+	struct stat fi;
+	stat((char*)(void*)System::Runtime::InteropServices::Marshal::StringToHGlobalAnsi(openFileDialog1->FileName), &fi);
+	int filesize = fi.st_size;
 
-	//void *input = malloc(filesize);
-	//ifs.read((char*)input, filesize);
+	void *input = malloc(filesize);
+	ifs.read((char*)input, filesize);
 
-	//EvLog::EventLog *eLog = new EvLog::EventLog();
-	//if (!eLog->ParseFromArray(input, filesize)) {
-	//	//cerr << "Failed to parse address book." << endl;
-	//	return;
-	//}
+	EvLog::EventLog *eLog = new EvLog::EventLog();
+	if (!eLog->ParseFromArray(input, filesize)) {
+		//cerr << "Failed to parse address book." << endl;
+		return;
+	}
 
-	//Events->Clear();
-	//for (int i = 0; i < eLog->events_size(); i++) {
-	//	EvLog::Event tempevent = eLog->events(i);
+	Events->Clear();
+	for (int i = 0; i < eLog->events_size(); i++) {
+		EvLog::Event tempevent = eLog->events(i);
 
-	//	EvLog::Device dev = tempevent.dev();
-	//	Event::EventCode eCode = (Event::EventCode)tempevent.ecode();
-	//	EvLog::TD td = tempevent.td();
-
-	//	Events->Add(gcnew Event(gcnew Device(dev.unique_id(), dev.signal_lvl(), dev.signal_quality(), dev.battery_lvl(), dev.work_mode(), NULL),
-	//		gcnew TimeAndDate(td.day(), td.month(), td.year(), td.hour(), td.minute(), td.second()), eCode));
-	//}
-	//update_event_list();
+		EvLog::Device dev = tempevent.dev();
+		Event::EventCode eCode = (Event::EventCode)tempevent.ecode();
+		EvLog::TD td = tempevent.td();
+		Device^ tempDev = gcnew Device(dev.unique_id());
+		//, , dev.work_mode(), NULL
+		tempDev->Fill(dev.battery_lvl(), dev.signal_lvl(), dev.signal_quality());
+		Events->Add(gcnew Event(tempDev, gcnew TimeAndDate(td.day(), td.month(), td.year(), td.hour(), td.minute(), td.second()), eCode));
+	}
+	UpdateEventList();
 }
 
 System::Void Evrika::mainform::переподключениеКДЦToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1716,7 +1841,7 @@ System::Void Evrika::mainform::checkBox3_CheckedChanged(System::Object ^ sender,
 	try {
 		if (!serialPort1->IsOpen)
 			serialPort1->Open();
-		eGPS = GPS_En->Checked;
+		eGPS = checkBox1->Checked;
 		myPos->bFirstRead = true;
 		//ConstructCMD(serialPort1, eGPS);
 		Commands::Class_0x0B::SetGPSPowerState(NULL, eGPS);
@@ -1758,23 +1883,23 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 			}
 			//sPointReciver->WaitOne(1000);
 		}
-		if (Get_Dev->Checked) {
-			get_device_progress->Value = 0;
-			try {
-				if (serialPort1->IsOpen)
-					//ConstructCMD(serialPort1, (uint32_t)3000);
-					Commands::Class_0x0C::WakeUp(NULL, 3000);
-			}
-			catch (IO::IOException ^ioexception) {
-				proglog->AppendText("\r\n" + ioexception->Message);
-			}
-			//sPointReciver->WaitOne(4000);
-		}
+		//if (Get_Dev->Checked) {
+		//	get_device_progress->Value = 0;
+		//	try {
+		//		if (serialPort1->IsOpen)
+		//			//ConstructCMD(serialPort1, (uint32_t)3000);
+		//			Commands::Class_0x0C::WakeUp(NULL, 3000);
+		//	}
+		//	catch (IO::IOException ^ioexception) {
+		//		proglog->AppendText("\r\n" + ioexception->Message);
+		//	}
+		//	//sPointReciver->WaitOne(4000);
+		//}
 	}
 	//T=1c
 	else if (sys_task_counter % 10 == 0) {
-		if (this->Get_Dev->Checked) get_device_progress->Value++;
-		if (GPS_En->Checked) {
+		//if (this->Get_Dev->Checked) get_device_progress->Value++;
+		if (checkBox1->Checked) {
 			try {
 				if (serialPort1->IsOpen) {
 					Commands::Class_0x0B::GetGPSStatus(NULL);
@@ -1806,9 +1931,14 @@ System::Void Evrika::mainform::DCGrid_SelectionChanged(System::Object ^ sender, 
 	if (DCGrid->SelectedCells->Count != 1) return;
 	int row = DCGrid->SelectedCells[0]->RowIndex;
 	if ((row < 0) || (Devices->Count == 0) || (row > Devices->Count - 1)) return;
-	if (PrevSelectedRepeaterIndex == row) return;
-	PrevSelectedRepeaterIndex = row;
-	RepeaterParamBox->Text = Devices[row]->IdInHex();
+	if (SelectedDevice != nullptr)
+		if (SelectedDevice->GetAddr() == Devices[row]->GetAddr())
+			return;
+	AutoUpdateTagChk->Checked = false;
+	Sleep(100);
+	SelectedDevice = Devices[row];
+	UpdateRadioTagsList();
+	RepeaterParamBox->Text = SelectedDevice->IdInHex();
 	GetRepParamProgress->Visible = true;
 	GetRepParamProgress->Value = 0;
 	Thread^ temp = gcnew Thread(gcnew ThreadStart(this, &mainform::ParamRequest));
@@ -1817,14 +1947,14 @@ System::Void Evrika::mainform::DCGrid_SelectionChanged(System::Object ^ sender, 
 
 System::Void Evrika::mainform::RelayStatCheckBox_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
-	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
-	Commands::Class_0x0A::SetRelayState(Devices[PrevSelectedRepeaterIndex]->GetAddr(), RelayStatCheckBox->Checked);
+	if (SelectedDevice == nullptr) return;
+	Commands::Class_0x0A::SetRelayState(SelectedDevice->GetAddr(), RelayStatCheckBox->Checked);
 }
 
 System::Void Evrika::mainform::ResetRepeaterBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
-	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
-	Commands::Class_0x0A::ProgrammReset(Devices[PrevSelectedRepeaterIndex]->GetAddr());
+	if (SelectedDevice == nullptr) return;
+	Commands::Class_0x0A::ProgrammReset(SelectedDevice->GetAddr());
 }
 
 System::Void Evrika::mainform::button12_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1840,14 +1970,110 @@ System::Void Evrika::mainform::ResetRepeatersBtn_Click(System::Object ^ sender, 
 
 System::Void Evrika::mainform::GPSOnOff_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
-	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
-	Commands::Class_0x0B::SetGPSPowerState(Devices[PrevSelectedRepeaterIndex]->GetAddr(), GPSOnOff->Checked);
+	if (SelectedDevice == nullptr) return;
+	Commands::Class_0x0B::SetGPSPowerState(SelectedDevice->GetAddr(), GPSOnOff->Checked);
 }
 
 System::Void Evrika::mainform::GPSAntenna_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
-	if ((PrevSelectedRepeaterIndex<0 || PrevSelectedRepeaterIndex>Devices->Count) || (Devices->Count < 1)) return;
-	Commands::Class_0x0B::ToggleGPSAntenna(Devices[PrevSelectedRepeaterIndex]->GetAddr(), GPSAntenna->Checked);
+	if (SelectedDevice == nullptr) return;
+	Commands::Class_0x0B::ToggleGPSAntenna(SelectedDevice->GetAddr(), GPSAntenna->Checked);
+}
+
+System::Void Evrika::mainform::WakeUpRadioTagBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (SelectedDevice == nullptr) return;
+	Commands::Class_0x0C::WakeUp(SelectedDevice->GetAddr(), 2000);
+	CurrentActionLbl->Text = "Поиск радиометок через " + SelectedDevice->IdInHex() + "...";
+}
+
+System::Void Evrika::mainform::RadioTagsGrid_SelectionChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (RadioTagsGrid->SelectedCells->Count != 1) return;
+	int row = RadioTagsGrid->SelectedCells[0]->RowIndex;
+	if ((row < 0) || (SelectedDevice->RadioTags->Count == 0) || (row > SelectedDevice->RadioTags->Count)) return;
+	if (PrevSelectedTagIndex == row)	return;
+	AutoUpdateTagChk->Checked = false;
+	PrevSelectedTagIndex = row;
+	RadioTagParamBox->Text = SelectedDevice->RadioTags[row]->IdInHex();
+	Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[row]->GetAddr());
+	CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[row]->IdInHex() + "...";
+}
+
+System::Void Evrika::mainform::TagAndRepeaterResetBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (SelectedDevice == nullptr) return;
+	Commands::Class_0x0C::ResetCC1101(SelectedDevice->GetAddr());
+	CurrentActionLbl->Text = "Сброс настроек метки и ретранслятора";
+}
+
+System::Void Evrika::mainform::UpdateTagBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
+	CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "...";
+}
+
+System::Void Evrika::mainform::AutoUpdateTagChk_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (AutoUpdateTagChk->Checked) {
+		if (RadioTagAutoUpdateThrd == nullptr) {
+			RadioTagAutoUpdateThrd = gcnew Thread(gcnew ThreadStart(this, &mainform::GetTagParam));
+			RadioTagAutoUpdateThrd->Start();
+			Sleep(100);
+			RadioTagAutoUpdateEnabled = true;
+			RadioTagUpdateEnabledSemaphore->Release();
+		}
+		else {
+			RadioTagAutoUpdateEnabled = true;
+			RadioTagUpdateEnabledSemaphore->Release();
+		}
+	}
+	else {
+		if (RadioTagAutoUpdateThrd != nullptr) {
+			RadioTagAutoUpdateEnabled = false;
+		}
+	}
+}
+
+System::Void Evrika::mainform::UpdateRepeaterParamBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	GetRepParamProgress->Visible = true;
+	GetRepParamProgress->Value = 0;
+	Thread^ temp = gcnew Thread(gcnew ThreadStart(this, &mainform::ParamRequest));
+	temp->Start();
+}
+
+System::Void Evrika::mainform::label12_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	first = 1;
+}
+
+System::Void Evrika::mainform::TagAndRepInfoUpdate_Tick(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (SelectedDevice == nullptr) {
+		TagAndRepInfoBox->Visible = false;
+		return;
+	}
+	if (PrevSelectedTagIndex < 0 || PrevSelectedTagIndex >= SelectedDevice->RadioTags->Count) {
+		TagAndRepInfoBox->Visible = false;
+		return;
+	}
+	TagAndRepInfoBox->Visible = true;
+	TagAndRepInfoBox->Text =SelectedDevice->IdInHex() +"+" + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex();
+	if (SelectedDevice->IfKnownPos()) {
+		SelectedRepeaterInfoLbl->Text = SelectedDevice->Lat.ToString() + " " + SelectedDevice->Lon.ToString();
+		DrawPointBtn->Enabled = true;
+	}
+	else {
+		SelectedRepeaterInfoLbl->Text = "Координат нет";
+		DrawPointBtn->Enabled = false;
+	}
+	SelectedTagDistanceLbl->Text = SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance().ToString() + " m.";
+}
+
+System::Void Evrika::mainform::DrawPointBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	AddNewPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance());
 }
 
 Evrika::mainform::MyPosition::MyPosition()

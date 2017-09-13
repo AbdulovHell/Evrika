@@ -75,24 +75,25 @@ namespace Evrika {
 	private: System::Windows::Forms::ToolStripMenuItem^  savemap;
 	private: System::Windows::Forms::SaveFileDialog^  saveFileDialog1;
 	private: System::Windows::Forms::DataGridView^  RadioTagsGrid;
-	private: System::Windows::Forms::Button^  button7;
+
 	private: System::Windows::Forms::ToolStripMenuItem^  settings_menu;
 	private: System::Windows::Forms::TabControl^  tabControl1;
 	private: System::Windows::Forms::TabPage^  tabPage1;
 	private: System::Windows::Forms::TabPage^  tabPage2;
-	private: System::Windows::Forms::Button^  button8;
+
 	private: System::Windows::Forms::Timer^  sys_task;
-	private: System::Windows::Forms::CheckBox^  Get_Dev;
+
 	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel1;
 	private: System::Windows::Forms::ToolStripProgressBar^  get_device_progress;
 	private: System::Windows::Forms::TabPage^  tabPage3;
-	private: System::Windows::Forms::DataGridView^  dataGridView2;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column1;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column3;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column4;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column5;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column6;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column7;
+	private: System::Windows::Forms::DataGridView^  EventsGrid;
+
+
+
+
+
+
+
 	private: System::Windows::Forms::ToolStripMenuItem^  SaveSessionBtn;
 	private: System::Windows::Forms::ToolStripMenuItem^  LoadSessionBtn;
 	private: System::Windows::Forms::SaveFileDialog^  saveFileDialog2;
@@ -103,23 +104,23 @@ namespace Evrika {
 	private: System::Windows::Forms::ToolStripMenuItem^  кэшToolStripMenuItem;
 	private: System::Windows::Forms::ToolStripMenuItem^  ExportMapBtn;
 	private: System::Windows::Forms::ToolStripMenuItem^  ImportMapBtn;
-	private: System::Windows::Forms::Button^  button11;
+
 	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel2;
 	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel3;
 	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel4;
 	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel5;
 	private: System::Windows::Forms::ToolStripStatusLabel^  ImageIndication;
-	private: System::Windows::Forms::CheckBox^  GPS_En;
-	private: System::Windows::Forms::TextBox^  A_text;
-	private: System::Windows::Forms::Label^  label9;
-	private: System::Windows::Forms::TextBox^  n_text;
-	private: System::Windows::Forms::Label^  label8;
+
+
+
+
+
 	private: System::Windows::Forms::Label^  label10;
-	private: System::Windows::Forms::Button^  button10;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  UniqueID;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  SignalLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
-	private: System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
+
+
+
+
+
 	private: System::Windows::Forms::DataGridView^  DCGrid;
 	private: System::Windows::Forms::DataGridViewTextBoxColumn^  dataGridViewTextBoxColumn1;
 	private: System::Windows::Forms::DataGridViewTextBoxColumn^  dataGridViewTextBoxColumn2;
@@ -143,6 +144,48 @@ namespace Evrika {
 	private: System::Windows::Forms::ProgressBar^  GetRepParamProgress;
 	private: System::Windows::Forms::Label^  GPSStatLbl;
 	private: System::Windows::Forms::CheckBox^  GPSAntenna;
+	private: System::Windows::Forms::Button^  WakeUpRadioTagBtn;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  UniqueID;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  SignalLVL;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  QualityLVL;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  BatteryLVL;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column2;
+	private: System::Windows::Forms::Button^  TagAndRepeaterResetBtn;
+	private: System::Windows::Forms::GroupBox^  RadioTagParamBox;
+	private: System::Windows::Forms::Label^  TimeLbl;
+	private: System::Windows::Forms::Label^  ARSSILbl;
+	private: System::Windows::Forms::Label^  BitrateLbl;
+	private: System::Windows::Forms::TextBox^  textBox2;
+	private: System::Windows::Forms::TextBox^  textBox3;
+	private: System::Windows::Forms::Button^  UpdateTagBtn;
+	private: System::Windows::Forms::CheckBox^  AutoUpdateTagChk;
+	private: System::Windows::Forms::Button^  UpdateRepeaterParamBtn;
+	private: System::Windows::Forms::Label^  label11;
+	private: System::Windows::Forms::CheckBox^  checkBox1;
+	private: System::Windows::Forms::Label^  label12;
+	private: System::Windows::Forms::Button^  PingModeBtn;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column1;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column3;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column4;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column5;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column6;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Column7;
+	private: System::Windows::Forms::GroupBox^  TagAndRepInfoBox;
+	private: System::Windows::Forms::Timer^  TagAndRepInfoUpdate;
+	private: System::Windows::Forms::Label^  SelectedTagDistanceLbl;
+	private: System::Windows::Forms::Label^  SelectedRepeaterInfoLbl;
+	private: System::Windows::Forms::Button^  DrawPointBtn;
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -376,12 +419,12 @@ namespace Evrika {
 	public:
 		void SetTimer(bool en);
 		void WriteLog(String^ message);
-		void AddNewPoint(float m);
+		void AddNewPoint(double lat,double lng,double m);
 		void UpdateMapPos();
 		bool CheckSum(cli::array<wchar_t>^ rbuf);
 		void UpdateRadioTagsList();
 		void UpdateRepeatersList();
-		void update_event_list();
+		void UpdateEventList();
 		void ParseDeviceBuffer(cli::array<wchar_t>^ rbuf);
 
 		static mainform^ my_handle;
@@ -404,6 +447,8 @@ namespace Evrika {
 		void ParamRequest();
 		void IncrementProgress();
 		void MakeVisible(bool state);
+		void GetTagParam();
+		void SetCurrentActionLblText(String^ str);
 
 		Evrika::mapform^ mapform;
 		static Evrika::settings^ settings_window;
@@ -412,12 +457,12 @@ namespace Evrika {
 		bool eGPS;
 		KalmanFilter^ mid_cycles;
 		cli::array<GMarkerGoogle^> ^markers;
-		long lCoordsCount;
+		//long lCoordsCount;
 		bool isOurCom;
 		//bool notLoaded;
 		List<geoPoint^> ^MyCoords;
 		List<Repeater^>^ Devices;
-		List<RadioTag^>^ RadioTags;
+		Repeater^ SelectedDevice;
 		List<Event^>^ Events;
 		//int cDevices;
 		GMapControl^ map;
@@ -433,8 +478,23 @@ namespace Evrika {
 		bool device_get = false;
 		List<TextBox^>^ logs;
 		uint64_t sys_task_counter = 0;
-		int PrevSelectedRepeaterIndex = -1;
+		int PrevSelectedTagIndex = -1;
 		uint8_t PrevCountFindedRepeaters = 0;
+		uint8_t PrevCountFindedRadioTags = 0;
+		Thread^ RadioTagAutoUpdateThrd;
+		bool RadioTagAutoUpdateEnabled = false;
+		Semaphore^ RadioTagUpdateEnabledSemaphore;
+		Semaphore^ RadioTagUpdateParam;
+		//test
+		double temp2 = 0;
+		uint64_t mid2 = 0;
+		int i2 = 0, i3 = 0;
+		double temp3 = 0;
+		uint64_t mid3 = 0;
+
+		uint64_t min_time, max_time;
+		int first = 1;
+		uint64_t min_atime, max_atime;
 	private: System::ComponentModel::IContainer^  components;
 
 #pragma region Windows Form Designer generated code
@@ -494,19 +554,31 @@ namespace Evrika {
 				 this->SignalLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->QualityLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->BatteryLVL = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->button7 = (gcnew System::Windows::Forms::Button());
+				 this->Column2 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->tabControl1 = (gcnew System::Windows::Forms::TabControl());
 				 this->tabPage1 = (gcnew System::Windows::Forms::TabPage());
-				 this->button10 = (gcnew System::Windows::Forms::Button());
+				 this->TagAndRepInfoBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->DrawPointBtn = (gcnew System::Windows::Forms::Button());
+				 this->SelectedRepeaterInfoLbl = (gcnew System::Windows::Forms::Label());
+				 this->SelectedTagDistanceLbl = (gcnew System::Windows::Forms::Label());
+				 this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
 				 this->label10 = (gcnew System::Windows::Forms::Label());
-				 this->A_text = (gcnew System::Windows::Forms::TextBox());
-				 this->label9 = (gcnew System::Windows::Forms::Label());
-				 this->n_text = (gcnew System::Windows::Forms::TextBox());
-				 this->label8 = (gcnew System::Windows::Forms::Label());
-				 this->GPS_En = (gcnew System::Windows::Forms::CheckBox());
-				 this->button11 = (gcnew System::Windows::Forms::Button());
 				 this->tabPage2 = (gcnew System::Windows::Forms::TabPage());
+				 this->RadioTagParamBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->PingModeBtn = (gcnew System::Windows::Forms::Button());
+				 this->label12 = (gcnew System::Windows::Forms::Label());
+				 this->label11 = (gcnew System::Windows::Forms::Label());
+				 this->AutoUpdateTagChk = (gcnew System::Windows::Forms::CheckBox());
+				 this->UpdateTagBtn = (gcnew System::Windows::Forms::Button());
+				 this->textBox3 = (gcnew System::Windows::Forms::TextBox());
+				 this->textBox2 = (gcnew System::Windows::Forms::TextBox());
+				 this->BitrateLbl = (gcnew System::Windows::Forms::Label());
+				 this->ARSSILbl = (gcnew System::Windows::Forms::Label());
+				 this->TimeLbl = (gcnew System::Windows::Forms::Label());
+				 this->TagAndRepeaterResetBtn = (gcnew System::Windows::Forms::Button());
+				 this->WakeUpRadioTagBtn = (gcnew System::Windows::Forms::Button());
 				 this->RepeaterParamBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->UpdateRepeaterParamBtn = (gcnew System::Windows::Forms::Button());
 				 this->GPSAntenna = (gcnew System::Windows::Forms::CheckBox());
 				 this->GPSStatLbl = (gcnew System::Windows::Forms::Label());
 				 this->GetRepParamProgress = (gcnew System::Windows::Forms::ProgressBar());
@@ -527,10 +599,8 @@ namespace Evrika {
 				 this->dataGridViewTextBoxColumn3 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->dataGridViewTextBoxColumn4 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->WorkMode = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-				 this->Get_Dev = (gcnew System::Windows::Forms::CheckBox());
-				 this->button8 = (gcnew System::Windows::Forms::Button());
 				 this->tabPage3 = (gcnew System::Windows::Forms::TabPage());
-				 this->dataGridView2 = (gcnew System::Windows::Forms::DataGridView());
+				 this->EventsGrid = (gcnew System::Windows::Forms::DataGridView());
 				 this->Column1 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->Column3 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->Column4 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
@@ -540,6 +610,7 @@ namespace Evrika {
 				 this->sys_task = (gcnew System::Windows::Forms::Timer(this->components));
 				 this->saveFileDialog2 = (gcnew System::Windows::Forms::SaveFileDialog());
 				 this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
+				 this->TagAndRepInfoUpdate = (gcnew System::Windows::Forms::Timer(this->components));
 				 this->groupBox1->SuspendLayout();
 				 this->groupBox2->SuspendLayout();
 				 this->statusStrip1->SuspendLayout();
@@ -547,11 +618,13 @@ namespace Evrika {
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->RadioTagsGrid))->BeginInit();
 				 this->tabControl1->SuspendLayout();
 				 this->tabPage1->SuspendLayout();
+				 this->TagAndRepInfoBox->SuspendLayout();
 				 this->tabPage2->SuspendLayout();
+				 this->RadioTagParamBox->SuspendLayout();
 				 this->RepeaterParamBox->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->BeginInit();
 				 this->tabPage3->SuspendLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView2))->BeginInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->EventsGrid))->BeginInit();
 				 this->SuspendLayout();
 				 this->button1->Location = System::Drawing::Point(6, 6);
 				 this->button1->Name = L"button1";
@@ -622,7 +695,7 @@ namespace Evrika {
 				 this->groupBox2->Controls->Add(this->label5);
 				 this->groupBox2->Location = System::Drawing::Point(300, 6);
 				 this->groupBox2->Name = L"groupBox2";
-				 this->groupBox2->Size = System::Drawing::Size(182, 193);
+				 this->groupBox2->Size = System::Drawing::Size(182, 218);
 				 this->groupBox2->TabIndex = 4;
 				 this->groupBox2->TabStop = false;
 				 this->groupBox2->Text = L"groupBox2";
@@ -672,7 +745,7 @@ namespace Evrika {
 				 this->button6->Text = L"Очистить карту";
 				 this->button6->UseVisualStyleBackColor = true;
 				 this->button6->Click += gcnew System::EventHandler(this, &mainform::button6_Click);
-				 this->button9->Location = System::Drawing::Point(300, 288);
+				 this->button9->Location = System::Drawing::Point(99, 220);
 				 this->button9->Name = L"button9";
 				 this->button9->Size = System::Drawing::Size(75, 21);
 				 this->button9->TabIndex = 9;
@@ -812,9 +885,9 @@ namespace Evrika {
 				 this->RadioTagsGrid->AutoSizeRowsMode = System::Windows::Forms::DataGridViewAutoSizeRowsMode::AllCells;
 				 this->RadioTagsGrid->CellBorderStyle = System::Windows::Forms::DataGridViewCellBorderStyle::Raised;
 				 this->RadioTagsGrid->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
-				 this->RadioTagsGrid->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(4) {
+				 this->RadioTagsGrid->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(5) {
 					 this->UniqueID, this->SignalLVL,
-						 this->QualityLVL, this->BatteryLVL
+						 this->QualityLVL, this->BatteryLVL, this->Column2
 				 });
 				 this->RadioTagsGrid->Location = System::Drawing::Point(500, 3);
 				 this->RadioTagsGrid->MultiSelect = false;
@@ -822,32 +895,45 @@ namespace Evrika {
 				 this->RadioTagsGrid->ReadOnly = true;
 				 this->RadioTagsGrid->RowHeadersVisible = false;
 				 this->RadioTagsGrid->SelectionMode = System::Windows::Forms::DataGridViewSelectionMode::CellSelect;
-				 this->RadioTagsGrid->Size = System::Drawing::Size(371, 425);
+				 this->RadioTagsGrid->Size = System::Drawing::Size(371, 345);
 				 this->RadioTagsGrid->TabIndex = 17;
 				 this->RadioTagsGrid->CellDoubleClick += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &mainform::open_device);
-				 this->UniqueID->HeaderText = L"Уникальный  ID";
+				 this->RadioTagsGrid->SelectionChanged += gcnew System::EventHandler(this, &mainform::RadioTagsGrid_SelectionChanged);
+				 this->UniqueID->AutoSizeMode = System::Windows::Forms::DataGridViewAutoSizeColumnMode::None;
+				 this->UniqueID->Frozen = true;
+				 this->UniqueID->HeaderText = L"Адрес";
 				 this->UniqueID->Name = L"UniqueID";
 				 this->UniqueID->ReadOnly = true;
 				 this->UniqueID->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->UniqueID->Width = 92;
+				 this->SignalLVL->AutoSizeMode = System::Windows::Forms::DataGridViewAutoSizeColumnMode::None;
+				 this->SignalLVL->Frozen = true;
 				 this->SignalLVL->HeaderText = L"Уровень сигнала";
 				 this->SignalLVL->Name = L"SignalLVL";
 				 this->SignalLVL->ReadOnly = true;
 				 this->SignalLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->SignalLVL->Width = 65;
+				 this->QualityLVL->AutoSizeMode = System::Windows::Forms::DataGridViewAutoSizeColumnMode::None;
+				 this->QualityLVL->Frozen = true;
 				 this->QualityLVL->HeaderText = L"Качество приема сигнала";
 				 this->QualityLVL->Name = L"QualityLVL";
 				 this->QualityLVL->ReadOnly = true;
 				 this->QualityLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->QualityLVL->Width = 70;
+				 this->BatteryLVL->AutoSizeMode = System::Windows::Forms::DataGridViewAutoSizeColumnMode::None;
+				 this->BatteryLVL->Frozen = true;
 				 this->BatteryLVL->HeaderText = L"Уровень заряда батареи";
 				 this->BatteryLVL->Name = L"BatteryLVL";
 				 this->BatteryLVL->ReadOnly = true;
 				 this->BatteryLVL->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 this->button7->Location = System::Drawing::Point(698, 445);
-				 this->button7->Name = L"button7";
-				 this->button7->Size = System::Drawing::Size(75, 23);
-				 this->button7->TabIndex = 18;
-				 this->button7->Text = L"button7";
-				 this->button7->UseVisualStyleBackColor = true;
-				 this->button7->Click += gcnew System::EventHandler(this, &mainform::button7_Click_1);
+				 this->BatteryLVL->Width = 80;
+				 this->Column2->AutoSizeMode = System::Windows::Forms::DataGridViewAutoSizeColumnMode::ColumnHeader;
+				 this->Column2->Frozen = true;
+				 this->Column2->HeaderText = L"Режим работы";
+				 this->Column2->Name = L"Column2";
+				 this->Column2->ReadOnly = true;
+				 this->Column2->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
+				 this->Column2->Width = 79;
 				 this->tabControl1->Controls->Add(this->tabPage1);
 				 this->tabControl1->Controls->Add(this->tabPage2);
 				 this->tabControl1->Controls->Add(this->tabPage3);
@@ -858,14 +944,9 @@ namespace Evrika {
 				 this->tabControl1->Size = System::Drawing::Size(882, 547);
 				 this->tabControl1->TabIndex = 19;
 				 this->tabControl1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::tabControl1_SelectedIndexChanged);
-				 this->tabPage1->Controls->Add(this->button10);
+				 this->tabPage1->Controls->Add(this->TagAndRepInfoBox);
+				 this->tabPage1->Controls->Add(this->checkBox1);
 				 this->tabPage1->Controls->Add(this->label10);
-				 this->tabPage1->Controls->Add(this->A_text);
-				 this->tabPage1->Controls->Add(this->label9);
-				 this->tabPage1->Controls->Add(this->n_text);
-				 this->tabPage1->Controls->Add(this->label8);
-				 this->tabPage1->Controls->Add(this->GPS_En);
-				 this->tabPage1->Controls->Add(this->button11);
 				 this->tabPage1->Controls->Add(this->groupBox2);
 				 this->tabPage1->Controls->Add(this->button1);
 				 this->tabPage1->Controls->Add(this->listBox1);
@@ -880,64 +961,55 @@ namespace Evrika {
 				 this->tabPage1->TabIndex = 0;
 				 this->tabPage1->Text = L"Управление";
 				 this->tabPage1->UseVisualStyleBackColor = true;
-				 this->button10->Location = System::Drawing::Point(78, 288);
-				 this->button10->Name = L"button10";
-				 this->button10->Size = System::Drawing::Size(75, 23);
-				 this->button10->TabIndex = 23;
-				 this->button10->Text = L"Сброс";
-				 this->button10->UseVisualStyleBackColor = true;
-				 this->button10->Click += gcnew System::EventHandler(this, &mainform::button10_Click);
+				 this->TagAndRepInfoBox->Controls->Add(this->DrawPointBtn);
+				 this->TagAndRepInfoBox->Controls->Add(this->SelectedRepeaterInfoLbl);
+				 this->TagAndRepInfoBox->Controls->Add(this->SelectedTagDistanceLbl);
+				 this->TagAndRepInfoBox->Location = System::Drawing::Point(300, 230);
+				 this->TagAndRepInfoBox->Name = L"TagAndRepInfoBox";
+				 this->TagAndRepInfoBox->Size = System::Drawing::Size(182, 88);
+				 this->TagAndRepInfoBox->TabIndex = 24;
+				 this->TagAndRepInfoBox->TabStop = false;
+				 this->TagAndRepInfoBox->Text = L"groupBox3";
+				 this->DrawPointBtn->Location = System::Drawing::Point(6, 59);
+				 this->DrawPointBtn->Name = L"DrawPointBtn";
+				 this->DrawPointBtn->Size = System::Drawing::Size(75, 23);
+				 this->DrawPointBtn->TabIndex = 2;
+				 this->DrawPointBtn->Text = L"На карту";
+				 this->DrawPointBtn->UseVisualStyleBackColor = true;
+				 this->DrawPointBtn->Click += gcnew System::EventHandler(this, &mainform::DrawPointBtn_Click);
+				 this->SelectedRepeaterInfoLbl->AutoSize = true;
+				 this->SelectedRepeaterInfoLbl->Location = System::Drawing::Point(7, 35);
+				 this->SelectedRepeaterInfoLbl->Name = L"SelectedRepeaterInfoLbl";
+				 this->SelectedRepeaterInfoLbl->Size = System::Drawing::Size(35, 13);
+				 this->SelectedRepeaterInfoLbl->TabIndex = 1;
+				 this->SelectedRepeaterInfoLbl->Text = L"label8";
+				 this->SelectedTagDistanceLbl->AutoSize = true;
+				 this->SelectedTagDistanceLbl->Location = System::Drawing::Point(7, 20);
+				 this->SelectedTagDistanceLbl->Name = L"SelectedTagDistanceLbl";
+				 this->SelectedTagDistanceLbl->Size = System::Drawing::Size(35, 13);
+				 this->SelectedTagDistanceLbl->TabIndex = 0;
+				 this->SelectedTagDistanceLbl->Text = L"label8";
+				 this->checkBox1->AutoSize = true;
+				 this->checkBox1->Location = System::Drawing::Point(611, 128);
+				 this->checkBox1->Name = L"checkBox1";
+				 this->checkBox1->Size = System::Drawing::Size(80, 17);
+				 this->checkBox1->TabIndex = 23;
+				 this->checkBox1->Text = L"checkBox1";
+				 this->checkBox1->UseVisualStyleBackColor = true;
 				 this->label10->AutoSize = true;
 				 this->label10->Location = System::Drawing::Point(310, 196);
 				 this->label10->Name = L"label10";
 				 this->label10->Size = System::Drawing::Size(41, 13);
 				 this->label10->TabIndex = 22;
 				 this->label10->Text = L"label10";
-				 this->A_text->Location = System::Drawing::Point(329, 245);
-				 this->A_text->Name = L"A_text";
-				 this->A_text->Size = System::Drawing::Size(46, 20);
-				 this->A_text->TabIndex = 21;
-				 this->A_text->Text = L"-31";
-				 this->label9->AutoSize = true;
-				 this->label9->Location = System::Drawing::Point(310, 248);
-				 this->label9->Name = L"label9";
-				 this->label9->Size = System::Drawing::Size(14, 13);
-				 this->label9->TabIndex = 20;
-				 this->label9->Text = L"A";
-				 this->n_text->Location = System::Drawing::Point(329, 218);
-				 this->n_text->Name = L"n_text";
-				 this->n_text->Size = System::Drawing::Size(46, 20);
-				 this->n_text->TabIndex = 19;
-				 this->n_text->Text = L"5";
-				 this->label8->AutoSize = true;
-				 this->label8->Location = System::Drawing::Point(310, 220);
-				 this->label8->Name = L"label8";
-				 this->label8->Size = System::Drawing::Size(13, 13);
-				 this->label8->TabIndex = 18;
-				 this->label8->Text = L"n";
-				 this->GPS_En->AutoSize = true;
-				 this->GPS_En->Location = System::Drawing::Point(6, 220);
-				 this->GPS_En->Name = L"GPS_En";
-				 this->GPS_En->Size = System::Drawing::Size(48, 17);
-				 this->GPS_En->TabIndex = 17;
-				 this->GPS_En->Text = L"GPS";
-				 this->GPS_En->UseVisualStyleBackColor = true;
-				 this->GPS_En->CheckedChanged += gcnew System::EventHandler(this, &mainform::checkBox3_CheckedChanged);
-				 this->button11->Location = System::Drawing::Point(6, 243);
-				 this->button11->Name = L"button11";
-				 this->button11->Size = System::Drawing::Size(73, 23);
-				 this->button11->TabIndex = 16;
-				 this->button11->Text = L"Get position";
-				 this->button11->UseVisualStyleBackColor = true;
-				 this->button11->Click += gcnew System::EventHandler(this, &mainform::button11_Click);
+				 this->tabPage2->Controls->Add(this->RadioTagParamBox);
+				 this->tabPage2->Controls->Add(this->TagAndRepeaterResetBtn);
+				 this->tabPage2->Controls->Add(this->WakeUpRadioTagBtn);
 				 this->tabPage2->Controls->Add(this->RepeaterParamBox);
 				 this->tabPage2->Controls->Add(this->ResetRepeatersBtn);
 				 this->tabPage2->Controls->Add(this->SearchRepeatersBtn);
 				 this->tabPage2->Controls->Add(this->DCGrid);
-				 this->tabPage2->Controls->Add(this->Get_Dev);
-				 this->tabPage2->Controls->Add(this->button8);
 				 this->tabPage2->Controls->Add(this->RadioTagsGrid);
-				 this->tabPage2->Controls->Add(this->button7);
 				 this->tabPage2->Location = System::Drawing::Point(4, 22);
 				 this->tabPage2->Name = L"tabPage2";
 				 this->tabPage2->Padding = System::Windows::Forms::Padding(3);
@@ -945,6 +1017,101 @@ namespace Evrika {
 				 this->tabPage2->TabIndex = 1;
 				 this->tabPage2->Text = L"Устройства";
 				 this->tabPage2->UseVisualStyleBackColor = true;
+				 this->RadioTagParamBox->Controls->Add(this->PingModeBtn);
+				 this->RadioTagParamBox->Controls->Add(this->label12);
+				 this->RadioTagParamBox->Controls->Add(this->label11);
+				 this->RadioTagParamBox->Controls->Add(this->AutoUpdateTagChk);
+				 this->RadioTagParamBox->Controls->Add(this->UpdateTagBtn);
+				 this->RadioTagParamBox->Controls->Add(this->textBox3);
+				 this->RadioTagParamBox->Controls->Add(this->textBox2);
+				 this->RadioTagParamBox->Controls->Add(this->BitrateLbl);
+				 this->RadioTagParamBox->Controls->Add(this->ARSSILbl);
+				 this->RadioTagParamBox->Controls->Add(this->TimeLbl);
+				 this->RadioTagParamBox->Location = System::Drawing::Point(500, 383);
+				 this->RadioTagParamBox->Name = L"RadioTagParamBox";
+				 this->RadioTagParamBox->Size = System::Drawing::Size(371, 135);
+				 this->RadioTagParamBox->TabIndex = 35;
+				 this->RadioTagParamBox->TabStop = false;
+				 this->RadioTagParamBox->Text = L"groupBox3";
+				 this->PingModeBtn->Enabled = false;
+				 this->PingModeBtn->Location = System::Drawing::Point(275, 13);
+				 this->PingModeBtn->Name = L"PingModeBtn";
+				 this->PingModeBtn->Size = System::Drawing::Size(90, 23);
+				 this->PingModeBtn->TabIndex = 9;
+				 this->PingModeBtn->Text = L"Пеленгация";
+				 this->PingModeBtn->UseVisualStyleBackColor = true;
+				 this->label12->AutoSize = true;
+				 this->label12->Location = System::Drawing::Point(7, 116);
+				 this->label12->Name = L"label12";
+				 this->label12->Size = System::Drawing::Size(41, 13);
+				 this->label12->TabIndex = 8;
+				 this->label12->Text = L"label12";
+				 this->label12->Click += gcnew System::EventHandler(this, &mainform::label12_Click);
+				 this->label11->AutoSize = true;
+				 this->label11->Location = System::Drawing::Point(80, 54);
+				 this->label11->Name = L"label11";
+				 this->label11->Size = System::Drawing::Size(41, 13);
+				 this->label11->TabIndex = 7;
+				 this->label11->Text = L"label11";
+				 this->AutoUpdateTagChk->AutoSize = true;
+				 this->AutoUpdateTagChk->CheckAlign = System::Drawing::ContentAlignment::MiddleRight;
+				 this->AutoUpdateTagChk->Location = System::Drawing::Point(234, 110);
+				 this->AutoUpdateTagChk->Name = L"AutoUpdateTagChk";
+				 this->AutoUpdateTagChk->Size = System::Drawing::Size(50, 17);
+				 this->AutoUpdateTagChk->TabIndex = 6;
+				 this->AutoUpdateTagChk->Text = L"Авто";
+				 this->AutoUpdateTagChk->UseVisualStyleBackColor = true;
+				 this->AutoUpdateTagChk->CheckedChanged += gcnew System::EventHandler(this, &mainform::AutoUpdateTagChk_CheckedChanged);
+				 this->UpdateTagBtn->Location = System::Drawing::Point(290, 106);
+				 this->UpdateTagBtn->Name = L"UpdateTagBtn";
+				 this->UpdateTagBtn->Size = System::Drawing::Size(75, 23);
+				 this->UpdateTagBtn->TabIndex = 5;
+				 this->UpdateTagBtn->Text = L"Обновить";
+				 this->UpdateTagBtn->UseVisualStyleBackColor = true;
+				 this->UpdateTagBtn->Click += gcnew System::EventHandler(this, &mainform::UpdateTagBtn_Click);
+				 this->textBox3->Location = System::Drawing::Point(113, 85);
+				 this->textBox3->Name = L"textBox3";
+				 this->textBox3->Size = System::Drawing::Size(100, 20);
+				 this->textBox3->TabIndex = 4;
+				 this->textBox3->Text = L"26";
+				 this->textBox2->Location = System::Drawing::Point(7, 85);
+				 this->textBox2->Name = L"textBox2";
+				 this->textBox2->Size = System::Drawing::Size(100, 20);
+				 this->textBox2->TabIndex = 3;
+				 this->textBox2->Text = L"1,4";
+				 this->BitrateLbl->AutoSize = true;
+				 this->BitrateLbl->Location = System::Drawing::Point(10, 54);
+				 this->BitrateLbl->Name = L"BitrateLbl";
+				 this->BitrateLbl->Size = System::Drawing::Size(41, 13);
+				 this->BitrateLbl->TabIndex = 2;
+				 this->BitrateLbl->Text = L"label12";
+				 this->ARSSILbl->AutoSize = true;
+				 this->ARSSILbl->Location = System::Drawing::Point(10, 37);
+				 this->ARSSILbl->Name = L"ARSSILbl";
+				 this->ARSSILbl->Size = System::Drawing::Size(41, 13);
+				 this->ARSSILbl->TabIndex = 1;
+				 this->ARSSILbl->Text = L"label11";
+				 this->TimeLbl->AutoSize = true;
+				 this->TimeLbl->Location = System::Drawing::Point(7, 20);
+				 this->TimeLbl->Name = L"TimeLbl";
+				 this->TimeLbl->Size = System::Drawing::Size(44, 13);
+				 this->TimeLbl->TabIndex = 0;
+				 this->TimeLbl->Text = L"TimeLbl";
+				 this->TagAndRepeaterResetBtn->Location = System::Drawing::Point(636, 354);
+				 this->TagAndRepeaterResetBtn->Name = L"TagAndRepeaterResetBtn";
+				 this->TagAndRepeaterResetBtn->Size = System::Drawing::Size(235, 23);
+				 this->TagAndRepeaterResetBtn->TabIndex = 34;
+				 this->TagAndRepeaterResetBtn->Text = L"Сброс к начальным установкам";
+				 this->TagAndRepeaterResetBtn->UseVisualStyleBackColor = true;
+				 this->TagAndRepeaterResetBtn->Click += gcnew System::EventHandler(this, &mainform::TagAndRepeaterResetBtn_Click);
+				 this->WakeUpRadioTagBtn->Location = System::Drawing::Point(500, 354);
+				 this->WakeUpRadioTagBtn->Name = L"WakeUpRadioTagBtn";
+				 this->WakeUpRadioTagBtn->Size = System::Drawing::Size(130, 23);
+				 this->WakeUpRadioTagBtn->TabIndex = 33;
+				 this->WakeUpRadioTagBtn->Text = L"Поиск радиометок";
+				 this->WakeUpRadioTagBtn->UseVisualStyleBackColor = true;
+				 this->WakeUpRadioTagBtn->Click += gcnew System::EventHandler(this, &mainform::WakeUpRadioTagBtn_Click);
+				 this->RepeaterParamBox->Controls->Add(this->UpdateRepeaterParamBtn);
 				 this->RepeaterParamBox->Controls->Add(this->GPSAntenna);
 				 this->RepeaterParamBox->Controls->Add(this->GPSStatLbl);
 				 this->RepeaterParamBox->Controls->Add(this->GetRepParamProgress);
@@ -963,6 +1130,13 @@ namespace Evrika {
 				 this->RepeaterParamBox->TabIndex = 32;
 				 this->RepeaterParamBox->TabStop = false;
 				 this->RepeaterParamBox->Text = L"RepeaterParamBox";
+				 this->UpdateRepeaterParamBtn->Location = System::Drawing::Point(410, 106);
+				 this->UpdateRepeaterParamBtn->Name = L"UpdateRepeaterParamBtn";
+				 this->UpdateRepeaterParamBtn->Size = System::Drawing::Size(75, 23);
+				 this->UpdateRepeaterParamBtn->TabIndex = 36;
+				 this->UpdateRepeaterParamBtn->Text = L"Обновить";
+				 this->UpdateRepeaterParamBtn->UseVisualStyleBackColor = true;
+				 this->UpdateRepeaterParamBtn->Click += gcnew System::EventHandler(this, &mainform::UpdateRepeaterParamBtn_Click);
 				 this->GPSAntenna->AutoSize = true;
 				 this->GPSAntenna->Location = System::Drawing::Point(191, 71);
 				 this->GPSAntenna->Name = L"GPSAntenna";
@@ -1096,22 +1270,7 @@ namespace Evrika {
 				 this->WorkMode->Name = L"WorkMode";
 				 this->WorkMode->ReadOnly = true;
 				 this->WorkMode->SortMode = System::Windows::Forms::DataGridViewColumnSortMode::NotSortable;
-				 this->Get_Dev->AutoSize = true;
-				 this->Get_Dev->Location = System::Drawing::Point(609, 451);
-				 this->Get_Dev->Name = L"Get_Dev";
-				 this->Get_Dev->Size = System::Drawing::Size(83, 17);
-				 this->Get_Dev->TabIndex = 20;
-				 this->Get_Dev->Text = L"Get devices";
-				 this->Get_Dev->UseVisualStyleBackColor = true;
-				 this->Get_Dev->CheckedChanged += gcnew System::EventHandler(this, &mainform::checkBox2_CheckedChanged);
-				 this->button8->Location = System::Drawing::Point(698, 474);
-				 this->button8->Name = L"button8";
-				 this->button8->Size = System::Drawing::Size(75, 23);
-				 this->button8->TabIndex = 19;
-				 this->button8->Text = L"button8";
-				 this->button8->UseVisualStyleBackColor = true;
-				 this->button8->Click += gcnew System::EventHandler(this, &mainform::button8_Click_1);
-				 this->tabPage3->Controls->Add(this->dataGridView2);
+				 this->tabPage3->Controls->Add(this->EventsGrid);
 				 this->tabPage3->Location = System::Drawing::Point(4, 22);
 				 this->tabPage3->Name = L"tabPage3";
 				 this->tabPage3->Padding = System::Windows::Forms::Padding(3);
@@ -1119,26 +1278,26 @@ namespace Evrika {
 				 this->tabPage3->TabIndex = 2;
 				 this->tabPage3->Text = L"События";
 				 this->tabPage3->UseVisualStyleBackColor = true;
-				 this->dataGridView2->AllowUserToAddRows = false;
-				 this->dataGridView2->AllowUserToDeleteRows = false;
-				 this->dataGridView2->AllowUserToResizeRows = false;
-				 this->dataGridView2->AutoSizeColumnsMode = System::Windows::Forms::DataGridViewAutoSizeColumnsMode::Fill;
-				 this->dataGridView2->AutoSizeRowsMode = System::Windows::Forms::DataGridViewAutoSizeRowsMode::AllCells;
-				 this->dataGridView2->CellBorderStyle = System::Windows::Forms::DataGridViewCellBorderStyle::Raised;
-				 this->dataGridView2->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
-				 this->dataGridView2->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(6) {
+				 this->EventsGrid->AllowUserToAddRows = false;
+				 this->EventsGrid->AllowUserToDeleteRows = false;
+				 this->EventsGrid->AllowUserToResizeRows = false;
+				 this->EventsGrid->AutoSizeColumnsMode = System::Windows::Forms::DataGridViewAutoSizeColumnsMode::Fill;
+				 this->EventsGrid->AutoSizeRowsMode = System::Windows::Forms::DataGridViewAutoSizeRowsMode::AllCells;
+				 this->EventsGrid->CellBorderStyle = System::Windows::Forms::DataGridViewCellBorderStyle::Raised;
+				 this->EventsGrid->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
+				 this->EventsGrid->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(6) {
 					 this->Column1, this->Column3,
 						 this->Column4, this->Column5, this->Column6, this->Column7
 				 });
-				 this->dataGridView2->Dock = System::Windows::Forms::DockStyle::Fill;
-				 this->dataGridView2->Location = System::Drawing::Point(3, 3);
-				 this->dataGridView2->MultiSelect = false;
-				 this->dataGridView2->Name = L"dataGridView2";
-				 this->dataGridView2->ReadOnly = true;
-				 this->dataGridView2->RowHeadersVisible = false;
-				 this->dataGridView2->Size = System::Drawing::Size(868, 515);
-				 this->dataGridView2->TabIndex = 0;
-				 this->Column1->HeaderText = L"Уникальный ID";
+				 this->EventsGrid->Dock = System::Windows::Forms::DockStyle::Fill;
+				 this->EventsGrid->Location = System::Drawing::Point(3, 3);
+				 this->EventsGrid->MultiSelect = false;
+				 this->EventsGrid->Name = L"EventsGrid";
+				 this->EventsGrid->ReadOnly = true;
+				 this->EventsGrid->RowHeadersVisible = false;
+				 this->EventsGrid->Size = System::Drawing::Size(868, 515);
+				 this->EventsGrid->TabIndex = 0;
+				 this->Column1->HeaderText = L"Адрес";
 				 this->Column1->Name = L"Column1";
 				 this->Column1->ReadOnly = true;
 				 this->Column3->HeaderText = L"Уровень сигнала";
@@ -1165,6 +1324,9 @@ namespace Evrika {
 				 this->openFileDialog1->DefaultExt = L"esf";
 				 this->openFileDialog1->Filter = L"Evrika session file|*.esf";
 				 this->openFileDialog1->SupportMultiDottedExtensions = true;
+				 this->TagAndRepInfoUpdate->Enabled = true;
+				 this->TagAndRepInfoUpdate->Interval = 1000;
+				 this->TagAndRepInfoUpdate->Tick += gcnew System::EventHandler(this, &mainform::TagAndRepInfoUpdate_Tick);
 				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 				 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 				 this->ClientSize = System::Drawing::Size(882, 593);
@@ -1189,13 +1351,16 @@ namespace Evrika {
 				 this->tabControl1->ResumeLayout(false);
 				 this->tabPage1->ResumeLayout(false);
 				 this->tabPage1->PerformLayout();
+				 this->TagAndRepInfoBox->ResumeLayout(false);
+				 this->TagAndRepInfoBox->PerformLayout();
 				 this->tabPage2->ResumeLayout(false);
-				 this->tabPage2->PerformLayout();
+				 this->RadioTagParamBox->ResumeLayout(false);
+				 this->RadioTagParamBox->PerformLayout();
 				 this->RepeaterParamBox->ResumeLayout(false);
 				 this->RepeaterParamBox->PerformLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->EndInit();
 				 this->tabPage3->ResumeLayout(false);
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridView2))->EndInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->EventsGrid))->EndInit();
 				 this->ResumeLayout(false);
 				 this->PerformLayout();
 
@@ -1211,12 +1376,9 @@ namespace Evrika {
 	private: System::Void button7_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button9_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void savemap_Click(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void button7_Click_1(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void настройкиToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void tabControl1_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e);
-	private: System::Void button8_Click_1(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void serialPort1_DataReceived(System::Object^  sender, System::IO::Ports::SerialDataReceivedEventArgs^  e);
-	private: System::Void checkBox2_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void open_device(System::Object^  sender, System::Windows::Forms::DataGridViewCellEventArgs^  e);
 	private: System::Void save_events(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void load_session(System::Object^  sender, System::EventArgs^  e);
@@ -1236,5 +1398,14 @@ namespace Evrika {
 	private: System::Void ResetRepeatersBtn_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void GPSOnOff_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void GPSAntenna_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void WakeUpRadioTagBtn_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void RadioTagsGrid_SelectionChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void TagAndRepeaterResetBtn_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void UpdateTagBtn_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void AutoUpdateTagChk_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void UpdateRepeaterParamBtn_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void label12_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void TagAndRepInfoUpdate_Tick(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void DrawPointBtn_Click(System::Object^  sender, System::EventArgs^  e);
 	};
 }
