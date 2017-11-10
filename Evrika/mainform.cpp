@@ -161,6 +161,7 @@ Evrika::mainform::mainform(void)
 	myPos = gcnew MyPosition();
 	this->Width = 512;
 	this->Height = 570;
+	ftime = gcnew KalmanFilter(1, 1, 200, 15);
 	UpdateMapPos();
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 
@@ -1366,12 +1367,20 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			//парсинг буфера в список у-в
 			uint32_t addr = ToInt32FromBuf(rbuf, 10);
 			int8_t rssi = rbuf[14];
-			int64_t time = ToInt32FromBuf(rbuf, 15) - 2250000;
+			int64_t time = ToInt32FromBuf(rbuf, 15);
 			int8_t lqi = rbuf[19];
 			float vbatt = (rbuf[20] >> 4) + (rbuf[20] & 0xF) / 10.0;
 			int8_t a_rssi = rbuf[21];
 			float a_time = GetFloatFromBuf(rbuf, 22);
 			uint8_t bitrate = rbuf[26];
+
+			if (ftime->first)
+				ftime->SetState(time, 0.1);
+			ftime->Correct(time);
+
+			chart1->Series[0]->Points->Add(time);
+			chart1->Series[1]->Points->Add(a_time);
+			chart1->Series[2]->Points->Add(ftime->State);
 
 			int64_t delta_time = 0;
 			int64_t delta_atime = 0;
@@ -1408,8 +1417,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 					//double m = CyclesToMeters(time);
 					//TimeLbl->Text = time.ToString() + " cycles. " + m.ToString() + " m." + a_time.ToString() + " cycles. " + CyclesToMeters(a_time).ToString() + " m.";
 					//TimeLbl->Text = a_time.ToString() + " cycles. " + LinCycleToMeters(a_time, bitrate).ToString() + " m.";
-					if (bitrate == 2) {
-						a_time -= 268542;
+					if (bitrate == 2) {	//265
+						a_time = abs(a_time - 265);
 						if (i2 == 10) {
 							//label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString()+" " + LinCycleToMeters(mid2/10, bitrate).ToString() + " m.";
 							label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString() + " " + TimeToMeters(mid2).ToString() + " m.";
@@ -1424,8 +1433,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 							i2++;
 						}
 					}
-					if (bitrate == 3) {	//210184
-						a_time -= 210184;
+					if (bitrate == 3) {	//105
+						a_time = abs(a_time - 105);
 						if (i3 == 10) {
 							//label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + LinCycleToMeters(mid3/10, bitrate).ToString() + " m.";
 							label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + TimeToMeters(mid3).ToString() + " m.";
@@ -1440,7 +1449,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 							i3++;
 						}
 					}
-					TimeLbl->Text = a_time.ToString() + " cycles. " + TimeToMeters(a_time * 10).ToString() + " m.";
+					TimeLbl->Text = a_time.ToString() + " cycles. " + TimeToMeters(a_time*10.0).ToString() + " m.";
 					//rssi
 					ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, double::Parse(textBox2->Text), double::Parse(textBox3->Text)).ToString() + " m.";
 					//ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, 3, 20.0).ToString() + " m.";
@@ -1669,7 +1678,7 @@ System::Void Evrika::mainform::tabControl1_SelectedIndexChanged(System::Object ^
 	case 1:
 	case 2:
 		this->Width = 902;
-		this->Height = 636;
+		this->Height = 800;
 		break;
 	default:
 		break;
@@ -1810,6 +1819,7 @@ System::Void Evrika::mainform::mainform_Load(System::Object ^ sender, System::Ev
 	my_handle = this;
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
 	connthrd->Start();
+	//double a=TimeToMeters((282-265)*10.0);
 }
 
 System::Void Evrika::mainform::ExportMapBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -2059,7 +2069,7 @@ System::Void Evrika::mainform::TagAndRepInfoUpdate_Tick(System::Object ^ sender,
 		return;
 	}
 	TagAndRepInfoBox->Visible = true;
-	TagAndRepInfoBox->Text =SelectedDevice->IdInHex() +"+" + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex();
+	TagAndRepInfoBox->Text = SelectedDevice->IdInHex() + "+" + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex();
 	if (SelectedDevice->IfKnownPos()) {
 		SelectedRepeaterInfoLbl->Text = SelectedDevice->Lat.ToString() + " " + SelectedDevice->Lon.ToString();
 		DrawPointBtn->Enabled = true;

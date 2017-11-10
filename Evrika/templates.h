@@ -216,6 +216,7 @@ namespace Evrika {
 
 	public:
 		double State;
+		bool first = true;
 
 		//1, 1, 200, 15
 		KalmanFilter() {
@@ -237,6 +238,7 @@ namespace Evrika {
 		void SetState(double state, double covariance) {
 			State = state;
 			Covariance = covariance;
+			first = false;
 		}
 
 		void Correct(double data) {

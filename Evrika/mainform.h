@@ -175,6 +175,7 @@ namespace Evrika {
 	private: System::Windows::Forms::Label^  SelectedTagDistanceLbl;
 	private: System::Windows::Forms::Label^  SelectedRepeaterInfoLbl;
 	private: System::Windows::Forms::Button^  DrawPointBtn;
+private: System::Windows::Forms::DataVisualization::Charting::Chart^  chart1;
 
 
 
@@ -456,6 +457,7 @@ namespace Evrika {
 		String^ ourPort;
 		bool eGPS;
 		KalmanFilter^ mid_cycles;
+		KalmanFilter^ ftime;
 		cli::array<GMarkerGoogle^> ^markers;
 		//long lCoordsCount;
 		bool isOurCom;
@@ -505,6 +507,11 @@ namespace Evrika {
 			 void InitializeComponent(void)
 			 {
 				 this->components = (gcnew System::ComponentModel::Container());
+				 System::Windows::Forms::DataVisualization::Charting::ChartArea^  chartArea1 = (gcnew System::Windows::Forms::DataVisualization::Charting::ChartArea());
+				 System::Windows::Forms::DataVisualization::Charting::Legend^  legend1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Legend());
+				 System::Windows::Forms::DataVisualization::Charting::Series^  series1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
+				 System::Windows::Forms::DataVisualization::Charting::Series^  series2 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
+				 System::Windows::Forms::DataVisualization::Charting::Series^  series3 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
 				 this->button1 = (gcnew System::Windows::Forms::Button());
 				 this->listBox1 = (gcnew System::Windows::Forms::ListBox());
 				 this->label1 = (gcnew System::Windows::Forms::Label());
@@ -611,6 +618,7 @@ namespace Evrika {
 				 this->saveFileDialog2 = (gcnew System::Windows::Forms::SaveFileDialog());
 				 this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
 				 this->TagAndRepInfoUpdate = (gcnew System::Windows::Forms::Timer(this->components));
+				 this->chart1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Chart());
 				 this->groupBox1->SuspendLayout();
 				 this->groupBox2->SuspendLayout();
 				 this->statusStrip1->SuspendLayout();
@@ -625,6 +633,7 @@ namespace Evrika {
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->BeginInit();
 				 this->tabPage3->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->EventsGrid))->BeginInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->BeginInit();
 				 this->SuspendLayout();
 				 this->button1->Location = System::Drawing::Point(6, 6);
 				 this->button1->Name = L"button1";
@@ -774,7 +783,7 @@ namespace Evrika {
 						 this->toolStripStatusLabel1, this->get_device_progress, this->toolStripStatusLabel2, this->toolStripStatusLabel3, this->toolStripStatusLabel4,
 						 this->toolStripStatusLabel5, this->toolStripStatusLabel6, this->CurrentActionLbl
 				 });
-				 this->statusStrip1->Location = System::Drawing::Point(0, 571);
+				 this->statusStrip1->Location = System::Drawing::Point(0, 735);
 				 this->statusStrip1->Name = L"statusStrip1";
 				 this->statusStrip1->Size = System::Drawing::Size(882, 22);
 				 this->statusStrip1->TabIndex = 14;
@@ -941,7 +950,7 @@ namespace Evrika {
 				 this->tabControl1->Location = System::Drawing::Point(0, 24);
 				 this->tabControl1->Name = L"tabControl1";
 				 this->tabControl1->SelectedIndex = 0;
-				 this->tabControl1->Size = System::Drawing::Size(882, 547);
+				 this->tabControl1->Size = System::Drawing::Size(882, 711);
 				 this->tabControl1->TabIndex = 19;
 				 this->tabControl1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::tabControl1_SelectedIndexChanged);
 				 this->tabPage1->Controls->Add(this->TagAndRepInfoBox);
@@ -1002,6 +1011,7 @@ namespace Evrika {
 				 this->label10->Size = System::Drawing::Size(41, 13);
 				 this->label10->TabIndex = 22;
 				 this->label10->Text = L"label10";
+				 this->tabPage2->Controls->Add(this->chart1);
 				 this->tabPage2->Controls->Add(this->RadioTagParamBox);
 				 this->tabPage2->Controls->Add(this->TagAndRepeaterResetBtn);
 				 this->tabPage2->Controls->Add(this->WakeUpRadioTagBtn);
@@ -1013,7 +1023,7 @@ namespace Evrika {
 				 this->tabPage2->Location = System::Drawing::Point(4, 22);
 				 this->tabPage2->Name = L"tabPage2";
 				 this->tabPage2->Padding = System::Windows::Forms::Padding(3);
-				 this->tabPage2->Size = System::Drawing::Size(874, 521);
+				 this->tabPage2->Size = System::Drawing::Size(874, 685);
 				 this->tabPage2->TabIndex = 1;
 				 this->tabPage2->Text = L"Устройства";
 				 this->tabPage2->UseVisualStyleBackColor = true;
@@ -1327,9 +1337,36 @@ namespace Evrika {
 				 this->TagAndRepInfoUpdate->Enabled = true;
 				 this->TagAndRepInfoUpdate->Interval = 1000;
 				 this->TagAndRepInfoUpdate->Tick += gcnew System::EventHandler(this, &mainform::TagAndRepInfoUpdate_Tick);
+				 chartArea1->Name = L"ChartArea1";
+				 this->chart1->ChartAreas->Add(chartArea1);
+				 legend1->Name = L"Legend1";
+				 this->chart1->Legends->Add(legend1);
+				 this->chart1->Location = System::Drawing::Point(3, 524);
+				 this->chart1->Name = L"chart1";
+				 series1->BorderWidth = 2;
+				 series1->ChartArea = L"ChartArea1";
+				 series1->ChartType = System::Windows::Forms::DataVisualization::Charting::SeriesChartType::Line;
+				 series1->Legend = L"Legend1";
+				 series1->Name = L"time";
+				 series2->BorderWidth = 2;
+				 series2->ChartArea = L"ChartArea1";
+				 series2->ChartType = System::Windows::Forms::DataVisualization::Charting::SeriesChartType::Line;
+				 series2->Legend = L"Legend1";
+				 series2->Name = L"a_time";
+				 series3->BorderWidth = 2;
+				 series3->ChartArea = L"ChartArea1";
+				 series3->ChartType = System::Windows::Forms::DataVisualization::Charting::SeriesChartType::Line;
+				 series3->Legend = L"Legend1";
+				 series3->Name = L"f(time)";
+				 this->chart1->Series->Add(series1);
+				 this->chart1->Series->Add(series2);
+				 this->chart1->Series->Add(series3);
+				 this->chart1->Size = System::Drawing::Size(862, 155);
+				 this->chart1->TabIndex = 36;
+				 this->chart1->Text = L"chart1";
 				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 				 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-				 this->ClientSize = System::Drawing::Size(882, 593);
+				 this->ClientSize = System::Drawing::Size(882, 757);
 				 this->Controls->Add(this->tabControl1);
 				 this->Controls->Add(this->statusStrip1);
 				 this->Controls->Add(this->menuStrip1);
@@ -1361,6 +1398,7 @@ namespace Evrika {
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->EndInit();
 				 this->tabPage3->ResumeLayout(false);
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->EventsGrid))->EndInit();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->EndInit();
 				 this->ResumeLayout(false);
 				 this->PerformLayout();
 
