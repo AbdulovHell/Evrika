@@ -162,7 +162,14 @@ Evrika::mainform::mainform(void)
 	this->Width = 512;
 	this->Height = 570;
 	ftime = gcnew KalmanFilter(1, 1, 200, 15);
+	mfilt = new MedianFilter<double, 10>();
 	UpdateMapPos();
+	collection0 = gcnew cli::array<double>(100);
+	collection1 = gcnew cli::array<double>(100);
+	collection2 = gcnew cli::array<double>(100);
+	chart1->Series[0]->Points->DataBindY(collection0);
+	chart1->Series[1]->Points->DataBindY(collection1);
+	chart1->Series[2]->Points->DataBindY(collection2);
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 
 	//proglog->Clear();
@@ -990,11 +997,11 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x88:	//ответ на запрос о состоянии реле
 		{
 			uint32_t addr = ToInt32FromBuf(rbuf, 2);
-			uint8_t state = rbuf[10];
+			uint8_t state = (uint8_t)rbuf[10];
 			for (int i = 0; i < Devices->Count; i++)
 				if (addr == Devices[i]->GetAddr())
-					Devices[i]->SaveRelayStat(state);
-			RelayStatCheckBox->Checked = state;
+					Devices[i]->SaveRelayStat((bool)state);
+			RelayStatCheckBox->Checked = (bool)state;
 			ParamReciver->Release();
 		}
 		break;
@@ -1016,8 +1023,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			break;
 		case 0x02:	//ответ на запрос состояния питания GPS
 		{
-			bool state = rbuf[10];
-			GPSOnOff->Checked = state;
+			bool state = (bool)rbuf[10];
+			GPSOnOff->Checked = (bool)state;
 			ParamReciver->Release();
 #pragma region Old Code
 			//int len = (rbuf[4] << 8) + rbuf[5];	//28
@@ -1078,7 +1085,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x03:	//ответ на запрос статуса GPS
 		{
 			//0 - nofix, 1 - standart, 2 - Diff., 3 - Estimate
-			uint8_t type = rbuf[10];
+			uint8_t type = (uint8_t)rbuf[10];
 			switch (type) {
 			case 0:
 				GPSStatLbl->Text = "NoFix";
@@ -1104,18 +1111,18 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x04:	//ответ на запрос данных GPS
 		{
-			uint8_t hh = rbuf[10];
-			uint8_t mm = rbuf[11];
-			uint8_t ss = rbuf[12];
-			int8_t lat_sign = rbuf[13];
-			uint8_t lat_deg = rbuf[14];
-			uint8_t lat_min = rbuf[15];
+			uint8_t hh = (uint8_t)rbuf[10];
+			uint8_t mm = (uint8_t)rbuf[11];
+			uint8_t ss = (uint8_t)rbuf[12];
+			int8_t lat_sign = (int8_t)rbuf[13];
+			uint8_t lat_deg = (uint8_t)rbuf[14];
+			uint8_t lat_min = (uint8_t)rbuf[15];
 			float lat_sec = GetFloatFromBuf(rbuf, 16);
-			int8_t lon_sign = rbuf[20];
-			uint8_t lon_deg = rbuf[21];
-			uint8_t lon_min = rbuf[22];
+			int8_t lon_sign = (int8_t)rbuf[20];
+			uint8_t lon_deg = (uint8_t)rbuf[21];
+			uint8_t lon_min = (uint8_t)rbuf[22];
 			float lon_sec = GetFloatFromBuf(rbuf, 23);
-			uint8_t satellites = rbuf[27];
+			uint8_t satellites = (uint8_t)rbuf[27];
 			float hdop = GetFloatFromBuf(rbuf, 28);
 			float alt = GetFloatFromBuf(rbuf, 32);
 
@@ -1190,7 +1197,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		switch (rbuf[MESSAGE_ID]) {	//message ID
 		case 0x01:	//ответ на запуск цикла пробуждения меток
 		{
-			uint8_t count = rbuf[10];
+			uint8_t count = (uint8_t)rbuf[10];
 			if (count > 0) {
 				CurrentActionLbl->Text = "Найдено радиометок: " + count.ToString() + ". Запрос параметров...";
 				PrevCountFindedRadioTags = count;
@@ -1269,11 +1276,11 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			//парсинг буфера в список у-в
 			for (int i = 0; i < devices; i++) {	//массив у-в в список у-в
 				uint32_t addr = ToInt32FromBuf(rbuf, 10 + 10 * i);
-				int8_t rssi = rbuf[14 + 10 * i];
-				int8_t lqi = rbuf[15 + 10 * i];
-				float vbatt = (rbuf[16 + 10 * i] >> 4) + (rbuf[16 + 10 * i] & 0xF) / 10.0;
-				int8_t a_rssi = rbuf[17 + 10 * i];
-				uint8_t bitrate = rbuf[18 + 10 * i];
+				int8_t rssi = (int8_t)rbuf[14 + 10 * i];
+				int8_t lqi = (int8_t)rbuf[15 + 10 * i];
+				float vbatt = (float)((rbuf[16 + 10 * i] >> 4) + (rbuf[16 + 10 * i] & 0xF) / 10.0);
+				int8_t a_rssi = (int8_t)rbuf[17 + 10 * i];
+				uint8_t bitrate = (uint8_t)rbuf[18 + 10 * i];
 
 				tempdev->Add(gcnew RadioTag(addr));
 				tempdev[i]->Fill(vbatt, rssi, lqi);
@@ -1366,24 +1373,53 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		{
 			//парсинг буфера в список у-в
 			uint32_t addr = ToInt32FromBuf(rbuf, 10);
-			int8_t rssi = rbuf[14];
-			int64_t time = ToInt32FromBuf(rbuf, 15);
-			int8_t lqi = rbuf[19];
-			float vbatt = (rbuf[20] >> 4) + (rbuf[20] & 0xF) / 10.0;
-			int8_t a_rssi = rbuf[21];
+			int8_t rssi = (int8_t)rbuf[14];
+			/*int64_t*/double time = (double)ToInt32FromBuf(rbuf, 15);
+			int8_t lqi = (int8_t)rbuf[19];
+			float vbatt = (float)((rbuf[20] >> 4) + (rbuf[20] & 0xF) / 10.0);
+			int8_t a_rssi = (int8_t)rbuf[21];
 			float a_time = GetFloatFromBuf(rbuf, 22);
-			uint8_t bitrate = rbuf[26];
+			uint8_t bitrate = (uint8_t)rbuf[26];
 
+			if (bitrate != LastBandWidth) {
+				LastBandWidth = bitrate;
+				delete ftime;
+				ftime = gcnew KalmanFilter();
+				delete mfilt;
+				mfilt = new MedianFilter<double,10>();
+				first = true;
+				return;
+			}
+
+			a_time /= 2;
+			time /= 2;
+
+			//Mid
+			mfilt->Correct(time);
+			//Kalman
 			if (ftime->first)
 				ftime->SetState(time, 0.1);
 			ftime->Correct(time);
+			
+			PushBack<double>(collection0, time);
+			PushBack<double>(collection1, a_time);
+			PushBack<double>(collection2, ftime->State);
+			chart1->Series[0]->Points->DataBindY(collection0);
+			chart1->Series[1]->Points->DataBindY(collection1);
+			chart1->Series[2]->Points->DataBindY(collection2);
 
-			chart1->Series[0]->Points->Add(time);
-			chart1->Series[1]->Points->Add(a_time);
-			chart1->Series[2]->Points->Add(ftime->State);
+			if (DoExport) {
+				DoExport = false;
+				ofstream fs("points.txt", ios::out);
+				for (int i = 0; i < collection0->Length; i++) {
+					fs << collection0[i] << "\t" << mToStr(collection2[i]) << endl;
+				}
+				fs.close();
+			}
 
-			int64_t delta_time = 0;
-			int64_t delta_atime = 0;
+			time = ftime->State;
+			double delta_time = 0;
+			double delta_atime = 0;
 			//double a = TimeToMeters(10);
 			if (first) {
 				min_time = time;
@@ -1408,48 +1444,48 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				delta_atime = max_atime / (max_atime - min_atime);
 			}
 			catch (...) {}
-			label12->Text = delta_time.ToString() + " " + delta_atime.ToString();
+			label12->Text = "dTime: " + delta_time.ToString() + " dATime: " + delta_atime.ToString();
 			for (int i = 0; i < SelectedDevice->RadioTags->Count; i++) {
 				if (SelectedDevice->RadioTags[i]->GetAddr() == addr) {
-					SelectedDevice->RadioTags[i]->Fill(time, a_rssi, a_time, bitrate);
+					SelectedDevice->RadioTags[i]->Fill((uint32_t)time, a_rssi, a_time, bitrate);
 					SelectedDevice->RadioTags[i]->Fill(vbatt, rssi, lqi);
 					//time
 					//double m = CyclesToMeters(time);
 					//TimeLbl->Text = time.ToString() + " cycles. " + m.ToString() + " m." + a_time.ToString() + " cycles. " + CyclesToMeters(a_time).ToString() + " m.";
 					//TimeLbl->Text = a_time.ToString() + " cycles. " + LinCycleToMeters(a_time, bitrate).ToString() + " m.";
-					if (bitrate == 2) {	//265
-						a_time = abs(a_time - 265);
+					if (bitrate == 2) {	//304 295	265
+						time = abs(time - 304);
 						if (i2 == 10) {
 							//label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString()+" " + LinCycleToMeters(mid2/10, bitrate).ToString() + " m.";
-							label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString() + " " + TimeToMeters(mid2).ToString() + " m.";
+							label11->Text = (mid2 / 10).ToString() + gcnew String(" ") + (temp2 / 10).ToString() + " " + TimeToMeters((double)mid2).ToString() + " m.";
 							i2 = 0;
 							mid2 = 0;
 							temp2 = 0;
 						}
 						else {
 							//temp2 += LinCycleToMeters(a_time, bitrate);
-							temp2 += TimeToMeters(a_time * 10);
-							mid2 += a_time;
+							temp2 += TimeToMeters(time * 10);
+							mid2 += (uint64_t)time;
 							i2++;
 						}
 					}
-					if (bitrate == 3) {	//105
-						a_time = abs(a_time - 105);
+					if (bitrate == 3) {	//105, 106
+						time = abs(time - 106);
 						if (i3 == 10) {
 							//label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + LinCycleToMeters(mid3/10, bitrate).ToString() + " m.";
-							label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + TimeToMeters(mid3).ToString() + " m.";
+							label11->Text = (mid3 / 10).ToString() + gcnew String(" ") + (temp3 / 10).ToString() + " " + TimeToMeters((double)mid3).ToString() + " m.";
 							i3 = 0;
 							mid3 = 0;
 							temp3 = 0;
 						}
 						else {
 							//temp3 += LinCycleToMeters(a_time, bitrate);
-							temp3 += TimeToMeters(a_time * 10);
-							mid3 += a_time;
+							temp3 += TimeToMeters(time * 10);
+							mid3 += (uint64_t)time;
 							i3++;
 						}
 					}
-					TimeLbl->Text = a_time.ToString() + " cycles. " + TimeToMeters(a_time*10.0).ToString() + " m.";
+					TimeLbl->Text = time.ToString() + " cycles. " + TimeToMeters(time*10.0).ToString() + " m.";
 					//rssi
 					ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, double::Parse(textBox2->Text), double::Parse(textBox3->Text)).ToString() + " m.";
 					//ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, 3, 20.0).ToString() + " m.";
@@ -1478,7 +1514,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		switch (rbuf[MESSAGE_ID]) {
 		case 0x01:	//ответ на запуск поиска ретрансл.
 		{
-			uint8_t count = rbuf[10];
+			uint8_t count = (uint8_t)rbuf[10];
 			if (count > 0) {
 				CurrentActionLbl->Text = "Найдено ретрансляторов: " + count.ToString() + ". Запрос параметров...";
 				PrevCountFindedRepeaters = count;
@@ -1501,9 +1537,9 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			//парсинг буфера в список у-в
 			for (int i = 0; i < devices; i++) {	//массив у-в в список у-в
 				uint32_t addr = ToInt32FromBuf(rbuf, 10 + 8 * i);
-				int8_t rssi = rbuf[14 + 8 * i];
-				int8_t lqi = rbuf[15 + 8 * i];
-				float vbatt = (rbuf[16 + 8 * i] >> 4) + (rbuf[16 + 8 * i] & 0xF) / 10.0;
+				int8_t rssi = (int8_t)rbuf[14 + 8 * i];
+				int8_t lqi = (int8_t)rbuf[15 + 8 * i];
+				float vbatt = (float)((rbuf[16 + 8 * i] >> 4) + (rbuf[16 + 8 * i] & 0xF) / 10.0);
 				//uint8_t param = rbuf[17+8*i];
 				tempdev->Add(gcnew Repeater(addr, false));
 				tempdev[i]->Fill(vbatt, rssi, lqi);
@@ -1796,7 +1832,7 @@ System::Void Evrika::mainform::load_session(System::Object ^ sender, System::Eve
 		EvLog::TD td = tempevent.td();
 		Device^ tempDev = gcnew Device(dev.unique_id());
 		//, , dev.work_mode(), NULL
-		tempDev->Fill(dev.battery_lvl(), dev.signal_lvl(), dev.signal_quality());
+		tempDev->Fill((float)dev.battery_lvl(), dev.signal_lvl(), dev.signal_quality());
 		Events->Add(gcnew Event(tempDev, gcnew TimeAndDate(td.day(), td.month(), td.year(), td.hour(), td.minute(), td.second()), eCode));
 	}
 	UpdateEventList();
@@ -2084,6 +2120,18 @@ System::Void Evrika::mainform::TagAndRepInfoUpdate_Tick(System::Object ^ sender,
 System::Void Evrika::mainform::DrawPointBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	AddNewPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance());
+}
+
+System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::EventArgs ^ e)
+{
+	chart1->Series[0]->Points->Clear();
+	chart1->Series[1]->Points->Clear();
+	chart1->Series[2]->Points->Clear();
+}
+
+System::Void Evrika::mainform::button8_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	DoExport = true;
 }
 
 Evrika::mainform::MyPosition::MyPosition()

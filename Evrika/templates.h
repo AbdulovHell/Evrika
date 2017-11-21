@@ -5,6 +5,8 @@ namespace Evrika {
 	ref class TimeAndDate;
 	ref class RadioTag;
 
+
+
 	double CyclesToMeters(uint32_t cycles);
 	double TimeToMeters(double time);
 	double dBToW(double lvl, double offset);
@@ -120,7 +122,7 @@ namespace Evrika {
 		double GetDistance() {
 			return ConvertToMeters(adaptive_rssi, 1.7, 26);
 		}
-		double GetDistance(double n,double SignalLvlAt1m) {
+		double GetDistance(double n, double SignalLvlAt1m) {
 			return ConvertToMeters(adaptive_rssi, n, SignalLvlAt1m);
 		}
 	};
@@ -241,6 +243,10 @@ namespace Evrika {
 			first = false;
 		}
 
+		void Reset() {
+			first = true;
+		}
+
 		void Correct(double data) {
 			X0 = F * State;
 			P0 = F * Covariance * F + Q;
@@ -250,6 +256,56 @@ namespace Evrika {
 			Covariance = (1 - K * H) * P0;
 		}
 	};
+
+	template<typename T, int s> class MedianFilter {
+		T buf[s];
+		unsigned int size = s;
+		bool first = true;
+		unsigned int it = 0;
+	public:
+		void Correct(T num) {
+			if (first) {
+				it = 0;
+				first = false;
+				for (unsigned int i = 0; i < size; i++)
+					buf[i] = num;
+			}
+			else {
+				buf[it] = num;
+			}
+			it++;
+			if (it > size - 1)
+				it = 0;
+		}
+		T State() {
+			T res = 0;
+			for (unsigned int i = 0; i < size; i++)
+				res += buf[i];
+			res /= size;
+			return res;
+		}
+		void Reset() {
+			first = true;
+		}
+	};
+
+	template<typename T> std::string mToStr(T num) {
+		char buf[10];
+		sprintf_s(buf, 10, "%.2f", num);
+		for (int i = 0; i < 10; i++)
+			if (buf[i] == '.')
+				buf[i] = ',';
+		return std::string(buf);
+	}
+
+	template<typename T> void PushBack(cli::array<T>^ arr, T num) {
+		for (int i = 0; i < arr->Length-1; i++) {
+			arr[i] = arr[i + 1];
+		}
+		arr[arr->Length - 1] = num;
+	}
+
+	extern MedianFilter<double, 10>* mfilt;
 
 	public ref class Commands {
 		static System::IO::Ports::SerialPort^ port;

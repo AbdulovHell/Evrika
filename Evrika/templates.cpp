@@ -1,12 +1,15 @@
 #include <iostream>
 #include <time.h>
 #include <windows.h>
+#include <stdint.h>
 #include "templates.h"
 
 namespace Evrika {
 	using namespace System;
 	using namespace System::Threading;
 	using namespace System::Runtime::InteropServices;
+
+	MedianFilter<double, 10>* mfilt;
 
 	ref class Device;
 	ref class TimeAndDate;
@@ -187,7 +190,10 @@ namespace Evrika {
 		//Bluetooth compatibility
 		rbuf[12] = '\r';	//CR
 		rbuf[13] = '\n';	//LF
-		port->Write(rbuf, 0, rbuf->Length);
+		try {
+			port->Write(rbuf, 0, rbuf->Length);
+		}
+		catch (...) {}
 	}
 	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint8_t msg_data)
 	{
@@ -211,7 +217,12 @@ namespace Evrika {
 		//Bluetooth compatibility
 		rbuf[12 + msg_len] = '\r';	//CR
 		rbuf[13 + msg_len] = '\n';	//LF
-		port->Write(rbuf, 0, rbuf->Length);
+		try {
+			port->Write(rbuf, 0, rbuf->Length);
+		}
+		catch (...) {
+
+		}
 	}
 	void Commands::ConstructCMD(uint32_t Addr, uint8_t msg_class, uint8_t msg_id, uint16_t msg_len, uint32_t msg_data)
 	{
@@ -235,7 +246,12 @@ namespace Evrika {
 		//Bluetooth compatibility
 		rbuf[12 + msg_len] = '\r';	//CR
 		rbuf[13 + msg_len] = '\n';	//LF
-		port->Write(rbuf, 0, rbuf->Length);
+		try {
+			port->Write(rbuf, 0, rbuf->Length);
+		}
+		catch (...) {
+
+		}
 	}
 	void Commands::Class_0x0A::TestConnect()
 	{
