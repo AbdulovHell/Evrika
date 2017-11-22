@@ -199,7 +199,7 @@ Evrika::mainform::mainform(void)
 	//BringWindowToTop();	//TODO: почему на заднем фоне?!
 	SetWindowPos((HWND)this->Handle.ToInt32(), HWND_TOP, NULL, NULL, NULL, NULL, SWP_NOSIZE | SWP_NOMOVE);
 }
-
+//считает точки пересечения двух окружностей и рисует их
 void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2)
 {	//return points and array size
 	double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
@@ -307,7 +307,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2)
 	areaOvrl->Polygons->Add(lineC);
 	return;
 }
-
+//считает точки пересечения двух окружностей и сохраняет их
 void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<PointLatLng>^ twoPoints)
 {	//return points and array size
 	double d, x31, x32, y31, y32, x0, x1, x2, y0, y1, y2, a, r0 = circle1->get_r() / 1000, r1 = circle2->get_r() / 1000;
@@ -322,6 +322,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<
 	x1 = circle2->get_lng();
 	double y = circle2->get_lat() - circle1->get_lat();
 	double x = circle2->get_lng() - circle1->get_lng();
+	if (x == 0 || y == 0) return;	//точки одинаковы
 	x *= 111.11*Z;
 	y *= 111.11;
 	d = Math::Sqrt(y*y + x*x); if (d > r0 + r1)
@@ -385,7 +386,7 @@ void Evrika::mainform::Triangulate(geoPoint ^ circle1, geoPoint ^ circle2, List<
 	twoPoints->Add(PointLatLng(y0 + y32, x0 + x32));
 	return;
 }
-
+//факториал числа
 int Evrika::mainform::factorial(int n)
 {
 	int res = 1;
@@ -393,7 +394,7 @@ int Evrika::mainform::factorial(int n)
 		res *= i;
 	return res;
 }
-
+//сортировка массива точек, каждая следующая точка ближайшая к предыдущей
 List<PointLatLng>^ Evrika::mainform::SortPoint_Line(List<PointLatLng>^ in_p)
 {
 	List<PointLatLng>^ out_p = gcnew List<PointLatLng>;
@@ -431,7 +432,7 @@ List<PointLatLng>^ Evrika::mainform::SortPoint_Line(List<PointLatLng>^ in_p)
 	//in_p->RemoveAt(0);
 	return out_p;
 }
-
+//проверка нахождения точки в любой из окружностей
 bool Evrika::mainform::inTheArea(PointLatLng point)
 {
 	bool result = true;
@@ -451,7 +452,7 @@ bool Evrika::mainform::inTheArea(PointLatLng point)
 	}
 	return result;
 }
-
+//проверка нахождения точки в пересечении трех окружностей с индексами i j k
 bool Evrika::mainform::inTheArea(PointLatLng point, int i, int j, int k) {
 	bool result = true;
 	double r1 = geoPoint::GetDistanceToPointFrom(point, MyCoords[i]->get_pointLatLng()) * 1000;
@@ -464,7 +465,7 @@ bool Evrika::mainform::inTheArea(PointLatLng point, int i, int j, int k) {
 		result = false;
 	return result;
 }
-
+//триангуляция
 void Evrika::mainform::metod_5()
 {
 	List<PointLatLng>^ area_points = gcnew List<PointLatLng>;
@@ -473,7 +474,9 @@ void Evrika::mainform::metod_5()
 		for (int j = i + 1; j < MyCoords->Count; j++) {
 			List<PointLatLng>^ tempPoints = gcnew List<PointLatLng>;
 			Triangulate(MyCoords[i], MyCoords[j], tempPoints);
-
+			if (tempPoints->Count == 0) {
+				return;
+			}
 			for (int p = 0; p < tempPoints->Count; p++) {
 				bool duplicate = false;
 				int index = -1;
@@ -527,12 +530,12 @@ void Evrika::mainform::ParseToPoint(cli::array<wchar_t>^ buf)
 		listBox1->Items->RemoveAt(0);
 	}
 }
-
+//вывод текущего порта в строку состояния
 void Evrika::mainform::WriteToComStat(String ^ str)
 {
 	whatCOM->Text = str;
 }
-
+//проверка соединения по порту
 void Evrika::mainform::CheckComConn()
 {
 	try {
@@ -556,7 +559,7 @@ void Evrika::mainform::CheckComConn()
 
 	}
 }
-
+//перечисления портов, поиск устройства
 void Evrika::mainform::EnumCOMs()
 {
 	this->Invoke(gcnew Action<String^>(this, &mainform::WriteLog), "Поиск последовательного порта...");
@@ -608,30 +611,13 @@ void Evrika::mainform::EnumCOMs()
 		serialPort1->Close();
 	LastStateIsOpen = false;
 }
-
-System::String ^ Evrika::mainform::Quality(int q)
-{
-	//0x2588 full block
-	//0x2591 light shade
-	//0x2584 half block
-	q = q % 7;
-	wchar_t buf[8];
-	for (int i = 0; i < 7; i++) {
-		if (i == 0 && q > 0) buf[i] = 0x2584;
-		else if (i > 0 && i < q) buf[i] = 0x2588;
-		else buf[i] = 0x2591;
-	}
-	buf[7] = 0;
-	System::String^ str = gcnew System::String(buf);
-	return str;
-}
-
+//возвращает случайное целое число
 int Evrika::mainform::RangeRandInt(int min, int max)
 {
 	Random^ autoRand = gcnew Random;
 	return autoRand->Next(min, max);
 }
-
+//возвращает случайное число с плавающей точкой
 double Evrika::mainform::RangeRandDouble(double min, double max)
 {
 	Random^ autoRand = gcnew Random;
@@ -640,7 +626,7 @@ double Evrika::mainform::RangeRandDouble(double min, double max)
 	int temp = int(num * 100);
 	return temp / 100.0;
 }
-
+//запрос параметром выбранного ретранслятора
 void Evrika::mainform::ParamRequest()
 {
 	uint32_t addr = SelectedDevice->GetAddr();
@@ -690,17 +676,17 @@ void Evrika::mainform::ParamRequest()
 	}
 	this->Invoke(gcnew Action<bool>(this, &mainform::MakeVisible), false);
 }
-
+//увеличение значения прогресс бара запроса параметров
 void Evrika::mainform::IncrementProgress()
 {
 	GetRepParamProgress->Increment(1);
 }
-
+//видимость прогресс бара запроса параметров
 void Evrika::mainform::MakeVisible(bool state)
 {
 	GetRepParamProgress->Visible = state;
 }
-
+//запрос параметров выбранной метки
 void Evrika::mainform::GetTagParam()
 {
 	while (true) {
@@ -709,22 +695,65 @@ void Evrika::mainform::GetTagParam()
 		}
 		Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
 		//CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "...";
-		Invoke(gcnew Action<String^>(this, &mainform::SetCurrentActionLblText), gcnew String("Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "..."));
+		try {
+			Invoke(gcnew Action<String^>(this, &mainform::SetCurrentActionLblText), gcnew String("Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "..."));
+		}
+		catch (...) {
+
+		}
 		RadioTagUpdateParam->WaitOne(6000);
 		Sleep(1000);
 	}
 }
-
+//установка в строку статуса текущей операции
 void Evrika::mainform::SetCurrentActionLblText(String ^ str)
 {
 	CurrentActionLbl->Text = str;
+}
+//обновление массива ретрансляторов
+void Evrika::mainform::UpdateRepeatersBase(List<Repeater^>^ newrep)
+{
+	//сброс флагов обработки у-в, уже наход в памяти
+	for (int i = 0; i < Devices->Count; i++) Devices[i]->Processed = false;
+	//сравнение и обновление у-в, которые уже были в памяти
+	for (int i = 0; i < Devices->Count; i++) {
+		for (int j = 0; j < newrep->Count; j++) {
+			if (Devices[i]->GetAddr() == newrep[j]->GetAddr()) {
+				Devices[i]->copy(newrep[j]);
+				Devices[i]->Processed = true;
+				Devices[i]->missing_counter = 0;
+				newrep->RemoveAt(j);
+			}
+		}
+	}
+	//обработка "устаревших" у-в
+	for (int i = 0; i < Devices->Count; i++) {
+		if (Devices[i]->Processed == false) {
+			if (Devices[i]->missing_counter > 3) {
+				//generate_event_disconnect
+				Events->Add(gcnew Event(Devices[i], Event::EventCode::SIGNAL_LOST));
+				UpdateEventList();
+				Devices->RemoveAt(i);
+			}
+			else
+				Devices[i]->missing_counter++;
+		}
+	}
+	//обработка "новых" у-в
+	for (int i = 0; i < newrep->Count; i++) {
+		//generate_newdev_event
+		Events->Add(gcnew Event(newrep[i], Event::EventCode::SIGNAL_FOUND));
+		UpdateEventList();
+		Devices->Add(newrep[i]);
+		newrep->RemoveAt(i);
+	}
 }
 
 void Evrika::mainform::SetTimer(bool en)
 {
 	sys_task->Enabled = en;
 }
-
+//вывод сообщений в лог
 void Evrika::mainform::WriteLog(String ^ message)
 {
 	for (int i = 0; i < logs->Count; i++) {
@@ -737,7 +766,7 @@ void Evrika::mainform::WriteLog(String ^ message)
 		}
 	}
 }
-
+//добавление новой точки, запуск триангуляции при наличии минимум 4
 void Evrika::mainform::AddNewPoint(double lat, double lng, double m)
 {
 	//if (!my_pos_accepted) return;
@@ -749,29 +778,31 @@ void Evrika::mainform::AddNewPoint(double lat, double lng, double m)
 		MyCoords->RemoveAt(0);
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 	WriteLog("Точка добавлена");
-	if (MyCoords->Count > 3) {
-		areaOvrl->Clear();
-		mrkrOvrl->Clear();
-		metod_5();
-		for (int i = 0; i < MyCoords->Count; i++) {
-			GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
-			mrkrOvrl->Markers->Add(marker);
 
-			GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
-			circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
-			circ->Stroke = gcnew Pen(Color::Blue, 1);
-			areaOvrl->Polygons->Add(circ);
-		}
+	areaOvrl->Clear();
+	mrkrOvrl->Clear();
+	for (int i = 0; i < MyCoords->Count; i++) {
+		GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
+		mrkrOvrl->Markers->Add(marker);
+
+		GMapPolygon ^circ = gcnew GMapPolygon(geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
+		circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
+		circ->Stroke = gcnew Pen(Color::Blue, 1);
+		areaOvrl->Polygons->Add(circ);
+	}
+
+	if (MyCoords->Count > 3) {
+		metod_5();	
 	}
 }
-
+//обновление координат центра карты
 void Evrika::mainform::UpdateMapPos()
 {
 	//обновление картой при изменении
 	label2->Text = "Широта: " + map->Position.Lat.ToString();	//Latitude
 	label3->Text = "Долгота: " + map->Position.Lng.ToString();	//Longetude
 }
-
+//подсчет контрольной суммы
 bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 {
 	if (!((rbuf[0] == 0x65) && (rbuf[1] == 0x76))) return false;	//базовая проверка
@@ -787,7 +818,7 @@ bool Evrika::mainform::CheckSum(cli::array<wchar_t>^ rbuf)
 	if ((cCK_A == mCK_A) && (cCK_B == mCK_B)) return true;
 	return false;
 }
-
+//обновление таблицы маяков
 void Evrika::mainform::UpdateRadioTagsList()
 {
 	this->RadioTagsGrid->SelectionChanged -= gcnew System::EventHandler(this, &mainform::RadioTagsGrid_SelectionChanged);
@@ -855,7 +886,7 @@ void Evrika::mainform::UpdateRadioTagsList()
 	RadioTagsGrid_SelectionChanged(this, gcnew EventArgs());
 	//DCGrid_SelectionChanged(this, gcnew EventArgs());
 }
-
+//обновление таблицы ретрансляторов
 void Evrika::mainform::UpdateRepeatersList()
 {
 	this->DCGrid->SelectionChanged -= gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
@@ -871,7 +902,7 @@ void Evrika::mainform::UpdateRepeatersList()
 		//добавляем новую строку
 		DCGrid->Rows->Add(1);
 		//столбец адреса
-		if (Devices[i]->missing_counter == 0)
+		if (Devices[i]->missing_counter == 0 || Devices[i]->isLocal)
 			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex();	//id
 		else
 			DCGrid->Rows[DCGrid->RowCount - 1]->Cells[0]->Value = Devices[i]->IdInHex() + " (!)";	//id
@@ -922,7 +953,7 @@ void Evrika::mainform::UpdateRepeatersList()
 	this->DCGrid->SelectionChanged += gcnew System::EventHandler(this, &mainform::DCGrid_SelectionChanged);
 	DCGrid_SelectionChanged(this, gcnew EventArgs());
 }
-
+//обновление списка событий
 void Evrika::mainform::UpdateEventList()
 {
 	EventsGrid->Rows->Clear();
@@ -938,7 +969,7 @@ void Evrika::mainform::UpdateEventList()
 		EventsGrid->Rows[EventsGrid->RowCount - 1]->Cells[5]->Value = Events[i]->td->ToSysString();	//dt
 	}
 }
-
+//разбор пакета от ретранслятора
 void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 {
 	//проверка синхробайтов и контрольной суммы, в случае ошибки выдаем в лог и не обрабатываем
@@ -957,10 +988,13 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		case 0x01:	//ответ на запрос локального адреса
 		{
 			uint32_t addr = ToInt32FromBuf(rbuf, 10);
-			Devices->Add(gcnew Repeater(addr, true));
-			Commands::Class_0x0A::GetVoltage(Devices[0]->GetAddr());
+			List<Repeater^>^ rep = gcnew List<Repeater^>;
+			rep->Add(gcnew Repeater(addr, true));
+			//Devices->Add(gcnew Repeater(addr, true));
+			Commands::Class_0x0A::GetVoltage(rep[0]->GetAddr());
+			Events->Add(gcnew Event(rep[0], Event::EventCode::DEV_CONNECTED));
+			UpdateRepeatersBase(rep);
 			UpdateRepeatersList();
-			Events->Add(gcnew Event(Devices[0], Event::EventCode::DEV_CONNECTED));
 			UpdateEventList();
 		}
 		break;
@@ -1016,7 +1050,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 	case 0x0B:
 		switch (rbuf[MESSAGE_ID]) {
 		case 0x01:	//ответ на управление питанием GPS
-			if (eGPS)
+			if (GPSOnOff->Checked)
 				WriteLog("GPS включен");
 			else
 				WriteLog("GPS выключен");
@@ -1386,9 +1420,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				delete ftime;
 				ftime = gcnew KalmanFilter();
 				delete mfilt;
-				mfilt = new MedianFilter<double,10>();
+				mfilt = new MedianFilter<double, 10>();
 				first = true;
-				return;
 			}
 
 			a_time /= 2;
@@ -1400,7 +1433,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			if (ftime->first)
 				ftime->SetState(time, 0.1);
 			ftime->Correct(time);
-			
+
 			PushBack<double>(collection0, time);
 			PushBack<double>(collection1, a_time);
 			PushBack<double>(collection2, ftime->State);
@@ -1544,40 +1577,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 				tempdev->Add(gcnew Repeater(addr, false));
 				tempdev[i]->Fill(vbatt, rssi, lqi);
 			}
-			//сброс флагов обработки у-в, уже наход в памяти
-			for (int i = 1; i < Devices->Count; i++) Devices[i]->Processed = false;
-			//сравнение и обновление у-в, которые уже были в памяти
-			for (int i = 1; i < Devices->Count; i++) {
-				for (int j = 0; j < tempdev->Count; j++) {
-					if (Devices[i]->GetAddr() == tempdev[j]->GetAddr()) {
-						Devices[i]->copy(tempdev[j]);
-						Devices[i]->Processed = true;
-						Devices[i]->missing_counter = 0;
-						tempdev->RemoveAt(j);
-					}
-				}
-			}
-			//обработка "устаревших" у-в
-			for (int i = 1; i < Devices->Count; i++) {
-				if (Devices[i]->Processed == false) {
-					if (Devices[i]->missing_counter > 3) {
-						//generate_event_disconnect
-						Events->Add(gcnew Event(Devices[i], Event::EventCode::SIGNAL_LOST));
-						UpdateEventList();
-						Devices->RemoveAt(i);
-					}
-					else
-						Devices[i]->missing_counter++;
-				}
-			}
-			//обработка "новых" у-в
-			for (int i = 0; i < tempdev->Count; i++) {
-				//generate_newdev_event
-				Events->Add(gcnew Event(tempdev[i], Event::EventCode::SIGNAL_FOUND));
-				UpdateEventList();
-				Devices->Add(tempdev[i]);
-				tempdev->RemoveAt(i);
-			}
+			UpdateRepeatersBase(tempdev);
 			if (Devices->Count > 1)
 				this->device_get = true;
 			else
@@ -1602,14 +1602,14 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 	}
 }
-
+//скрытие/показ карты
 System::Void Evrika::mainform::button1_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (mapform->Visible)
 		mapform->Hide();
 	else mapform->Show();
 }
-
+//сохранение точки с заданным радиусом и позицией в центре карты
 System::Void Evrika::mainform::button2_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	//MyCoords[lCoordsCount] = gcnew geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + lCoordsCount.ToString());
@@ -1617,7 +1617,7 @@ System::Void Evrika::mainform::button2_Click(System::Object ^ sender, System::Ev
 	listBox1->Items->Add(MyCoords[MyCoords->Count - 1]->get_name());
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 }
-
+//вызывается при выборе точки, отображает информацию о ней
 System::Void Evrika::mainform::listBox1_SelectedIndexChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>MyCoords->Count - 1) return;
@@ -1626,7 +1626,7 @@ System::Void Evrika::mainform::listBox1_SelectedIndexChanged(System::Object ^ se
 	label6->Text = "Lat: " + MyCoords[listBox1->SelectedIndex]->get_lat().ToString();
 	label7->Text = "Lng: " + MyCoords[listBox1->SelectedIndex]->get_lng().ToString();
 }
-
+//удаление выбранной точки
 System::Void Evrika::mainform::button5_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (listBox1->SelectedIndex<0 || listBox1->SelectedIndex>MyCoords->Count - 1) return;
@@ -1641,7 +1641,7 @@ System::Void Evrika::mainform::button5_Click(System::Object ^ sender, System::Ev
 	}
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
 }
-
+//отрисовка выбранной точки в виде окружности с точкой в центре
 System::Void Evrika::mainform::button3_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	//draw area point
@@ -1654,13 +1654,13 @@ System::Void Evrika::mainform::button3_Click(System::Object ^ sender, System::Ev
 	circ->Stroke = gcnew Pen(Color::Blue, 1);
 	areaOvrl->Polygons->Add(circ);
 }
-
+//очистка карты
 System::Void Evrika::mainform::button6_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	areaOvrl->Clear();
 	mrkrOvrl->Clear();
 }
-
+//отрисовка выбранной точки, как точки)
 System::Void Evrika::mainform::button4_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	GMarkerGoogle^ marker = gcnew GMarkerGoogle(MyCoords[listBox1->SelectedIndex]->get_pointLatLng(), GMarkerGoogleType::blue_pushpin);
@@ -1672,12 +1672,12 @@ System::Void Evrika::mainform::button7_Click(System::Object ^ sender, System::Ev
 	//find points of intersect
 	Triangulate(MyCoords[0], MyCoords[1]);
 }
-
+//ручной запуск триангуляции
 System::Void Evrika::mainform::button9_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	metod_5();
 }
-
+//сохранение изображения карты в файл
 System::Void Evrika::mainform::savemap_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	TimeAndDate dt;
@@ -1697,12 +1697,13 @@ System::Void Evrika::mainform::savemap_Click(System::Object ^ sender, System::Ev
 	//EvLog::EventLog a;
 	//a.add_events();
 }
-
+//показ окна настроек
 System::Void Evrika::mainform::настройкиToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	settings_window->Show();
 }
-
+//изменение размера окна в зависимости от вкладки 
+//TODO: сделать плавно
 System::Void Evrika::mainform::tabControl1_SelectedIndexChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	switch (tabControl1->SelectedIndex)
@@ -1721,7 +1722,7 @@ System::Void Evrika::mainform::tabControl1_SelectedIndexChanged(System::Object ^
 	}
 	this->Refresh();
 }
-
+//вызывается по приему данных по порту, передает обработку дальше
 System::Void Evrika::mainform::serialPort1_DataReceived(System::Object ^ sender, System::IO::Ports::SerialDataReceivedEventArgs ^ e)
 {
 	cli::array<wchar_t>^ rbuf = gcnew cli::array<wchar_t>(512);
@@ -1736,19 +1737,7 @@ System::Void Evrika::mainform::serialPort1_DataReceived(System::Object ^ sender,
 	}
 	//serialPort1->Close();
 }
-
-System::Void Evrika::mainform::open_device(System::Object ^ sender, System::Windows::Forms::DataGridViewCellEventArgs ^ e)
-{
-	//int row = e->RowIndex;
-	//if ((row < 0) || (Devices->Count == 0) || (row > Devices->Count - 1)) return;
-
-	////ConstructCMD(serialPort1, Devices[row]->unique_id, true);
-	//device_prop^ prop = gcnew device_prop(Devices[row], serialPort1);
-	//prop->Show();
-	//logs->Add(prop->my_log);
-	//PropWindows->Add(prop);
-}
-
+//сохранение лога событий в файл
 System::Void Evrika::mainform::save_events(System::Object ^ sender, System::EventArgs ^ e)
 {
 	TimeAndDate dt;
@@ -1803,7 +1792,7 @@ System::Void Evrika::mainform::save_events(System::Object ^ sender, System::Even
 	delete output;
 	//saveFileDialog2->FileName; путь
 }
-
+//загрузка лога событий из файла
 System::Void Evrika::mainform::load_session(System::Object ^ sender, System::EventArgs ^ e)
 {
 	openFileDialog1->ShowDialog();
@@ -1837,32 +1826,33 @@ System::Void Evrika::mainform::load_session(System::Object ^ sender, System::Eve
 	}
 	UpdateEventList();
 }
-
+//создание отдельного потока для нахождения порта с устройством
 System::Void Evrika::mainform::переподключениеКДЦToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
 	connthrd->Start();
 }
-
+//проверка соединения
 System::Void Evrika::mainform::проверкаСоединенияToolStripMenuItem_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::CheckComConn));
 	connthrd->Start();
 }
-
+///событие при загрузке главного окна
 System::Void Evrika::mainform::mainform_Load(System::Object ^ sender, System::EventArgs ^ e)
 {
 	my_handle = this;
+	//попытка найти уже подключенное устройство
 	Thread^ connthrd = gcnew Thread(gcnew ThreadStart(this, &mainform::EnumCOMs));
 	connthrd->Start();
 	//double a=TimeToMeters((282-265)*10.0);
 }
-
+//экспорт базы с картой
 System::Void Evrika::mainform::ExportMapBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	map->ShowExportDialog();
 }
-
+//импорт базы с картой
 System::Void Evrika::mainform::ImportMapBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	map->ShowImportDialog();
@@ -1971,7 +1961,7 @@ System::Void Evrika::mainform::button10_Click(System::Object ^ sender, System::E
 		textBox1->AppendText("\r\n" + ioexception->Message);
 	}
 }
-
+//обновление информации при выборе ретранслятора из таблицы
 System::Void Evrika::mainform::DCGrid_SelectionChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (DCGrid->SelectedCells->Count != 1) return;
@@ -1990,49 +1980,49 @@ System::Void Evrika::mainform::DCGrid_SelectionChanged(System::Object ^ sender, 
 	Thread^ temp = gcnew Thread(gcnew ThreadStart(this, &mainform::ParamRequest));
 	temp->Start();
 }
-
+//переключение состояния реле
 System::Void Evrika::mainform::RelayStatCheckBox_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	Commands::Class_0x0A::SetRelayState(SelectedDevice->GetAddr(), RelayStatCheckBox->Checked);
 }
-
+//сброс настроек выбранного ретранслятора
 System::Void Evrika::mainform::ResetRepeaterBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	Commands::Class_0x0A::ProgrammReset(SelectedDevice->GetAddr());
 }
-
+//запуск поиска ретрансляторов
 System::Void Evrika::mainform::button12_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Commands::Class_0x0D::StartSearchRepeaters(NULL);
 	CurrentActionLbl->Text = "Поиск ретрансляторов...";
 }
-
+//общий сброс настроек ретрансляторов
 System::Void Evrika::mainform::ResetRepeatersBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Commands::Class_0x0D::GlobalResetRepeaters(NULL);
 }
-
+//переключение питания GPS
 System::Void Evrika::mainform::GPSOnOff_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	Commands::Class_0x0B::SetGPSPowerState(SelectedDevice->GetAddr(), GPSOnOff->Checked);
 }
-
+//переключение антенны GPS
 System::Void Evrika::mainform::GPSAntenna_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	Commands::Class_0x0B::ToggleGPSAntenna(SelectedDevice->GetAddr(), GPSAntenna->Checked);
 }
-
+//запуск поиска радиометок
 System::Void Evrika::mainform::WakeUpRadioTagBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	Commands::Class_0x0C::WakeUp(SelectedDevice->GetAddr(), 2000);
 	CurrentActionLbl->Text = "Поиск радиометок через " + SelectedDevice->IdInHex() + "...";
 }
-
+//запрос параметров выбранной метки
 System::Void Evrika::mainform::RadioTagsGrid_SelectionChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (RadioTagsGrid->SelectedCells->Count != 1) return;
@@ -2045,20 +2035,20 @@ System::Void Evrika::mainform::RadioTagsGrid_SelectionChanged(System::Object ^ s
 	Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[row]->GetAddr());
 	CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[row]->IdInHex() + "...";
 }
-
+//сброс настроей метки и ретранслятора
 System::Void Evrika::mainform::TagAndRepeaterResetBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	Commands::Class_0x0C::ResetCC1101(SelectedDevice->GetAddr());
 	CurrentActionLbl->Text = "Сброс настроек метки и ретранслятора";
 }
-
+//ручной запрос параметров о метке
 System::Void Evrika::mainform::UpdateTagBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
 	CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "...";
 }
-
+//цикличное обновление данных о метке
 System::Void Evrika::mainform::AutoUpdateTagChk_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (AutoUpdateTagChk->Checked) {
@@ -2080,7 +2070,7 @@ System::Void Evrika::mainform::AutoUpdateTagChk_CheckedChanged(System::Object ^ 
 		}
 	}
 }
-
+//ручное обновление параметров ретранслятора
 System::Void Evrika::mainform::UpdateRepeaterParamBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	GetRepParamProgress->Visible = true;
@@ -2088,12 +2078,12 @@ System::Void Evrika::mainform::UpdateRepeaterParamBtn_Click(System::Object ^ sen
 	Thread^ temp = gcnew Thread(gcnew ThreadStart(this, &mainform::ParamRequest));
 	temp->Start();
 }
-
+//???
 System::Void Evrika::mainform::label12_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	first = 1;
 }
-
+//обновление информации о последнем известном положении ретранслятора и расстояния до метки
 System::Void Evrika::mainform::TagAndRepInfoUpdate_Tick(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) {
@@ -2116,24 +2106,23 @@ System::Void Evrika::mainform::TagAndRepInfoUpdate_Tick(System::Object ^ sender,
 	}
 	SelectedTagDistanceLbl->Text = SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance().ToString() + " m.";
 }
-
+//добавление точки на карту на основе координат ретранслятора и расстояния до метки
 System::Void Evrika::mainform::DrawPointBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	AddNewPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance());
 }
-
+//очистка графика
 System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::EventArgs ^ e)
 {
 	chart1->Series[0]->Points->Clear();
 	chart1->Series[1]->Points->Clear();
 	chart1->Series[2]->Points->Clear();
 }
-
+//запускает экспорт массива точек на следующей итерации получения расстояния
 System::Void Evrika::mainform::button8_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	DoExport = true;
 }
-
 Evrika::mainform::MyPosition::MyPosition()
 {
 	lat = gcnew KalmanFilter();
@@ -2142,7 +2131,6 @@ Evrika::mainform::MyPosition::MyPosition()
 	Height = gcnew KalmanFilter();
 	bFirstRead = true;
 }
-
 Evrika::mainform::MyPosition::~MyPosition()
 {
 	delete lat;
@@ -2150,7 +2138,6 @@ Evrika::mainform::MyPosition::~MyPosition()
 	delete HDOP;
 	delete Height;
 }
-
 void Evrika::mainform::MyPosition::SetState(double _lat, double _lng, double _HDOP, double _Height)
 {
 	lat->SetState(_lat, 0.1);
@@ -2158,7 +2145,6 @@ void Evrika::mainform::MyPosition::SetState(double _lat, double _lng, double _HD
 	HDOP->SetState(_HDOP, 0.1);
 	Height->SetState(_Height, 0.1);
 }
-
 void Evrika::mainform::MyPosition::Correct(double _lat, double _lng, double _HDOP, double _Height)
 {
 	lat->Correct(_lat);
@@ -2166,7 +2152,6 @@ void Evrika::mainform::MyPosition::Correct(double _lat, double _lng, double _HDO
 	HDOP->Correct(_HDOP);
 	Height->Correct(_Height);
 }
-
 void Evrika::mainform::MyPosition::GetState(double * _lat, double * _lng, double * _HDOP, double * _Height)
 {
 	*_lat = lat->State;
@@ -2174,7 +2159,6 @@ void Evrika::mainform::MyPosition::GetState(double * _lat, double * _lng, double
 	*_HDOP = HDOP->State;
 	*_Height = Height->State;
 }
-
 void Evrika::mainform::MyPosition::GetPos(double * _lat, double * _lng)
 {
 	*_lat = lat->State;
