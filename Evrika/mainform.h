@@ -179,6 +179,11 @@ namespace Evrika {
 	private: System::Windows::Forms::Button^  button7;
 	private: System::Windows::Forms::Button^  button8;
 	private: System::Windows::Forms::SaveFileDialog^  saveFileDialog3;
+	private: System::Windows::Forms::DataVisualization::Charting::Chart^  chart2;
+	private: System::Windows::Forms::Label^  label8;
+private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
+
+
 
 
 
@@ -453,6 +458,8 @@ namespace Evrika {
 		void GetTagParam();
 		void SetCurrentActionLblText(String^ str);
 		void UpdateRepeatersBase(List<Repeater^>^ newrep);
+		void UpdateDistanceBar(double rssi);
+		int CoefToColor(double coef);
 
 		Evrika::mapform^ mapform;
 		static Evrika::settings^ settings_window;
@@ -478,6 +485,8 @@ namespace Evrika {
 		Semaphore^ ParamReciver;
 		GMapOverlay ^areaOvrl;
 		GMapOverlay^ myPosOvrl;
+		double MIN_RSSI = -100.0;
+		double MAX_RSSI = -25.0;
 		bool LastStateIsOpen;
 		bool GPS_KnownPos = false;
 		bool my_pos_accepted = false;
@@ -521,6 +530,10 @@ namespace Evrika {
 				 System::Windows::Forms::DataVisualization::Charting::Series^  series1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
 				 System::Windows::Forms::DataVisualization::Charting::Series^  series2 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
 				 System::Windows::Forms::DataVisualization::Charting::Series^  series3 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
+				 System::Windows::Forms::DataVisualization::Charting::ChartArea^  chartArea2 = (gcnew System::Windows::Forms::DataVisualization::Charting::ChartArea());
+				 System::Windows::Forms::DataVisualization::Charting::Series^  series4 = (gcnew System::Windows::Forms::DataVisualization::Charting::Series());
+				 System::Windows::Forms::DataVisualization::Charting::DataPoint^  dataPoint1 = (gcnew System::Windows::Forms::DataVisualization::Charting::DataPoint(0,
+					 50));
 				 this->button1 = (gcnew System::Windows::Forms::Button());
 				 this->listBox1 = (gcnew System::Windows::Forms::ListBox());
 				 this->label1 = (gcnew System::Windows::Forms::Label());
@@ -574,6 +587,7 @@ namespace Evrika {
 				 this->tabControl1 = (gcnew System::Windows::Forms::TabControl());
 				 this->tabPage1 = (gcnew System::Windows::Forms::TabPage());
 				 this->TagAndRepInfoBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->AutoUpdateAndAddPointChk = (gcnew System::Windows::Forms::CheckBox());
 				 this->DrawPointBtn = (gcnew System::Windows::Forms::Button());
 				 this->SelectedRepeaterInfoLbl = (gcnew System::Windows::Forms::Label());
 				 this->SelectedTagDistanceLbl = (gcnew System::Windows::Forms::Label());
@@ -584,6 +598,8 @@ namespace Evrika {
 				 this->button7 = (gcnew System::Windows::Forms::Button());
 				 this->chart1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Chart());
 				 this->RadioTagParamBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->label8 = (gcnew System::Windows::Forms::Label());
+				 this->chart2 = (gcnew System::Windows::Forms::DataVisualization::Charting::Chart());
 				 this->PingModeBtn = (gcnew System::Windows::Forms::Button());
 				 this->label12 = (gcnew System::Windows::Forms::Label());
 				 this->label11 = (gcnew System::Windows::Forms::Label());
@@ -642,6 +658,7 @@ namespace Evrika {
 				 this->tabPage2->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->BeginInit();
 				 this->RadioTagParamBox->SuspendLayout();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart2))->BeginInit();
 				 this->RepeaterParamBox->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->BeginInit();
 				 this->tabPage3->SuspendLayout();
@@ -981,6 +998,7 @@ namespace Evrika {
 				 this->tabPage1->TabIndex = 0;
 				 this->tabPage1->Text = L"Управление";
 				 this->tabPage1->UseVisualStyleBackColor = true;
+				 this->TagAndRepInfoBox->Controls->Add(this->AutoUpdateAndAddPointChk);
 				 this->TagAndRepInfoBox->Controls->Add(this->DrawPointBtn);
 				 this->TagAndRepInfoBox->Controls->Add(this->SelectedRepeaterInfoLbl);
 				 this->TagAndRepInfoBox->Controls->Add(this->SelectedTagDistanceLbl);
@@ -990,6 +1008,13 @@ namespace Evrika {
 				 this->TagAndRepInfoBox->TabIndex = 24;
 				 this->TagAndRepInfoBox->TabStop = false;
 				 this->TagAndRepInfoBox->Text = L"groupBox3";
+				 this->AutoUpdateAndAddPointChk->AutoSize = true;
+				 this->AutoUpdateAndAddPointChk->Location = System::Drawing::Point(87, 63);
+				 this->AutoUpdateAndAddPointChk->Name = L"AutoUpdateAndAddPointChk";
+				 this->AutoUpdateAndAddPointChk->Size = System::Drawing::Size(50, 17);
+				 this->AutoUpdateAndAddPointChk->TabIndex = 3;
+				 this->AutoUpdateAndAddPointChk->Text = L"Авто";
+				 this->AutoUpdateAndAddPointChk->UseVisualStyleBackColor = true;
 				 this->DrawPointBtn->Location = System::Drawing::Point(6, 59);
 				 this->DrawPointBtn->Name = L"DrawPointBtn";
 				 this->DrawPointBtn->Size = System::Drawing::Size(75, 23);
@@ -1040,14 +1065,14 @@ namespace Evrika {
 				 this->tabPage2->TabIndex = 1;
 				 this->tabPage2->Text = L"Устройства";
 				 this->tabPage2->UseVisualStyleBackColor = true;
-				 this->button8->Location = System::Drawing::Point(356, 354);
+				 this->button8->Location = System::Drawing::Point(763, 602);
 				 this->button8->Name = L"button8";
-				 this->button8->Size = System::Drawing::Size(57, 23);
+				 this->button8->Size = System::Drawing::Size(75, 23);
 				 this->button8->TabIndex = 38;
 				 this->button8->Text = L"Export";
 				 this->button8->UseVisualStyleBackColor = true;
 				 this->button8->Click += gcnew System::EventHandler(this, &mainform::button8_Click);
-				 this->button7->Location = System::Drawing::Point(419, 354);
+				 this->button7->Location = System::Drawing::Point(763, 631);
 				 this->button7->Name = L"button7";
 				 this->button7->Size = System::Drawing::Size(75, 23);
 				 this->button7->TabIndex = 37;
@@ -1084,6 +1109,8 @@ namespace Evrika {
 				 this->chart1->Size = System::Drawing::Size(862, 155);
 				 this->chart1->TabIndex = 36;
 				 this->chart1->Text = L"chart1";
+				 this->RadioTagParamBox->Controls->Add(this->label8);
+				 this->RadioTagParamBox->Controls->Add(this->chart2);
 				 this->RadioTagParamBox->Controls->Add(this->PingModeBtn);
 				 this->RadioTagParamBox->Controls->Add(this->label12);
 				 this->RadioTagParamBox->Controls->Add(this->label11);
@@ -1100,6 +1127,39 @@ namespace Evrika {
 				 this->RadioTagParamBox->TabIndex = 35;
 				 this->RadioTagParamBox->TabStop = false;
 				 this->RadioTagParamBox->Text = L"groupBox3";
+				 this->label8->AutoSize = true;
+				 this->label8->Location = System::Drawing::Point(101, 108);
+				 this->label8->Name = L"label8";
+				 this->label8->Size = System::Drawing::Size(67, 13);
+				 this->label8->TabIndex = 11;
+				 this->label8->Text = L"Расстояние";
+				 chartArea2->AxisX->Enabled = System::Windows::Forms::DataVisualization::Charting::AxisEnabled::False;
+				 chartArea2->AxisX->Maximum = 1;
+				 chartArea2->AxisX->Minimum = 1;
+				 chartArea2->AxisY->Enabled = System::Windows::Forms::DataVisualization::Charting::AxisEnabled::True;
+				 chartArea2->AxisY->LabelAutoFitStyle = static_cast<System::Windows::Forms::DataVisualization::Charting::LabelAutoFitStyles>(((System::Windows::Forms::DataVisualization::Charting::LabelAutoFitStyles::IncreaseFont | System::Windows::Forms::DataVisualization::Charting::LabelAutoFitStyles::DecreaseFont)
+					 | System::Windows::Forms::DataVisualization::Charting::LabelAutoFitStyles::WordWrap));
+				 chartArea2->AxisY->LabelStyle->Enabled = false;
+				 chartArea2->AxisY->Maximum = 100;
+				 chartArea2->AxisY->Minimum = 0;
+				 chartArea2->Name = L"ChartArea1";
+				 this->chart2->ChartAreas->Add(chartArea2);
+				 this->chart2->Location = System::Drawing::Point(3, 16);
+				 this->chart2->Margin = System::Windows::Forms::Padding(0);
+				 this->chart2->Name = L"chart2";
+				 series4->BackImageAlignment = System::Windows::Forms::DataVisualization::Charting::ChartImageAlignmentStyle::Left;
+				 series4->ChartArea = L"ChartArea1";
+				 series4->ChartType = System::Windows::Forms::DataVisualization::Charting::SeriesChartType::Bar;
+				 series4->Color = System::Drawing::Color::Orange;
+				 series4->LabelBackColor = System::Drawing::Color::White;
+				 series4->LabelBorderColor = System::Drawing::Color::White;
+				 series4->Name = L"Series1";
+				 series4->Points->Add(dataPoint1);
+				 this->chart2->Series->Add(series4);
+				 this->chart2->Size = System::Drawing::Size(269, 91);
+				 this->chart2->SuppressExceptions = true;
+				 this->chart2->TabIndex = 10;
+				 this->chart2->Text = L"chart2";
 				 this->PingModeBtn->Enabled = false;
 				 this->PingModeBtn->Location = System::Drawing::Point(275, 13);
 				 this->PingModeBtn->Name = L"PingModeBtn";
@@ -1113,6 +1173,7 @@ namespace Evrika {
 				 this->label12->Size = System::Drawing::Size(41, 13);
 				 this->label12->TabIndex = 8;
 				 this->label12->Text = L"label12";
+				 this->label12->Visible = false;
 				 this->label12->Click += gcnew System::EventHandler(this, &mainform::label12_Click);
 				 this->label11->AutoSize = true;
 				 this->label11->Location = System::Drawing::Point(80, 54);
@@ -1120,6 +1181,7 @@ namespace Evrika {
 				 this->label11->Size = System::Drawing::Size(41, 13);
 				 this->label11->TabIndex = 7;
 				 this->label11->Text = L"label11";
+				 this->label11->Visible = false;
 				 this->AutoUpdateTagChk->AutoSize = true;
 				 this->AutoUpdateTagChk->CheckAlign = System::Drawing::ContentAlignment::MiddleRight;
 				 this->AutoUpdateTagChk->Location = System::Drawing::Point(234, 110);
@@ -1141,29 +1203,34 @@ namespace Evrika {
 				 this->textBox3->Size = System::Drawing::Size(100, 20);
 				 this->textBox3->TabIndex = 4;
 				 this->textBox3->Text = L"26";
+				 this->textBox3->Visible = false;
 				 this->textBox2->Location = System::Drawing::Point(7, 85);
 				 this->textBox2->Name = L"textBox2";
 				 this->textBox2->Size = System::Drawing::Size(100, 20);
 				 this->textBox2->TabIndex = 3;
 				 this->textBox2->Text = L"1,4";
+				 this->textBox2->Visible = false;
 				 this->BitrateLbl->AutoSize = true;
 				 this->BitrateLbl->Location = System::Drawing::Point(10, 54);
 				 this->BitrateLbl->Name = L"BitrateLbl";
 				 this->BitrateLbl->Size = System::Drawing::Size(41, 13);
 				 this->BitrateLbl->TabIndex = 2;
 				 this->BitrateLbl->Text = L"label12";
+				 this->BitrateLbl->Visible = false;
 				 this->ARSSILbl->AutoSize = true;
 				 this->ARSSILbl->Location = System::Drawing::Point(10, 37);
 				 this->ARSSILbl->Name = L"ARSSILbl";
 				 this->ARSSILbl->Size = System::Drawing::Size(41, 13);
 				 this->ARSSILbl->TabIndex = 1;
 				 this->ARSSILbl->Text = L"label11";
+				 this->ARSSILbl->Visible = false;
 				 this->TimeLbl->AutoSize = true;
 				 this->TimeLbl->Location = System::Drawing::Point(7, 20);
 				 this->TimeLbl->Name = L"TimeLbl";
 				 this->TimeLbl->Size = System::Drawing::Size(44, 13);
 				 this->TimeLbl->TabIndex = 0;
 				 this->TimeLbl->Text = L"TimeLbl";
+				 this->TimeLbl->Visible = false;
 				 this->TagAndRepeaterResetBtn->Location = System::Drawing::Point(636, 354);
 				 this->TagAndRepeaterResetBtn->Name = L"TagAndRepeaterResetBtn";
 				 this->TagAndRepeaterResetBtn->Size = System::Drawing::Size(235, 23);
@@ -1246,18 +1313,21 @@ namespace Evrika {
 				 this->vlna1Lbl->Size = System::Drawing::Size(47, 13);
 				 this->vlna1Lbl->TabIndex = 28;
 				 this->vlna1Lbl->Text = L"vlna1Lbl";
+				 this->vlna1Lbl->Visible = false;
 				 this->vtempLbl->AutoSize = true;
 				 this->vtempLbl->Location = System::Drawing::Point(357, 52);
 				 this->vtempLbl->Name = L"vtempLbl";
 				 this->vtempLbl->Size = System::Drawing::Size(50, 13);
 				 this->vtempLbl->TabIndex = 31;
 				 this->vtempLbl->Text = L"vtempLbl";
+				 this->vtempLbl->Visible = false;
 				 this->vchargerLbl->AutoSize = true;
 				 this->vchargerLbl->Location = System::Drawing::Point(241, 35);
 				 this->vchargerLbl->Name = L"vchargerLbl";
 				 this->vchargerLbl->Size = System::Drawing::Size(63, 13);
 				 this->vchargerLbl->TabIndex = 27;
 				 this->vchargerLbl->Text = L"vchargerLbl";
+				 this->vchargerLbl->Visible = false;
 				 this->ResetRepeaterBtn->Location = System::Drawing::Point(6, 42);
 				 this->ResetRepeaterBtn->Name = L"ResetRepeaterBtn";
 				 this->ResetRepeaterBtn->Size = System::Drawing::Size(75, 23);
@@ -1271,18 +1341,21 @@ namespace Evrika {
 				 this->vcoreLbl->Size = System::Drawing::Size(48, 13);
 				 this->vcoreLbl->TabIndex = 30;
 				 this->vcoreLbl->Text = L"vcoreLbl";
+				 this->vcoreLbl->Visible = false;
 				 this->vbattLbl->AutoSize = true;
 				 this->vbattLbl->Location = System::Drawing::Point(241, 16);
 				 this->vbattLbl->Name = L"vbattLbl";
 				 this->vbattLbl->Size = System::Drawing::Size(45, 13);
 				 this->vbattLbl->TabIndex = 26;
 				 this->vbattLbl->Text = L"vbattLbl";
+				 this->vbattLbl->Visible = false;
 				 this->vlna2Lbl->AutoSize = true;
 				 this->vlna2Lbl->Location = System::Drawing::Point(357, 16);
 				 this->vlna2Lbl->Name = L"vlna2Lbl";
 				 this->vlna2Lbl->Size = System::Drawing::Size(47, 13);
 				 this->vlna2Lbl->TabIndex = 29;
 				 this->vlna2Lbl->Text = L"vlna2Lbl";
+				 this->vlna2Lbl->Visible = false;
 				 this->ResetRepeatersBtn->Location = System::Drawing::Point(156, 354);
 				 this->ResetRepeatersBtn->Name = L"ResetRepeatersBtn";
 				 this->ResetRepeatersBtn->Size = System::Drawing::Size(175, 23);
@@ -1424,6 +1497,7 @@ namespace Evrika {
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->EndInit();
 				 this->RadioTagParamBox->ResumeLayout(false);
 				 this->RadioTagParamBox->PerformLayout();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart2))->EndInit();
 				 this->RepeaterParamBox->ResumeLayout(false);
 				 this->RepeaterParamBox->PerformLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->DCGrid))->EndInit();

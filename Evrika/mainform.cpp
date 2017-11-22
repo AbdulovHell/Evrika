@@ -748,6 +748,24 @@ void Evrika::mainform::UpdateRepeatersBase(List<Repeater^>^ newrep)
 		newrep->RemoveAt(i);
 	}
 }
+//обновление значения бара дистанции и цвета
+void Evrika::mainform::UpdateDistanceBar(double rssi)
+{
+	double coef = Math::Abs(rssi - MIN_RSSI) / Math::Abs(MAX_RSSI - MIN_RSSI);
+	if (coef > 1.0) coef = 1.0;
+	chart2->Series[0]->Points[0]->YValues[0] = coef * 100;
+	chart2->Series[0]->Color = Color::FromArgb(CoefToColor(coef), CoefToColor(1 - coef), 0);
+}
+//расчет коэф цвета
+int Evrika::mainform::CoefToColor(double coef)
+{
+	if (coef <= 0.5) {
+		return 255;
+	}
+	else {
+		return 255 - (coef - 0.5) * 255 * 2;
+	}
+}
 
 void Evrika::mainform::SetTimer(bool en)
 {
@@ -792,7 +810,7 @@ void Evrika::mainform::AddNewPoint(double lat, double lng, double m)
 	}
 
 	if (MyCoords->Count > 3) {
-		metod_5();	
+		metod_5();
 	}
 }
 //обновление координат центра карты
@@ -1521,6 +1539,13 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 					TimeLbl->Text = time.ToString() + " cycles. " + TimeToMeters(time*10.0).ToString() + " m.";
 					//rssi
 					ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, double::Parse(textBox2->Text), double::Parse(textBox3->Text)).ToString() + " m.";
+					
+					if (rssi > MAX_RSSI)
+						MAX_RSSI = rssi;
+					if (rssi < MIN_RSSI)
+						MIN_RSSI = rssi;
+					UpdateDistanceBar(rssi);
+					
 					//ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, 3, 20.0).ToString() + " m.";
 					//bitrate
 					BitrateLbl->Text = bitrate.ToString();
@@ -1919,31 +1944,12 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 			}
 			//sPointReciver->WaitOne(1000);
 		}
-		//if (Get_Dev->Checked) {
-		//	get_device_progress->Value = 0;
-		//	try {
-		//		if (serialPort1->IsOpen)
-		//			//ConstructCMD(serialPort1, (uint32_t)3000);
-		//			Commands::Class_0x0C::WakeUp(NULL, 3000);
-		//	}
-		//	catch (IO::IOException ^ioexception) {
-		//		proglog->AppendText("\r\n" + ioexception->Message);
-		//	}
-		//	//sPointReciver->WaitOne(4000);
-		//}
+		
 	}
 	//T=1c
 	else if (sys_task_counter % 10 == 0) {
-		//if (this->Get_Dev->Checked) get_device_progress->Value++;
-		if (checkBox1->Checked) {
-			try {
-				if (serialPort1->IsOpen) {
-					Commands::Class_0x0B::GetGPSStatus(NULL);
-				}
-			}
-			catch (IO::IOException ^ioexception) {
-				proglog->AppendText("\r\n" + ioexception->Message + " in sys_task_Tick.");
-			}
+		if (AutoUpdateAndAddPointChk->Checked) {
+			
 		}
 	}
 	sys_task_counter++;
@@ -2022,7 +2028,7 @@ System::Void Evrika::mainform::WakeUpRadioTagBtn_Click(System::Object ^ sender, 
 	Commands::Class_0x0C::WakeUp(SelectedDevice->GetAddr(), 2000);
 	CurrentActionLbl->Text = "Поиск радиометок через " + SelectedDevice->IdInHex() + "...";
 }
-//запрос параметров выбранной метки
+//обновление информации при выборе метки из таблицы
 System::Void Evrika::mainform::RadioTagsGrid_SelectionChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (RadioTagsGrid->SelectedCells->Count != 1) return;
