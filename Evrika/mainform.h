@@ -181,7 +181,7 @@ namespace Evrika {
 	private: System::Windows::Forms::SaveFileDialog^  saveFileDialog3;
 	private: System::Windows::Forms::DataVisualization::Charting::Chart^  chart2;
 	private: System::Windows::Forms::Label^  label8;
-private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
+	private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 
 
 
@@ -460,6 +460,12 @@ private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 		void UpdateRepeatersBase(List<Repeater^>^ newrep);
 		void UpdateDistanceBar(double rssi);
 		int CoefToColor(double coef);
+		void DataUpdateThread();
+		void SetTextTagAndRepInfoBox(String^ txt);
+		void ChangeGPSOnOffState(bool state);
+		void SelectedRepeaterInfoLblSet(String^ txt);
+		void AutoUpdateTagState(bool state);
+		void SelectedTagDistanceText(String^ txt);
 
 		Evrika::mapform^ mapform;
 		static Evrika::settings^ settings_window;
@@ -486,7 +492,7 @@ private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 		GMapOverlay ^areaOvrl;
 		GMapOverlay^ myPosOvrl;
 		double MIN_RSSI = -100.0;
-		double MAX_RSSI = -25.0;
+		double MAX_RSSI = -30.0;
 		bool LastStateIsOpen;
 		bool GPS_KnownPos = false;
 		bool my_pos_accepted = false;
@@ -502,9 +508,12 @@ private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 		uint8_t PrevCountFindedRepeaters = 0;
 		uint8_t PrevCountFindedRadioTags = 0;
 		Thread^ RadioTagAutoUpdateThrd;
+		Thread^ DataAutoUpdateThrd;
 		bool RadioTagAutoUpdateEnabled = false;
+		bool DataAutoUpdateThrdEnabled = false;
 		Semaphore^ RadioTagUpdateEnabledSemaphore;
 		Semaphore^ RadioTagUpdateParam;
+		Semaphore^ DataAutoUpdateThrdSemaphore;
 		//test
 		double temp2 = 0;
 		uint64_t mid2 = 0;
@@ -1015,6 +1024,7 @@ private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 				 this->AutoUpdateAndAddPointChk->TabIndex = 3;
 				 this->AutoUpdateAndAddPointChk->Text = L"Авто";
 				 this->AutoUpdateAndAddPointChk->UseVisualStyleBackColor = true;
+				 this->AutoUpdateAndAddPointChk->CheckedChanged += gcnew System::EventHandler(this, &mainform::AutoUpdateAndAddPointChk_CheckedChanged);
 				 this->DrawPointBtn->Location = System::Drawing::Point(6, 59);
 				 this->DrawPointBtn->Name = L"DrawPointBtn";
 				 this->DrawPointBtn->Size = System::Drawing::Size(75, 23);
@@ -1464,7 +1474,6 @@ private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 				 this->openFileDialog1->DefaultExt = L"esf";
 				 this->openFileDialog1->Filter = L"Evrika session file|*.esf";
 				 this->openFileDialog1->SupportMultiDottedExtensions = true;
-				 this->TagAndRepInfoUpdate->Enabled = true;
 				 this->TagAndRepInfoUpdate->Interval = 1000;
 				 this->TagAndRepInfoUpdate->Tick += gcnew System::EventHandler(this, &mainform::TagAndRepInfoUpdate_Tick);
 				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -1550,5 +1559,6 @@ private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
 	private: System::Void DrawPointBtn_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button7_Click_1(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button8_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void AutoUpdateAndAddPointChk_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	};
 }

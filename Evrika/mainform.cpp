@@ -152,6 +152,7 @@ Evrika::mainform::mainform(void)
 	ParamReciver = gcnew Semaphore(0, 3);
 	RadioTagUpdateEnabledSemaphore = gcnew Semaphore(0, 3);
 	RadioTagUpdateParam = gcnew Semaphore(0, 3);
+	DataAutoUpdateThrdSemaphore = gcnew Semaphore(0, 3);
 	listBox1->Items->Clear();
 	mrkrOvrl = mapform->mrkrOvrl;
 	areaOvrl = mapform->areaOvrl;
@@ -767,6 +768,84 @@ int Evrika::mainform::CoefToColor(double coef)
 	}
 }
 
+void Evrika::mainform::DataUpdateThread()
+{
+	int attempts = 0;
+	while (1) {
+		if (!DataAutoUpdateThrdEnabled) {
+			DataAutoUpdateThrdSemaphore->WaitOne();
+		}
+		//если выбран какой-то ретранлятор
+		if (SelectedDevice != nullptr) {
+			//TagAndRepInfoBox->Text = SelectedDevice->IdInHex();
+			Invoke(gcnew Action<String^>(this, &mainform::SetTextTagAndRepInfoBox), SelectedDevice->IdInHex());
+			//проверяем наличие координат
+			if (SelectedDevice->IfKnownPos()) {//есть
+											   //обновляем
+				attempts = 0;
+				do {
+					Commands::Class_0x0B::GetGPSPosition(SelectedDevice->GetAddr());
+					attempts++;
+					if (attempts > 10) break;
+				} while (!ParamReciver->WaitOne(1500));
+				//SelectedRepeaterInfoLbl->Text = "Lat:" + SelectedDevice->Lat.ToString() + " Lon:" + SelectedDevice->Lon.ToString();
+				Invoke(gcnew Action<String^>(this, &mainform::SelectedRepeaterInfoLblSet), "Lat:" + SelectedDevice->Lat.ToString() + " Lon:" + SelectedDevice->Lon.ToString());
+			}
+			else {//нету
+				  //пробуем включить питание gps
+				//GPSOnOff->Checked = true;		//invoke
+				Invoke(gcnew Action<bool>(this,&mainform::ChangeGPSOnOffState), true);
+				//запрос состояние gps
+				attempts = 0;
+				do {
+					Commands::Class_0x0B::GetGPSStatus(SelectedDevice->GetAddr());
+					attempts++;
+					if (attempts > 10) break;
+				} while (!ParamReciver->WaitOne(1500));
+				//SelectedRepeaterInfoLbl->Text = "Координат нет. Ожидание...";
+				Invoke(gcnew Action<String^>(this,&mainform::SelectedRepeaterInfoLblSet), "Координат нет. Ожидание...");
+			}
+			//выбрана ли метка
+			if (!(PrevSelectedTagIndex < 0 || PrevSelectedTagIndex >= SelectedDevice->RadioTags->Count)) {
+				//AutoUpdateTagChk->Checked = false;
+				Invoke(gcnew Action<bool>(this,&mainform::AutoUpdateTagState),false);
+				//TagAndRepInfoBox->Text = SelectedDevice->IdInHex() + "+" + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex();
+				Invoke(gcnew Action<String^>(this, &mainform::SetTextTagAndRepInfoBox), SelectedDevice->IdInHex() + "+" + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex());
+				Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
+				RadioTagUpdateParam->WaitOne(6000);
+				//SelectedTagDistanceLbl->Text = SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance().ToString() + " m.";
+				Invoke(gcnew Action<String^>(this,&mainform::SelectedTagDistanceText), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance().ToString() + " m.");
+			}
+		}
+		Sleep(100);
+	}
+}
+
+void Evrika::mainform::SetTextTagAndRepInfoBox(String ^ txt)
+{
+	TagAndRepInfoBox->Text = txt;
+}
+
+void Evrika::mainform::ChangeGPSOnOffState(bool state)
+{
+	GPSOnOff->Checked = state;
+}
+
+void Evrika::mainform::SelectedRepeaterInfoLblSet(String ^ txt)
+{
+	SelectedRepeaterInfoLbl->Text = txt;
+}
+
+void Evrika::mainform::AutoUpdateTagState(bool state)
+{
+	AutoUpdateTagChk->Checked = state;
+}
+
+void Evrika::mainform::SelectedTagDistanceText(String ^ txt)
+{
+	SelectedTagDistanceLbl->Text = txt;
+}
+
 void Evrika::mainform::SetTimer(bool en)
 {
 	sys_task->Enabled = en;
@@ -1065,7 +1144,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			break;
 		}
 		break;
-	case 0x0B:
+	case 0x0B:	//GPS
 		switch (rbuf[MESSAGE_ID]) {
 		case 0x01:	//ответ на управление питанием GPS
 			if (GPSOnOff->Checked)
@@ -1245,7 +1324,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			break;
 		}
 		break;
-	case 0x0C:
+	case 0x0C:	//Метки
 		switch (rbuf[MESSAGE_ID]) {	//message ID
 		case 0x01:	//ответ на запуск цикла пробуждения меток
 		{
@@ -1537,15 +1616,16 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 						}
 					}
 					TimeLbl->Text = time.ToString() + " cycles. " + TimeToMeters(time*10.0).ToString() + " m.";
+					SelectedDevice->RadioTags[i]->SaveDist(TimeToMeters(time*10.0));
 					//rssi
 					ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, double::Parse(textBox2->Text), double::Parse(textBox3->Text)).ToString() + " m.";
-					
+
 					if (rssi > MAX_RSSI)
 						MAX_RSSI = rssi;
 					if (rssi < MIN_RSSI)
 						MIN_RSSI = rssi;
 					UpdateDistanceBar(rssi);
-					
+
 					//ARSSILbl->Text = a_rssi.ToString() + " db. " + ConvertToMeters(a_rssi, 3, 20.0).ToString() + " m.";
 					//bitrate
 					BitrateLbl->Text = bitrate.ToString();
@@ -1944,13 +2024,11 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 			}
 			//sPointReciver->WaitOne(1000);
 		}
-		
+
 	}
 	//T=1c
 	else if (sys_task_counter % 10 == 0) {
-		if (AutoUpdateAndAddPointChk->Checked) {
-			
-		}
+
 	}
 	sys_task_counter++;
 }
@@ -2128,6 +2206,27 @@ System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::
 System::Void Evrika::mainform::button8_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	DoExport = true;
+}
+System::Void Evrika::mainform::AutoUpdateAndAddPointChk_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	if (AutoUpdateAndAddPointChk->Checked) {
+		if (DataAutoUpdateThrd == nullptr) {
+			DataAutoUpdateThrd = gcnew Thread(gcnew ThreadStart(this, &mainform::DataUpdateThread));
+			DataAutoUpdateThrd->Start();
+			Sleep(100);
+			DataAutoUpdateThrdEnabled = true;
+			DataAutoUpdateThrdSemaphore->Release();
+		}
+		else {
+			DataAutoUpdateThrdEnabled = true;
+			DataAutoUpdateThrdSemaphore->Release();
+		}
+	}
+	else {
+		if (DataAutoUpdateThrd != nullptr) {
+			DataAutoUpdateThrdEnabled = false;
+		}
+	}
 }
 Evrika::mainform::MyPosition::MyPosition()
 {

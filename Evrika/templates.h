@@ -97,6 +97,7 @@ namespace Evrika {
 		int8_t adaptive_rssi;
 		float adaptive_time;
 		uint8_t adaptive_bitrate;
+		double distance_t;
 	public:
 		bool ping;
 
@@ -119,8 +120,21 @@ namespace Evrika {
 		virtual int GetDevType() override {
 			return 2;
 		}
+		//сохраняет последнюю расчитанную дистанцию временным методом
+		void SaveDist(double m) {
+			distance_t = m;
+		}
+		//возвращает дистанцию до маяка
 		double GetDistance() {
-			return ConvertToMeters(adaptive_rssi, 1.7, 26);
+			//если полоса 2 или 3, вернем расстояние от временного метода
+			if (adaptive_bitrate > 1) {
+				return distance_t;
+			}
+			//если все плохо, то амплитудным
+			else
+			{
+				return ConvertToMeters(adaptive_rssi, 1.7, 26);
+			}
 		}
 		double GetDistance(double n, double SignalLvlAt1m) {
 			return ConvertToMeters(adaptive_rssi, n, SignalLvlAt1m);
@@ -299,7 +313,7 @@ namespace Evrika {
 	}
 
 	template<typename T> void PushBack(cli::array<T>^ arr, T num) {
-		for (int i = 0; i < arr->Length-1; i++) {
+		for (int i = 0; i < arr->Length - 1; i++) {
 			arr[i] = arr[i + 1];
 		}
 		arr[arr->Length - 1] = num;
