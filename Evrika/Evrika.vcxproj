@@ -162,15 +162,18 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="emath.cpp" />
     <ClCompile Include="EventLog.pb.cc" />
     <ClCompile Include="loading_page.cpp" />
     <ClCompile Include="mainform.cpp" />
     <ClCompile Include="mapform.cpp" />
     <ClCompile Include="SaveSettings.pb.cc" />
     <ClCompile Include="settings.cpp" />
+    <ClCompile Include="TaskProvider.cpp" />
     <ClCompile Include="templates.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="emath.h" />
     <ClInclude Include="EventLog.pb.h" />
     <ClInclude Include="loading_page.h">
       <FileType>CppForm</FileType>
@@ -185,6 +188,7 @@
     <ClInclude Include="settings.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="TaskProvider.h" />
     <ClInclude Include="templates.h" />
   </ItemGroup>
   <ItemGroup>
@@ -202,7 +206,6 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
     <None Include="GMap.NET.Core.dll" />
   </ItemGroup>
   <ItemGroup>

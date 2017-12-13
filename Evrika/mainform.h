@@ -22,7 +22,6 @@ namespace Evrika {
 	ref class settings;
 	ref class loading_page;
 	ref class KalmanFilter;
-	ref class geoPoint;
 	ref class Device;
 	ref class Event;
 	ref class Repeater;
@@ -204,212 +203,6 @@ namespace Evrika {
 
 	private: System::Windows::Forms::ListBox^  listBox1;
 
-	private: ref class geoPoint {                 //Класс geoPoint для хранения координат точек
-	private:
-		double _lat, _lng, _r;	//градусы, км в градусах					
-		System::String ^_name;
-	public:
-		geoPoint()
-		{
-		}
-		geoPoint(double lat, double lng, double r_m)
-		{
-			_lat = lat;
-			_lng = lng;
-			_r = r_m;
-		}
-		geoPoint(double lat, double lng, double r_m, System::String ^name)
-		{
-			_lat = lat;
-			_lng = lng;
-			_r = r_m;
-			_name = name;
-		}
-		geoPoint(System::String ^name)
-		{
-			_lat = 0;
-			_lng = 0;
-			_r = 0;
-			_name = name;
-		}
-		geoPoint(const geoPoint %c)   // конструктор копирования
-		{
-			_lat = c._lat;
-			_lng = c._lng;
-			_name = c._name;
-			_r = c._r;
-		}
-		void set_point(double lat, double lng, double r_m) //метод присваивания
-		{
-			_lat = lat;
-			_lng = lng;
-			_r = r_m;
-		}
-		double get_lat()                    //возвращает координату х точки
-		{
-			return _lat;
-		}
-		double get_lng()                     //возвращает координату у точки
-		{
-			return _lng;
-		}
-		double get_r()
-		{
-			return _r;
-		}
-		System::String^ get_name() {
-			return _name;
-		}
-		PointLatLng get_pointLatLng() {
-			return PointLatLng(_lat, _lng);
-		}
-		static double RadiansToDegrees(double rads) {
-			return rads*(180.0 / Math::PI);
-		}
-		static double DegreesToRadians(double degr) {
-			return degr*(Math::PI / 180.0);
-		}
-		static List<PointLatLng>^ CreateCircle(PointLatLng geoPoint, double radius_m) {
-			int segments = 360;
-			List<PointLatLng>^ gpollist = gcnew List<PointLatLng>();
-
-			for (int i = 0; i < segments; i++)
-				gpollist->Add(geoPoint::FindPointAtDistanceFrom(geoPoint, 2 * Math::PI*i / segments, radius_m / 1000));
-
-			return gpollist;
-		}
-		List<PointLatLng>^ CreateCircle() {
-			PointLatLng geoPoint = get_pointLatLng();
-			double radius_km = get_r() / 1000;
-			int segments = 360;
-			List<PointLatLng>^ gpollist = gcnew List<PointLatLng>();
-
-			for (int i = 0; i < segments; i++)
-				gpollist->Add(FindPointAtDistanceFrom(geoPoint, 2 * Math::PI*i / segments, radius_km));
-
-			return gpollist;
-		}
-		static PointLatLng FindPointAtDistanceFrom(PointLatLng^ startPoint, double initialBearingRadians, double distanceKilometres) {
-			const double radiusEarthKilometres = 6371.01;
-			double distRatio = distanceKilometres / radiusEarthKilometres;
-			double distRatioSine = Math::Sin(distRatio);
-			double distRatioCosine = Math::Cos(distRatio);
-
-			double startLatRad = DegreesToRadians(startPoint->Lat);
-			double startLonRad = DegreesToRadians(startPoint->Lng);
-
-			double startLatCos = Math::Cos(startLatRad);
-			double startLatSin = Math::Sin(startLatRad);
-
-			double endLatRads = Math::Asin((startLatSin*distRatioCosine) + (startLatCos*distRatioSine*Math::Cos(initialBearingRadians)));
-
-			double endLonRads = startLonRad + Math::Atan2(
-				Math::Sin(initialBearingRadians)*distRatioSine*startLatCos,
-				distRatioCosine - startLatSin*Math::Sin(endLatRads));
-
-			return PointLatLng(RadiansToDegrees(endLatRads), RadiansToDegrees(endLonRads));
-		}
-		static double GetDistanceToPointFrom(PointLatLng^ startPoint, PointLatLng^ endPoint) {
-			double distanceKilometres = 0;
-			const double radiusEarthKilometres = 6371.01;
-			double startLatRad = DegreesToRadians(startPoint->Lat);
-			double startLonRad = DegreesToRadians(startPoint->Lng);
-			double endLatRad = DegreesToRadians(endPoint->Lat);
-			double endLonRad = DegreesToRadians(endPoint->Lng);
-			double temp = Math::Sin(startLatRad)*Math::Sin(endLatRad) + Math::Cos(startLatRad)*Math::Cos(endLatRad)*Math::Cos(startLonRad - endLonRad);
-			double d = Math::Acos(temp);
-			distanceKilometres = d*radiusEarthKilometres;
-			return distanceKilometres;
-		}
-		static List<PointLatLng>^ SortPoints_distance(List<PointLatLng>^ sorting_point) {
-			return sorting_point;
-			double temp_dist = 0, min_dist = 0;
-			int min_index = -1, size = sorting_point->Count;
-			PointLatLng tempPoint;
-			List<PointLatLng>^ sorted_point = gcnew List<PointLatLng>;
-
-			sorted_point->Add(sorting_point[0]);
-			sorting_point->RemoveAt(0);
-			for (int i = 0; i < size - 1; i++) {
-				for (int j = 0; j < size; j++) {
-					temp_dist = Math::Sqrt(
-						Math::Pow(Math::Abs(sorting_point[i].Lat - sorting_point[j].Lat), 2) +
-						Math::Pow(Math::Abs(sorting_point[i].Lng - sorting_point[j].Lng), 2));
-					if (min_dist == 0)
-					{
-						min_dist = temp_dist;
-						min_index = j;
-					}
-					else if (temp_dist < min_dist) {
-						min_dist = temp_dist;
-						min_index = j;
-					}
-				}
-				sorted_point->Add(sorting_point[min_index]);
-				sorting_point->RemoveAt(min_index);
-				min_index = -1;
-				min_dist = 0;
-			}
-			sorted_point->Add(sorting_point[0]);
-			sorting_point->RemoveAt(0);
-			return sorted_point;
-		}
-	};
-			 ref class Line                 //Класс line для хранения коэффициентов A, B, C уравнения прямой на плоскости
-			 {
-			 private:
-				 double A, B, C;
-			 public:
-				 Line()
-				 {
-				 }
-				 Line(double a, double b, double c)
-				 {
-					 A = a;
-					 B = b;
-					 C = c;
-				 }
-				 Line(PointLatLng P0, PointLatLng P1)
-				 {
-					 A = P1.Lng - P0.Lng;
-					 B = P0.Lat - P1.Lat;
-					 C = 0 - B * P0.Lng - A * P0.Lat;
-				 }
-				 void set_line(PointLatLng ^ P0, PointLatLng ^ P1)          //метод составляет уравнение прямой по двум точкам и сохраняет коэффициенты
-				 {
-					 A = P1->Lng - P0->Lng;
-					 B = P0->Lat - P1->Lat;
-					 C = 0 - B * P0->Lng - A * P0->Lat;
-				 }
-				 int check_point(PointLatLng ^ P0)                  //метод для проверки положения точки относительно прямой
-				 {
-					 if (A* P0->Lat + B * P0->Lng + C == 0)
-					 {
-						 return 0;                        // Возвращает 0, если точка лежит на прямой
-					 }
-					 else
-						 if (A* P0->Lat + B * P0->Lng + C < 0)
-						 {
-							 return -1;                   // Возвращает -1, если точка лежит в правой полуплоскости (условно)
-						 }
-						 else
-							 return 1;                    // Возвращает 1, если точка лежит в левой полуплоскости (условно)
-				 }
-
-
-				 double get_A()  //Возвращает коэффициет A
-				 {
-					 return A;
-				 }
-				 double get_B()   //Возвращает коэффициет B
-				 {
-					 return B;
-				 }
-				 double get_C()  //Возвращает коэффициет C
-				 {
-					 return C;
-				 }
-			 };
 	public:	 ref class MyPosition {
 		KalmanFilter^ lat;
 		KalmanFilter^ lng;
@@ -437,21 +230,12 @@ namespace Evrika {
 		void ParseDeviceBuffer(cli::array<wchar_t>^ rbuf);
 
 		static mainform^ my_handle;
-		MyPosition^ myPos;
+		//MyPosition^ myPos;
 	private:
-		void Triangulate(geoPoint^ circle1, geoPoint^ circle2);
-		void Triangulate(geoPoint^ circle1, geoPoint^ circle2, List<PointLatLng>^ twoPoints);
-		int factorial(int n);
-		List<PointLatLng>^ SortPoint_Line(List<PointLatLng>^ in_p);
-		bool inTheArea(PointLatLng point);
-		bool inTheArea(PointLatLng point, int i, int j, int k);
-		void metod_5();
 		void ParseToPoint(cli::array<wchar_t>^ buf);
 		void WriteToComStat(String^ str);
 		void CheckComConn();
 		void EnumCOMs();
-		int RangeRandInt(int min, int max);
-		double RangeRandDouble(double min, double max);
 		void ParamRequest();
 		void IncrementProgress();
 		void MakeVisible(bool state);
@@ -479,7 +263,7 @@ namespace Evrika {
 		//long lCoordsCount;
 		bool isOurCom;
 		//bool notLoaded;
-		List<geoPoint^> ^MyCoords;
+		List<EMath::geoPoint^> ^MyCoords;
 		List<Repeater^>^ Devices;
 		Repeater^ SelectedDevice;
 		List<Event^>^ Events;
@@ -509,6 +293,7 @@ namespace Evrika {
 		uint8_t PrevCountFindedRadioTags = 0;
 		Thread^ RadioTagAutoUpdateThrd;
 		Thread^ DataAutoUpdateThrd;
+		Thread^ TaskProceedThrd;
 		bool RadioTagAutoUpdateEnabled = false;
 		bool DataAutoUpdateThrdEnabled = false;
 		Semaphore^ RadioTagUpdateEnabledSemaphore;

@@ -1,3 +1,4 @@
+#include "emath.h"
 #include "mainform.h"
 #include "mapform.h"
 
