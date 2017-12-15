@@ -7,6 +7,8 @@ using namespace System::Collections::Generic;
 namespace Evrika {
 	namespace EMath {
 
+		extern double ScaleCoef;
+
 		ref class LatLngComparer : System::Collections::Generic::IComparer<PointLatLng> {
 		public:
 			virtual int Compare(PointLatLng x, PointLatLng y) {
@@ -68,7 +70,7 @@ namespace Evrika {
 			}
 			double get_r()
 			{
-				return _r;
+				return _r*ScaleCoef;
 			}
 			System::String^ get_name() {
 				return _name;
@@ -224,13 +226,34 @@ namespace Evrika {
 			}
 		};
 
+		ref class WeightPoint {
+
+			PointLatLng point;
+			int weight;
+
+		public:
+			
+			WeightPoint(PointLatLng Point,int Weight) {
+				this->point = Point;
+				this->weight = Weight;
+			}
+
+			PointLatLng Point() { return point; }
+			void Point(PointLatLng p) { point = p; }
+
+			int Weight() { return weight; }
+			void Weight(int w) { weight = w; }
+		};
+
 		//void FindIntersect(geoPoint^ circle1, geoPoint^ circle2);
 		//поиск точек пересечения двух окружностей
 		void FindIntersect(geoPoint^ circle1, geoPoint^ circle2, List<PointLatLng>^ twoPoints);
 		//факториал числа
 		int Factorial(int n);
-		//сортировка точек, каждая следующая ближайшая к предыдущей
+		//сортировка точек, используя уравнение прямой
 		List<PointLatLng>^ SortPoint_Line(List<PointLatLng>^ in_p);
+		//сортировка точек, каждая следующая ближайшая к предыдущей
+		List<PointLatLng>^ SortPoints(List<PointLatLng>^ in_p);
 		//проверка нахождения точки во всем массиве окружностей
 		bool InTheArea(PointLatLng point, List<geoPoint^>^ Coords);
 		//проверка нахождения точки в трех окружностях из всего массива
@@ -247,5 +270,7 @@ namespace Evrika {
 		List<PointLatLng>^ DivideCircle(PointLatLng center, double radius_km, int segments);
 		//алгоритм нахождения области пересечения на основе общих дуг окружностей
 		List<PointLatLng>^ SixthAttempt(List<geoPoint^>^ Coords);
+		//находит область пересечения двух окружностей
+		List<Evrika::EMath::WeightPoint^>^ Area(geoPoint^ point,int index, List<geoPoint^>^ Coords);
 	}
 }

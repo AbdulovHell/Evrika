@@ -1,8 +1,15 @@
+#include <stdint.h>
 #include "emath.h"
 
 using namespace GMap::NET;
 using namespace System;
 using namespace System::Collections::Generic;
+
+namespace Evrika {
+	namespace EMath {
+		double ScaleCoef = 1.0;
+	}
+}
 
 //считает точки пересечения двух окружностей и рисует их
 //void Evrika::EMath::FindIntersect(geoPoint ^ circle1, geoPoint ^ circle2)
@@ -237,6 +244,35 @@ List<PointLatLng>^ Evrika::EMath::SortPoint_Line(List<PointLatLng>^ in_p)
 	//in_p->RemoveAt(0);
 	return out_p;
 }
+List<PointLatLng>^ Evrika::EMath::SortPoints(List<PointLatLng>^ points)
+{
+	List<PointLatLng>^ out_p = gcnew List<PointLatLng>;
+	List<PointLatLng>^ in_p = gcnew List<PointLatLng>;
+	for (int i = 0; i < points->Count; i++)
+		in_p->Add(points[i]);
+
+	out_p->Add(in_p[0]);
+	in_p->RemoveAt(0);
+	while (in_p->Count) {
+		double min_dist = 5000000.0;
+		int index = -1;
+		for (int i = 0; i < in_p->Count; i++) {
+			double dist = geoPoint::GetDistanceToPointFrom(out_p[out_p->Count - 1], in_p[i]);
+			if (dist < min_dist) {
+				min_dist = dist;
+				index = i;
+			}
+		}
+		if (index != -1) {
+			out_p->Add(in_p[index]);
+			in_p->RemoveAt(index);
+		}
+		else {
+			throw(gcnew Exception("SortPoints: index == -1"));
+		}
+	}
+	return out_p;
+}
 //проверка нахождения точки в любой из окружностей
 bool Evrika::EMath::InTheArea(PointLatLng point, List<geoPoint^>^ Coords)
 {
@@ -273,7 +309,7 @@ bool Evrika::EMath::InTheArea(PointLatLng point, int i, int j, int k, List<geoPo
 bool Evrika::EMath::InTheArea(PointLatLng point, int index, List<geoPoint^>^ Coords)
 {
 	bool result = true;
-	double r1 = geoPoint::GetDistanceToPointFrom(point, Coords[index]->get_pointLatLng()) * 1;
+	double r1 = geoPoint::GetDistanceToPointFrom(point, Coords[index]->get_pointLatLng()) * 1000;
 	double radius1 = Coords[index]->get_r();
 	if (r1 - 0.002*radius1 > radius1)
 		result = false;
@@ -340,51 +376,76 @@ double Evrika::EMath::RangeRandDouble(double min, double max)
 	return temp / 100.0;
 }
 
-List<PointLatLng>^ Evrika::EMath::DivideCircle(PointLatLng center, double radius_km, int segments)
+List<PointLatLng>^ Evrika::EMath::DivideCircle(PointLatLng center, double radius_m, int segments)
 {
 	//int segments = 360;
 	List<PointLatLng>^ gpollist = gcnew List<PointLatLng>();
 
 	for (int i = 0; i < segments; i++)
-		gpollist->Add(geoPoint::FindPointAtDistanceFrom(center, 2 * Math::PI*i / segments, radius_km));
+		gpollist->Add(geoPoint::FindPointAtDistanceFrom(center, 2 * Math::PI*i / segments, radius_m / 1000.0));
 
 	return gpollist;
 }
 
 List<PointLatLng>^ Evrika::EMath::SixthAttempt(List<geoPoint^>^ Coords)
 {
-	LatLngComparer^ cmpr = gcnew LatLngComparer();
 	List<PointLatLng>^ points = gcnew List<PointLatLng>;
-	for (int i = 0; i < Coords->Count - 1; i++) {
-		//Dictionary<PointLatLng, int> mass;
+	List<WeightPoint^>^ pointsww = gcnew List<WeightPoint^>;
+	for (int i = 0; i < Coords->Count; i++) {
+		pointsww->AddRange(Area(Coords[i], i, Coords));
+	}
 
-		SortedList<PointLatLng, int>^ mass = gcnew SortedList<PointLatLng, int>(cmpr);
-		List<PointLatLng>^ temp = DivideCircle(Coords[i]->get_pointLatLng(), Coords[i]->get_r(), 360);
-		for (int n = 0; n < temp->Count; n++) {
-			mass->Add(temp[n], 0);
+	int max_mass = 0, cnt = 0;
+	for (int k = 0; k < pointsww->Count; k++) {
+		if (pointsww[k]->Weight() > max_mass) {
+			max_mass = pointsww[k]->Weight();
+			cnt = 1;
 		}
-		for (int j = 1 + i; j < Coords->Count; j++) {
-			for (int k = 0; k < mass->Count; k++) {
-				if (InTheArea(mass->Keys[k], j, Coords)) {
-					mass->Values[k] = mass->Values[k] + 1;
-				}
-			}
+		else if (pointsww[k]->Weight() == max_mass) {
+			cnt++;
 		}
-		int max_mass = 0, cnt = 0;;
-		for (int k = 0; k < mass->Count; k++) {
-			if (mass->Values[k] > max_mass) {
-				max_mass = mass->Values[k];
-				cnt = 1;
-			}
-			else if (mass->Values[k] == max_mass) {
-				cnt++;
-			}
+	}
+	for (int k = 0; k < pointsww->Count; k++) {
+		if (pointsww[k]->Weight() == max_mass && pointsww[k]->Weight() != 0) {
+			points->Add(pointsww[k]->Point());
 		}
-		for (int k = 0; k < mass->Count; k++) {
-			if (mass->Values[k] == max_mass) {
-				points->Add(mass->Keys[k]);
+	}
+
+	if (points->Count > 2) points = SortPoints(points);
+	return points;
+}
+
+List<Evrika::EMath::WeightPoint^>^ Evrika::EMath::Area(geoPoint^ point, int index, List<geoPoint^>^ Coords)
+{
+	List<WeightPoint^>^ wpoints = gcnew List<WeightPoint^>;
+	List<WeightPoint^>^ retpoints = gcnew List<WeightPoint^>;
+	List<PointLatLng>^ temp = DivideCircle(point->get_pointLatLng(), point->get_r(), 360);
+	for (int n = 0; n < temp->Count; n++) {
+		wpoints->Add(gcnew WeightPoint(temp[n], 0));
+	}
+	for (int i = 0; i < Coords->Count; i++) {
+		if (i == index) continue;
+		for (int k = 0; k < wpoints->Count; k++) {
+			if (InTheArea(wpoints[k]->Point(), i, Coords)) {
+				wpoints[k]->Weight(wpoints[k]->Weight() + 1);
 			}
 		}
 	}
-	return points;
+	int max_mass = 0, cnt = 0;
+	for (int k = 0; k < wpoints->Count; k++) {
+		if (wpoints[k]->Weight() > max_mass) {
+			max_mass = wpoints[k]->Weight();
+			cnt = 1;
+		}
+		else if (wpoints[k]->Weight() == max_mass) {
+			cnt++;
+		}
+	}
+	for (int k = 0; k < wpoints->Count; k++) {
+		if (wpoints[k]->Weight() == max_mass) {
+			retpoints->Add(wpoints[k]);
+		}
+	}
+
+	return retpoints;
 }

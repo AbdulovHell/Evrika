@@ -181,6 +181,10 @@ namespace Evrika {
 	private: System::Windows::Forms::DataVisualization::Charting::Chart^  chart2;
 	private: System::Windows::Forms::Label^  label8;
 	private: System::Windows::Forms::CheckBox^  AutoUpdateAndAddPointChk;
+	private: System::Windows::Forms::TrackBar^  ScaleFactor;
+
+	private: System::Windows::Forms::Label^  ScaleLbl;
+
 
 
 
@@ -380,6 +384,8 @@ namespace Evrika {
 				 this->Column2 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->tabControl1 = (gcnew System::Windows::Forms::TabControl());
 				 this->tabPage1 = (gcnew System::Windows::Forms::TabPage());
+				 this->ScaleLbl = (gcnew System::Windows::Forms::Label());
+				 this->ScaleFactor = (gcnew System::Windows::Forms::TrackBar());
 				 this->TagAndRepInfoBox = (gcnew System::Windows::Forms::GroupBox());
 				 this->AutoUpdateAndAddPointChk = (gcnew System::Windows::Forms::CheckBox());
 				 this->DrawPointBtn = (gcnew System::Windows::Forms::Button());
@@ -448,6 +454,7 @@ namespace Evrika {
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->RadioTagsGrid))->BeginInit();
 				 this->tabControl1->SuspendLayout();
 				 this->tabPage1->SuspendLayout();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ScaleFactor))->BeginInit();
 				 this->TagAndRepInfoBox->SuspendLayout();
 				 this->tabPage2->SuspendLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->BeginInit();
@@ -577,11 +584,11 @@ namespace Evrika {
 				 this->button6->Text = L"Очистить карту";
 				 this->button6->UseVisualStyleBackColor = true;
 				 this->button6->Click += gcnew System::EventHandler(this, &mainform::button6_Click);
-				 this->button9->Location = System::Drawing::Point(99, 220);
+				 this->button9->Location = System::Drawing::Point(6, 276);
 				 this->button9->Name = L"button9";
-				 this->button9->Size = System::Drawing::Size(75, 21);
+				 this->button9->Size = System::Drawing::Size(168, 21);
 				 this->button9->TabIndex = 9;
-				 this->button9->Text = L"Triangulate";
+				 this->button9->Text = L"Область пересечения";
 				 this->button9->UseVisualStyleBackColor = true;
 				 this->button9->Click += gcnew System::EventHandler(this, &mainform::button9_Click);
 				 this->serialPort1->BaudRate = 115200;
@@ -775,6 +782,8 @@ namespace Evrika {
 				 this->tabControl1->Size = System::Drawing::Size(882, 711);
 				 this->tabControl1->TabIndex = 19;
 				 this->tabControl1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::tabControl1_SelectedIndexChanged);
+				 this->tabPage1->Controls->Add(this->ScaleLbl);
+				 this->tabPage1->Controls->Add(this->ScaleFactor);
 				 this->tabPage1->Controls->Add(this->TagAndRepInfoBox);
 				 this->tabPage1->Controls->Add(this->checkBox1);
 				 this->tabPage1->Controls->Add(this->label10);
@@ -792,6 +801,21 @@ namespace Evrika {
 				 this->tabPage1->TabIndex = 0;
 				 this->tabPage1->Text = L"Управление";
 				 this->tabPage1->UseVisualStyleBackColor = true;
+				 this->ScaleLbl->AutoSize = true;
+				 this->ScaleLbl->Location = System::Drawing::Point(47, 257);
+				 this->ScaleLbl->Name = L"ScaleLbl";
+				 this->ScaleLbl->Size = System::Drawing::Size(85, 13);
+				 this->ScaleLbl->TabIndex = 26;
+				 this->ScaleLbl->Text = L"Масштаб: 100%";
+				 this->ScaleLbl->Click += gcnew System::EventHandler(this, &mainform::ScaleLbl_Click);
+				 this->ScaleFactor->Location = System::Drawing::Point(6, 225);
+				 this->ScaleFactor->Maximum = 200;
+				 this->ScaleFactor->Minimum = 1;
+				 this->ScaleFactor->Name = L"ScaleFactor";
+				 this->ScaleFactor->Size = System::Drawing::Size(168, 45);
+				 this->ScaleFactor->TabIndex = 25;
+				 this->ScaleFactor->Value = 100;
+				 this->ScaleFactor->ValueChanged += gcnew System::EventHandler(this, &mainform::ScaleFactor_ValueChanged);
 				 this->TagAndRepInfoBox->Controls->Add(this->AutoUpdateAndAddPointChk);
 				 this->TagAndRepInfoBox->Controls->Add(this->DrawPointBtn);
 				 this->TagAndRepInfoBox->Controls->Add(this->SelectedRepeaterInfoLbl);
@@ -1285,6 +1309,7 @@ namespace Evrika {
 				 this->tabControl1->ResumeLayout(false);
 				 this->tabPage1->ResumeLayout(false);
 				 this->tabPage1->PerformLayout();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ScaleFactor))->EndInit();
 				 this->TagAndRepInfoBox->ResumeLayout(false);
 				 this->TagAndRepInfoBox->PerformLayout();
 				 this->tabPage2->ResumeLayout(false);
@@ -1345,5 +1370,7 @@ namespace Evrika {
 	private: System::Void button7_Click_1(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void button8_Click(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void AutoUpdateAndAddPointChk_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void ScaleFactor_ValueChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void ScaleLbl_Click(System::Object^  sender, System::EventArgs^  e);
 	};
 }

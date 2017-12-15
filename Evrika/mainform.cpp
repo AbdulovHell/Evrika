@@ -579,8 +579,8 @@ void Evrika::mainform::AddNewPoint(double lat, double lng, double m)
 		areaOvrl->Polygons->Add(circ);
 	}
 
-	if (MyCoords->Count > 3) {
-		List<PointLatLng>^ area_points = EMath::Triangulate(MyCoords);
+	if (MyCoords->Count > 1) {
+		List<PointLatLng>^ area_points = EMath::SixthAttempt(MyCoords);
 		//рисуем область пересечения
 		GMapPolygon ^cent_area = gcnew GMapPolygon(area_points, "center_area");
 		cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
@@ -1437,6 +1437,14 @@ System::Void Evrika::mainform::button2_Click(System::Object ^ sender, System::Ev
 	MyCoords->Add(gcnew EMath::geoPoint(map->Position.Lat, map->Position.Lng, double::Parse(textBox1->Text), "P" + (MyCoords->Count).ToString()));
 	listBox1->Items->Add(MyCoords[MyCoords->Count - 1]->get_name());
 	groupBox1->Text = "Точек сохранено: " + MyCoords->Count.ToString(); //обновление при получении точк
+
+	GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[MyCoords->Count-1]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
+	mrkrOvrl->Markers->Add(marker);
+
+	GMapPolygon ^circ = gcnew GMapPolygon(EMath::geoPoint::SortPoints_distance(MyCoords[MyCoords->Count - 1]->CreateCircle()), "circ");
+	circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
+	circ->Stroke = gcnew Pen(Color::Blue, 1);
+	areaOvrl->Polygons->Add(circ);
 }
 //вызывается при выборе точки, отображает информацию о ней
 System::Void Evrika::mainform::listBox1_SelectedIndexChanged(System::Object ^ sender, System::EventArgs ^ e)
@@ -1496,12 +1504,19 @@ System::Void Evrika::mainform::button7_Click(System::Object ^ sender, System::Ev
 //ручной запуск триангуляции
 System::Void Evrika::mainform::button9_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
-	List<PointLatLng>^ area_points = EMath::SixthAttempt(MyCoords);
+	List<PointLatLng>^ area_points2 = EMath::SixthAttempt(MyCoords);
 	//рисуем область пересечения
-	GMapPolygon ^cent_area = gcnew GMapPolygon(area_points, "center_area");
-	cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
-	cent_area->Stroke = gcnew Pen(Color::Red, 2);
-	areaOvrl->Polygons->Add(cent_area);
+	GMapPolygon ^cent_area2 = gcnew GMapPolygon(area_points2, "center_area2");
+	cent_area2->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
+	cent_area2->Stroke = gcnew Pen(Color::Red, 2);
+	areaOvrl->Polygons->Add(cent_area2);
+
+	//триангуляция
+	/*List<PointLatLng>^ area_points = EMath::Triangulate(MyCoords);
+	GMapPolygon ^cent_area1 = gcnew GMapPolygon(area_points, "center_area1");
+	cent_area1->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Green));
+	cent_area1->Stroke = gcnew Pen(Color::Green, 2);
+	areaOvrl->Polygons->Add(cent_area1);*/
 }
 //сохранение изображения карты в файл
 System::Void Evrika::mainform::savemap_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1962,6 +1977,28 @@ System::Void Evrika::mainform::AutoUpdateAndAddPointChk_CheckedChanged(System::O
 			DataAutoUpdateThrdEnabled = false;
 		}
 	}
+}
+System::Void Evrika::mainform::ScaleFactor_ValueChanged(System::Object ^ sender, System::EventArgs ^ e)
+{
+	ScaleLbl->Text = "Масштаб: " + ScaleFactor->Value + "%";
+	EMath::ScaleCoef = (double)ScaleFactor->Value / 100.0;
+	areaOvrl->Clear();
+	mrkrOvrl->Clear();
+	for (int i = 0; i < MyCoords->Count; i++) {
+		GMarkerGoogle^ marker = gcnew Markers::GMarkerGoogle(MyCoords[i]->get_pointLatLng(), Markers::GMarkerGoogleType::blue_small);
+		mrkrOvrl->Markers->Add(marker);
+
+		GMapPolygon ^circ = gcnew GMapPolygon(EMath::geoPoint::SortPoints_distance(MyCoords[i]->CreateCircle()), "circ");
+		circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Blue));
+		circ->Stroke = gcnew Pen(Color::Blue, 1);
+		areaOvrl->Polygons->Add(circ);
+	}
+	if (MyCoords->Count > 1)
+		button9_Click(sender, e);
+}
+System::Void Evrika::mainform::ScaleLbl_Click(System::Object ^ sender, System::EventArgs ^ e)
+{
+	ScaleFactor->Value = 100;
 }
 Evrika::mainform::MyPosition::MyPosition()
 {
