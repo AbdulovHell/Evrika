@@ -232,8 +232,8 @@ namespace Evrika {
 			int weight;
 
 		public:
-			
-			WeightPoint(PointLatLng Point,int Weight) {
+
+			WeightPoint(PointLatLng Point, int Weight) {
 				this->point = Point;
 				this->weight = Weight;
 			}
@@ -271,6 +271,204 @@ namespace Evrika {
 		//алгоритм нахождения области пересечения на основе общих дуг окружностей
 		List<PointLatLng>^ SixthAttempt(List<geoPoint^>^ Coords);
 		//находит область пересечения двух окружностей
-		List<Evrika::EMath::WeightPoint^>^ Area(geoPoint^ point,int index, List<geoPoint^>^ Coords);
+		List<Evrika::EMath::WeightPoint^>^ Area(geoPoint^ point, int index, List<geoPoint^>^ Coords);
+	}
+
+	namespace Filters {
+
+		public ref class KalmanFilter {
+			double X0, P0, F, H, R, Q, Covariance, B;
+
+		public:
+			double State;
+			bool first = true;
+
+			//1, 1, 200, 15
+			KalmanFilter() {
+				Q = 15;
+				R = 200;
+				F = 1;
+				H = 1;
+				B = 0;
+			}
+
+			KalmanFilter(double f, double h, double r, double q) {
+				Q = q;
+				R = r;
+				F = f;
+				H = h;
+				B = 0;
+			}
+
+			void SetState(double state, double covariance) {
+				State = state;
+				Covariance = covariance;
+				first = false;
+			}
+
+			void Reset() {
+				first = true;
+			}
+
+			void Correct(double data) {
+				X0 = F * State;
+				P0 = F * Covariance * F + Q;
+
+				double K = H * P0 / (H * P0 * H + R);
+				State = X0 + K * (data - H * X0);
+				Covariance = (1 - K * H) * P0;
+			}
+		};
+
+		template<typename T, int s> class CenterFilter {
+			double coefH[3] = { 0.1,0.25,0.5 };
+			double coefL[3] = { 1.1,1.25,1.5 };
+			T *buf;
+			unsigned int limit = s;
+			unsigned int it = 0;
+			T res;
+
+		public:
+			bool Add(T num) {
+				if (buf == nullptr) {
+					buf = new T(limit);
+					it = 0;
+				}
+				if (it < limit) {
+					buf[it++] = num;
+					return false;
+				}
+
+				T mid = 0;
+				unsigned int cnt = limit;
+				for (int i = 0; i < limit; i++)
+					mid += buf[i];
+				mid /= limit;
+
+				T Hl = mid*coefH[2];
+				T Ll = mid*coefL[2];
+
+				cnt = 0;
+				for (int i = 0; i < limit; i++)
+					if (buf[i] >= Ll && buf[i] <= Hl)
+						cnt++;
+
+				T *step1 = new T(cnt);
+				unsigned int step1it = 0;
+				for (int i = 0; i < limit; i++)
+					if (buf[i] >= Ll && buf[i] <= Hl) {
+						step1[step1it++] = buf[i];
+					}
+
+				T step1mid = 0;
+				for (int i = 0; i < cnt; i++)
+					step1mid += step1[i];
+				step1mid /= cnt;
+
+				Hl = mid*coefH[1];
+				Ll = mid*coefL[1];
+
+				unsigned int step2cnt = 0;
+				for (int i = 0; i < cnt; i++)
+					if (step1[i] >= Ll && step1[i] <= Hl)
+						step2cnt++;
+
+				T *step2 = new T(step2cnt);
+				unsigned int step2it = 0;
+				for (int i = 0; i < step2cnt; i++)
+					if (step1[i] >= Ll && step1[i] <= Hl) {
+						step2[step2it++] = step1[i];
+					}
+
+				T step2mid = 0;
+				for (int i = 0; i < step2cnt; i++)
+					step2mid += step2[i];
+				step2mid /= step2cnt;
+
+				if (step2cnt == 1) {
+					res = step2mid;
+					return true;
+				}
+
+				Hl = mid*coefH[0];
+				Ll = mid*coefL[0];
+
+				unsigned int step3cnt = 0;
+				for (int i = 0; i < step2cnt; i++)
+					if (step2[i] >= Ll && step2[i] <= Hl)
+						step3cnt++;
+
+				T *step3 = new T(step3cnt);
+				unsigned int step3it = 0;
+				for (int i = 0; i < step3cnt; i++)
+					if (step2[i] >= Ll && step2[i] <= Hl) {
+						step3[step3it++] = step2[i];
+					}
+
+				T step3mid = 0;
+				for (int i = 0; i < step3cnt; i++)
+					step3mid += step3[i];
+				step3mid /= step3cnt;
+
+				res = step3mid;
+
+				return true;
+			}
+
+			T Result() {
+				return res;
+			}
+
+			void Reset() {
+				it = 0;
+				max = 0;
+				min = 5000000;
+				mid = 0;
+				delete[] buf;
+			}
+			void Reset(unsigned int Limit) {
+				limit = Limit;
+				it = 0;
+				max = 0;
+				min = 5000000;
+				mid = 0;
+				delete[] buf;
+			}
+		};
+
+		template<typename T, int s> class MedianFilter {
+			T buf[s];
+			unsigned int size = s;
+			bool first = true;
+			unsigned int it = 0;
+		public:
+			void Correct(T num) {
+				if (first) {
+					it = 0;
+					first = false;
+					for (unsigned int i = 0; i < size; i++)
+						buf[i] = num;
+				}
+				else {
+					buf[it] = num;
+				}
+				it++;
+				if (it > size - 1)
+					it = 0;
+			}
+			T State() {
+				T res = 0;
+				for (unsigned int i = 0; i < size; i++)
+					res += buf[i];
+				res /= size;
+				return res;
+			}
+			void Reset() {
+				first = true;
+			}
+		};
+
+		extern MedianFilter<double, 10>* mfilt;
+		extern CenterFilter<double, 10> cfilt;
 	}
 }

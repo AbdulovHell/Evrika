@@ -1,11 +1,10 @@
 namespace Evrika {
 	using namespace System;
 	using namespace System::Collections::Generic;
+	using namespace Evrika::EMath;
 
 	ref class TimeAndDate;
 	ref class RadioTag;
-
-
 
 	double CyclesToMeters(uint32_t cycles);
 	double TimeToMeters(double time);
@@ -19,6 +18,39 @@ namespace Evrika {
 	double GetDoubleFromBuf(cli::array<wchar_t>^, size_t offset);
 	float GetFloatFromBuf(cli::array<wchar_t>^, size_t offset);
 	uint32_t ToInt32FromBuf(cli::array<wchar_t>^, size_t offset);
+
+	public ref class Floodgate {
+		System::Threading::Semaphore^ sem;
+		bool work;
+
+	public:
+		Floodgate(bool init_state) {
+			sem = gcnew System::Threading::Semaphore(0, 1);
+			work = init_state;
+		}
+
+		bool TrySwoosh() {
+			if (work) {
+				return false;
+			}
+			return sem->WaitOne();
+		}
+
+		void Lock() {
+			work = false;
+		}
+
+		void Unlock() {
+			work = true;
+			try {
+				sem->Release();
+			}catch(...){}
+		}
+
+		bool State() {
+			return work;
+		}
+	};
 
 	public ref class Device {
 		uint32_t Addr;
@@ -122,22 +154,25 @@ namespace Evrika {
 		}
 		//сохраняет последнюю расчитанную дистанцию временным методом
 		void SaveDist(double m) {
-			distance_t = m;
+			if (m > 2000)
+				distance_t = 2000.0;
+			else
+				distance_t = m;
 		}
 		//возвращает дистанцию до маяка
 		double GetDistance() {
 			//если полоса 2 или 3, вернем расстояние от временного метода
 			if (adaptive_bitrate > 1) {
-				return distance_t;
+				return distance_t * ScaleCoef;
 			}
 			//если все плохо, то амплитудным
 			else
 			{
-				return ConvertToMeters(adaptive_rssi, 1.7, 26);
+				return ConvertToMeters(adaptive_rssi, 1.8, 26) * ScaleCoef;
 			}
 		}
 		double GetDistance(double n, double SignalLvlAt1m) {
-			return ConvertToMeters(adaptive_rssi, n, SignalLvlAt1m);
+			return ConvertToMeters(adaptive_rssi, n, SignalLvlAt1m) * ScaleCoef;
 		}
 	};
 
@@ -227,82 +262,6 @@ namespace Evrika {
 		}
 	};
 
-	public ref class KalmanFilter {
-		double X0, P0, F, H, R, Q, Covariance, B;
-
-	public:
-		double State;
-		bool first = true;
-
-		//1, 1, 200, 15
-		KalmanFilter() {
-			Q = 15;
-			R = 200;
-			F = 1;
-			H = 1;
-			B = 0;
-		}
-
-		KalmanFilter(double f, double h, double r, double q) {
-			Q = q;
-			R = r;
-			F = f;
-			H = h;
-			B = 0;
-		}
-
-		void SetState(double state, double covariance) {
-			State = state;
-			Covariance = covariance;
-			first = false;
-		}
-
-		void Reset() {
-			first = true;
-		}
-
-		void Correct(double data) {
-			X0 = F * State;
-			P0 = F * Covariance * F + Q;
-
-			double K = H * P0 / (H * P0 * H + R);
-			State = X0 + K * (data - H * X0);
-			Covariance = (1 - K * H) * P0;
-		}
-	};
-
-	template<typename T, int s> class MedianFilter {
-		T buf[s];
-		unsigned int size = s;
-		bool first = true;
-		unsigned int it = 0;
-	public:
-		void Correct(T num) {
-			if (first) {
-				it = 0;
-				first = false;
-				for (unsigned int i = 0; i < size; i++)
-					buf[i] = num;
-			}
-			else {
-				buf[it] = num;
-			}
-			it++;
-			if (it > size - 1)
-				it = 0;
-		}
-		T State() {
-			T res = 0;
-			for (unsigned int i = 0; i < size; i++)
-				res += buf[i];
-			res /= size;
-			return res;
-		}
-		void Reset() {
-			first = true;
-		}
-	};
-
 	template<typename T> std::string mToStr(T num) {
 		char buf[10];
 		sprintf_s(buf, 10, "%.2f", num);
@@ -318,8 +277,6 @@ namespace Evrika {
 		}
 		arr[arr->Length - 1] = num;
 	}
-
-	extern MedianFilter<double, 10>* mfilt;
 
 	public ref class Commands {
 		static System::IO::Ports::SerialPort^ port;

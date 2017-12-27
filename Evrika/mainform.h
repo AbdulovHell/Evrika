@@ -26,6 +26,7 @@ namespace Evrika {
 	ref class Event;
 	ref class Repeater;
 	ref class RadioTag;
+	ref class Floodgate;
 	/// <summary>
 	/// Сводка для mainform
 	/// </summary>
@@ -184,6 +185,13 @@ namespace Evrika {
 	private: System::Windows::Forms::TrackBar^  ScaleFactor;
 
 	private: System::Windows::Forms::Label^  ScaleLbl;
+	private: System::Windows::Forms::NumericUpDown^  MassFactor;
+	private: System::Windows::Forms::CheckBox^  TMMEnable;
+	private: System::Windows::Forms::CheckBox^  WakeUpTagsRepeatChk;
+	private: System::Windows::Forms::Button^  button10;
+
+
+
 
 
 
@@ -207,21 +215,6 @@ namespace Evrika {
 
 	private: System::Windows::Forms::ListBox^  listBox1;
 
-	public:	 ref class MyPosition {
-		KalmanFilter^ lat;
-		KalmanFilter^ lng;
-		KalmanFilter^ HDOP;
-		KalmanFilter^ Height;
-	public:
-		bool bFirstRead;
-
-		MyPosition();
-		~MyPosition();
-		void SetState(double _lat, double _lng, double _HDOP, double _Height);
-		void Correct(double _lat, double _lng, double _HDOP, double _Height);
-		void GetState(double* _lat, double* _lng, double* _HDOP, double* _Height);
-		void GetPos(double* _lat, double* _lng);
-	};
 	public:
 		void SetTimer(bool en);
 		void WriteLog(String^ message);
@@ -254,14 +247,17 @@ namespace Evrika {
 		void SelectedRepeaterInfoLblSet(String^ txt);
 		void AutoUpdateTagState(bool state);
 		void SelectedTagDistanceText(String^ txt);
+		void UpdatePosAndDist(bool withRadius);
+		void RepeatWakeUp();
+		void StopAutoUpdate();
 
 		Evrika::mapform^ mapform;
 		static Evrika::settings^ settings_window;
 		Evrika::loading_page^ ldng_wnd;
 		String^ ourPort;
 		bool eGPS;
-		KalmanFilter^ mid_cycles;
-		KalmanFilter^ ftime;
+		Filters::KalmanFilter^ mid_cycles;
+		Filters::KalmanFilter^ ftime;
 
 		cli::array<GMarkerGoogle^> ^markers;
 		//long lCoordsCount;
@@ -277,10 +273,12 @@ namespace Evrika {
 		Semaphore ^sEnumCom;
 		Semaphore^ sPointReciver;
 		Semaphore^ ParamReciver;
+		Floodgate^ WakeUpRepeatFG;
 		GMapOverlay ^areaOvrl;
 		GMapOverlay^ myPosOvrl;
 		double MIN_RSSI = -100.0;
 		double MAX_RSSI = -30.0;
+		double last_time = 0;
 		bool LastStateIsOpen;
 		bool GPS_KnownPos = false;
 		bool my_pos_accepted = false;
@@ -298,6 +296,7 @@ namespace Evrika {
 		Thread^ RadioTagAutoUpdateThrd;
 		Thread^ DataAutoUpdateThrd;
 		Thread^ TaskProceedThrd;
+		Thread^ WakeUpRepeatThrd;
 		bool RadioTagAutoUpdateEnabled = false;
 		bool DataAutoUpdateThrdEnabled = false;
 		Semaphore^ RadioTagUpdateEnabledSemaphore;
@@ -384,9 +383,12 @@ namespace Evrika {
 				 this->Column2 = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 				 this->tabControl1 = (gcnew System::Windows::Forms::TabControl());
 				 this->tabPage1 = (gcnew System::Windows::Forms::TabPage());
+				 this->button10 = (gcnew System::Windows::Forms::Button());
+				 this->MassFactor = (gcnew System::Windows::Forms::NumericUpDown());
 				 this->ScaleLbl = (gcnew System::Windows::Forms::Label());
 				 this->ScaleFactor = (gcnew System::Windows::Forms::TrackBar());
 				 this->TagAndRepInfoBox = (gcnew System::Windows::Forms::GroupBox());
+				 this->TMMEnable = (gcnew System::Windows::Forms::CheckBox());
 				 this->AutoUpdateAndAddPointChk = (gcnew System::Windows::Forms::CheckBox());
 				 this->DrawPointBtn = (gcnew System::Windows::Forms::Button());
 				 this->SelectedRepeaterInfoLbl = (gcnew System::Windows::Forms::Label());
@@ -394,6 +396,7 @@ namespace Evrika {
 				 this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
 				 this->label10 = (gcnew System::Windows::Forms::Label());
 				 this->tabPage2 = (gcnew System::Windows::Forms::TabPage());
+				 this->WakeUpTagsRepeatChk = (gcnew System::Windows::Forms::CheckBox());
 				 this->button8 = (gcnew System::Windows::Forms::Button());
 				 this->button7 = (gcnew System::Windows::Forms::Button());
 				 this->chart1 = (gcnew System::Windows::Forms::DataVisualization::Charting::Chart());
@@ -454,6 +457,7 @@ namespace Evrika {
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->RadioTagsGrid))->BeginInit();
 				 this->tabControl1->SuspendLayout();
 				 this->tabPage1->SuspendLayout();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->MassFactor))->BeginInit();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ScaleFactor))->BeginInit();
 				 this->TagAndRepInfoBox->SuspendLayout();
 				 this->tabPage2->SuspendLayout();
@@ -586,7 +590,7 @@ namespace Evrika {
 				 this->button6->Click += gcnew System::EventHandler(this, &mainform::button6_Click);
 				 this->button9->Location = System::Drawing::Point(6, 276);
 				 this->button9->Name = L"button9";
-				 this->button9->Size = System::Drawing::Size(168, 21);
+				 this->button9->Size = System::Drawing::Size(126, 21);
 				 this->button9->TabIndex = 9;
 				 this->button9->Text = L"Область пересечения";
 				 this->button9->UseVisualStyleBackColor = true;
@@ -782,6 +786,8 @@ namespace Evrika {
 				 this->tabControl1->Size = System::Drawing::Size(882, 711);
 				 this->tabControl1->TabIndex = 19;
 				 this->tabControl1->SelectedIndexChanged += gcnew System::EventHandler(this, &mainform::tabControl1_SelectedIndexChanged);
+				 this->tabPage1->Controls->Add(this->button10);
+				 this->tabPage1->Controls->Add(this->MassFactor);
 				 this->tabPage1->Controls->Add(this->ScaleLbl);
 				 this->tabPage1->Controls->Add(this->ScaleFactor);
 				 this->tabPage1->Controls->Add(this->TagAndRepInfoBox);
@@ -801,6 +807,22 @@ namespace Evrika {
 				 this->tabPage1->TabIndex = 0;
 				 this->tabPage1->Text = L"Управление";
 				 this->tabPage1->UseVisualStyleBackColor = true;
+				 this->button10->Location = System::Drawing::Point(1, 303);
+				 this->button10->Name = L"button10";
+				 this->button10->Size = System::Drawing::Size(84, 19);
+				 this->button10->TabIndex = 28;
+				 this->button10->Text = L"Очистить лог";
+				 this->button10->UseVisualStyleBackColor = true;
+				 this->button10->Click += gcnew System::EventHandler(this, &mainform::button10_Click_1);
+				 this->MassFactor->Location = System::Drawing::Point(138, 276);
+				 this->MassFactor->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 8, 0, 0, 0 });
+				 this->MassFactor->Minimum = System::Decimal(gcnew cli::array< System::Int32 >(4) { 2, 0, 0, 0 });
+				 this->MassFactor->Name = L"MassFactor";
+				 this->MassFactor->ReadOnly = true;
+				 this->MassFactor->Size = System::Drawing::Size(37, 20);
+				 this->MassFactor->TabIndex = 27;
+				 this->MassFactor->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) { 8, 0, 0, 0 });
+				 this->MassFactor->Visible = false;
 				 this->ScaleLbl->AutoSize = true;
 				 this->ScaleLbl->Location = System::Drawing::Point(47, 257);
 				 this->ScaleLbl->Name = L"ScaleLbl";
@@ -816,6 +838,7 @@ namespace Evrika {
 				 this->ScaleFactor->TabIndex = 25;
 				 this->ScaleFactor->Value = 100;
 				 this->ScaleFactor->ValueChanged += gcnew System::EventHandler(this, &mainform::ScaleFactor_ValueChanged);
+				 this->TagAndRepInfoBox->Controls->Add(this->TMMEnable);
 				 this->TagAndRepInfoBox->Controls->Add(this->AutoUpdateAndAddPointChk);
 				 this->TagAndRepInfoBox->Controls->Add(this->DrawPointBtn);
 				 this->TagAndRepInfoBox->Controls->Add(this->SelectedRepeaterInfoLbl);
@@ -826,6 +849,13 @@ namespace Evrika {
 				 this->TagAndRepInfoBox->TabIndex = 24;
 				 this->TagAndRepInfoBox->TabStop = false;
 				 this->TagAndRepInfoBox->Text = L"groupBox3";
+				 this->TMMEnable->AutoSize = true;
+				 this->TMMEnable->Location = System::Drawing::Point(143, 63);
+				 this->TMMEnable->Name = L"TMMEnable";
+				 this->TMMEnable->Size = System::Drawing::Size(142, 17);
+				 this->TMMEnable->TabIndex = 4;
+				 this->TMMEnable->Text = L"Исп. временной метод";
+				 this->TMMEnable->UseVisualStyleBackColor = true;
 				 this->AutoUpdateAndAddPointChk->AutoSize = true;
 				 this->AutoUpdateAndAddPointChk->Location = System::Drawing::Point(87, 63);
 				 this->AutoUpdateAndAddPointChk->Name = L"AutoUpdateAndAddPointChk";
@@ -838,7 +868,7 @@ namespace Evrika {
 				 this->DrawPointBtn->Name = L"DrawPointBtn";
 				 this->DrawPointBtn->Size = System::Drawing::Size(75, 23);
 				 this->DrawPointBtn->TabIndex = 2;
-				 this->DrawPointBtn->Text = L"На карту";
+				 this->DrawPointBtn->Text = L"Сохранить";
 				 this->DrawPointBtn->UseVisualStyleBackColor = true;
 				 this->DrawPointBtn->Click += gcnew System::EventHandler(this, &mainform::DrawPointBtn_Click);
 				 this->SelectedRepeaterInfoLbl->AutoSize = true;
@@ -866,6 +896,7 @@ namespace Evrika {
 				 this->label10->Size = System::Drawing::Size(41, 13);
 				 this->label10->TabIndex = 22;
 				 this->label10->Text = L"label10";
+				 this->tabPage2->Controls->Add(this->WakeUpTagsRepeatChk);
 				 this->tabPage2->Controls->Add(this->button8);
 				 this->tabPage2->Controls->Add(this->button7);
 				 this->tabPage2->Controls->Add(this->chart1);
@@ -884,6 +915,14 @@ namespace Evrika {
 				 this->tabPage2->TabIndex = 1;
 				 this->tabPage2->Text = L"Устройства";
 				 this->tabPage2->UseVisualStyleBackColor = true;
+				 this->WakeUpTagsRepeatChk->AutoSize = true;
+				 this->WakeUpTagsRepeatChk->Location = System::Drawing::Point(503, 358);
+				 this->WakeUpTagsRepeatChk->Name = L"WakeUpTagsRepeatChk";
+				 this->WakeUpTagsRepeatChk->Size = System::Drawing::Size(50, 17);
+				 this->WakeUpTagsRepeatChk->TabIndex = 39;
+				 this->WakeUpTagsRepeatChk->Text = L"Авто";
+				 this->WakeUpTagsRepeatChk->UseVisualStyleBackColor = true;
+				 this->WakeUpTagsRepeatChk->CheckedChanged += gcnew System::EventHandler(this, &mainform::WakeUpTagsRepeatChk_CheckedChanged);
 				 this->button8->Location = System::Drawing::Point(763, 602);
 				 this->button8->Name = L"button8";
 				 this->button8->Size = System::Drawing::Size(75, 23);
@@ -1050,16 +1089,16 @@ namespace Evrika {
 				 this->TimeLbl->TabIndex = 0;
 				 this->TimeLbl->Text = L"TimeLbl";
 				 this->TimeLbl->Visible = false;
-				 this->TagAndRepeaterResetBtn->Location = System::Drawing::Point(636, 354);
+				 this->TagAndRepeaterResetBtn->Location = System::Drawing::Point(677, 354);
 				 this->TagAndRepeaterResetBtn->Name = L"TagAndRepeaterResetBtn";
-				 this->TagAndRepeaterResetBtn->Size = System::Drawing::Size(235, 23);
+				 this->TagAndRepeaterResetBtn->Size = System::Drawing::Size(194, 23);
 				 this->TagAndRepeaterResetBtn->TabIndex = 34;
 				 this->TagAndRepeaterResetBtn->Text = L"Сброс к начальным установкам";
 				 this->TagAndRepeaterResetBtn->UseVisualStyleBackColor = true;
 				 this->TagAndRepeaterResetBtn->Click += gcnew System::EventHandler(this, &mainform::TagAndRepeaterResetBtn_Click);
-				 this->WakeUpRadioTagBtn->Location = System::Drawing::Point(500, 354);
+				 this->WakeUpRadioTagBtn->Location = System::Drawing::Point(559, 354);
 				 this->WakeUpRadioTagBtn->Name = L"WakeUpRadioTagBtn";
-				 this->WakeUpRadioTagBtn->Size = System::Drawing::Size(130, 23);
+				 this->WakeUpRadioTagBtn->Size = System::Drawing::Size(112, 23);
 				 this->WakeUpRadioTagBtn->TabIndex = 33;
 				 this->WakeUpRadioTagBtn->Text = L"Поиск радиометок";
 				 this->WakeUpRadioTagBtn->UseVisualStyleBackColor = true;
@@ -1309,10 +1348,12 @@ namespace Evrika {
 				 this->tabControl1->ResumeLayout(false);
 				 this->tabPage1->ResumeLayout(false);
 				 this->tabPage1->PerformLayout();
+				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->MassFactor))->EndInit();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->ScaleFactor))->EndInit();
 				 this->TagAndRepInfoBox->ResumeLayout(false);
 				 this->TagAndRepInfoBox->PerformLayout();
 				 this->tabPage2->ResumeLayout(false);
+				 this->tabPage2->PerformLayout();
 				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->chart1))->EndInit();
 				 this->RadioTagParamBox->ResumeLayout(false);
 				 this->RadioTagParamBox->PerformLayout();
@@ -1372,5 +1413,7 @@ namespace Evrika {
 	private: System::Void AutoUpdateAndAddPointChk_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void ScaleFactor_ValueChanged(System::Object^  sender, System::EventArgs^  e);
 	private: System::Void ScaleLbl_Click(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void WakeUpTagsRepeatChk_CheckedChanged(System::Object^  sender, System::EventArgs^  e);
+	private: System::Void button10_Click_1(System::Object^  sender, System::EventArgs^  e);
 	};
 }

@@ -2,14 +2,13 @@
 #include <time.h>
 #include <windows.h>
 #include <stdint.h>
-#include "templates.h"
+#include "emath.h"
+#include "misc.h"
 
 namespace Evrika {
 	using namespace System;
 	using namespace System::Threading;
 	using namespace System::Runtime::InteropServices;
-
-	MedianFilter<double, 10>* mfilt;
 
 	ref class Device;
 	ref class TimeAndDate;

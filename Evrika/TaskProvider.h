@@ -43,6 +43,7 @@ namespace Evrika {
 
 		static ref class TaskProvider {
 			static Semaphore^ sem;
+			static Floodgate^ fg;
 			static List<Task^>^ tl;
 			static bool working = false;
 		public:
@@ -51,6 +52,7 @@ namespace Evrika {
 			static void Add(Task^ tsk);
 			static int Count();
 			static void ProceedTasks();
+			static void Clear();
 		};
 	}
 }

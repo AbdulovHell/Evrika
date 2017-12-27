@@ -24,9 +24,6 @@
     <ClCompile Include="SaveSettings.pb.cc">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="templates.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="mapform.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
@@ -40,6 +37,9 @@
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="emath.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="misc.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
   </ItemGroup>
@@ -62,13 +62,13 @@
     <ClInclude Include="loading_page.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="templates.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="TaskProvider.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="emath.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="misc.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>

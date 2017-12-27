@@ -170,7 +170,7 @@
     <ClCompile Include="SaveSettings.pb.cc" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="TaskProvider.cpp" />
-    <ClCompile Include="templates.cpp" />
+    <ClCompile Include="misc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="emath.h" />
@@ -189,7 +189,7 @@
       <FileType>CppForm</FileType>
     </ClInclude>
     <ClInclude Include="TaskProvider.h" />
-    <ClInclude Include="templates.h" />
+    <ClInclude Include="misc.h" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="loading_page.resx">

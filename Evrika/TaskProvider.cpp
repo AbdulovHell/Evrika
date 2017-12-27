@@ -5,7 +5,7 @@
 
 #include "emath.h"
 #include "mainform.h"
-#include "templates.h"
+#include "misc.h"
 #include "TaskProvider.h"
 
 Evrika::Tasks::Task::Task(TaskType type, uint32_t addr, uint32_t param)
@@ -18,7 +18,7 @@ Evrika::Tasks::Task::Task(TaskType type, uint32_t addr, uint32_t param)
 bool Evrika::Tasks::Task::Work()
 {
 	switch (tt) {
-	//A
+		//A
 	case TaskType::TestConnect:
 		Commands::Class_0x0A::TestConnect();
 		break;
@@ -37,7 +37,7 @@ bool Evrika::Tasks::Task::Work()
 	case TaskType::ProgrammReset:
 		Commands::Class_0x0A::ProgrammReset(Addr);
 		break;
-	//B
+		//B
 	case TaskType::SetGPSPowerState:
 		Commands::Class_0x0B::SetGPSPowerState(Addr, Param);
 		break;
@@ -56,7 +56,7 @@ bool Evrika::Tasks::Task::Work()
 	case TaskType::GetGPSUsingAntenna:
 		Commands::Class_0x0B::GetGPSUsingAntenna(Addr);
 		break;
-	//C
+		//C
 	case TaskType::WakeUp:
 		Commands::Class_0x0C::WakeUp(Addr, Param);
 		break;
@@ -72,7 +72,7 @@ bool Evrika::Tasks::Task::Work()
 	case TaskType::ResetCC1101:
 		Commands::Class_0x0C::ResetCC1101(Addr);
 		break;
-	//D
+		//D
 	case TaskType::StartSearchRepeaters:
 		Commands::Class_0x0D::StartSearchRepeaters(Addr);
 		break;
@@ -82,7 +82,7 @@ bool Evrika::Tasks::Task::Work()
 	case TaskType::GlobalResetRepeaters:
 		Commands::Class_0x0D::GlobalResetRepeaters(Addr);
 		break;
-	//
+		//
 	default:
 		return false;
 	}
@@ -96,8 +96,9 @@ Evrika::Tasks::TaskType Evrika::Tasks::Task::GetType()
 
 Evrika::Tasks::TaskProvider::TaskProvider()
 {
-	tl = gcnew List<Task^>; 
+	tl = gcnew List<Task^>;
 	sem = gcnew Semaphore(0, 3);
+	fg = gcnew Floodgate(true);
 }
 
 void Evrika::Tasks::TaskProvider::Go()
@@ -120,18 +121,24 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 	if (working) return;
 	working = true;
 	while (1) {
+		fg->TrySwoosh();
+		fg->Lock();
 		if (tl->Count) {
 			try {
 				if (!tl[0]->Work()) {
 					mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "Ошибка отправки");
 				}
 				else {
+#ifdef _DEBUG
 					mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "D: Отправлено");
+#endif
 					if (!sem->WaitOne(5000)) {
 						mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "Превышен предел ожидания ответа от ретранслятора");
 					}
 					else {
+#ifdef _DEBUG
 						mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "D: Выполнено, ожидает " + (tl->Count - 1).ToString());
+#endif
 					}
 				}
 			}
@@ -140,6 +147,15 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 			}
 			tl->RemoveAt(0);
 		}
+		fg->Unlock();
 		System::Threading::Thread::Sleep(10);
 	}
+}
+
+void Evrika::Tasks::TaskProvider::Clear()
+{
+	fg->TrySwoosh();
+	fg->Lock();
+	tl->Clear();
+	fg->Unlock();
 }

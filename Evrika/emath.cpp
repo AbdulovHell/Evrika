@@ -9,6 +9,10 @@ namespace Evrika {
 	namespace EMath {
 		double ScaleCoef = 1.0;
 	}
+	namespace Filters {
+		MedianFilter<double, 10>* mfilt;
+		CenterFilter<double, 10> cfilt;
+	}
 }
 
 //считает точки пересечения двух окружностей и рисует их
