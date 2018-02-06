@@ -573,6 +573,11 @@ void Evrika::mainform::StopAutoUpdate()
 	AutoUpdateTagChk->Checked = false;
 }
 
+void Evrika::mainform::UpdateTaskCounter(int tsks)
+{
+	toolStripStatusLabel7->Text = tsks.ToString();
+}
+
 void Evrika::mainform::SetTimer(bool en)
 {
 	sys_task->Enabled = en;
@@ -624,6 +629,7 @@ void Evrika::mainform::AddNewPoint(double lat, double lng, double m)
 
 	if (MyCoords->Count > 1) {
 		List<PointLatLng>^ area_points = EMath::SixthAttempt(MyCoords);
+		if (area_points == nullptr) return;
 		//рисуем область пересечения
 		GMapPolygon ^cent_area = gcnew GMapPolygon(area_points, "center_area");
 		cent_area->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));
@@ -1555,6 +1561,7 @@ System::Void Evrika::mainform::button7_Click(System::Object ^ sender, System::Ev
 System::Void Evrika::mainform::button9_Click(System::Object ^ sender, System::EventArgs ^ e)
 {
 	List<PointLatLng>^ area_points2 = EMath::SixthAttempt(MyCoords);
+	if (area_points2 == nullptr) return;
 	//рисуем область пересечения
 	GMapPolygon ^cent_area2 = gcnew GMapPolygon(area_points2, "center_area2");
 	cent_area2->Fill = gcnew SolidBrush(System::Drawing::Color::FromArgb(127, Color::Red));

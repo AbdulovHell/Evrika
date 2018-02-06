@@ -380,6 +380,64 @@ double Evrika::EMath::RangeRandDouble(double min, double max)
 	return temp / 100.0;
 }
 
+bool Evrika::EMath::isIntersects(List<geoPoint^>^ Coords, int index)
+{
+	List<PointLatLng>^ points = DivideCircle(Coords[index]->get_pointLatLng(), Coords[index]->get_r(), 360);
+	for (int i = 0; i < Coords->Count; i++) {
+		if (index == i) continue;
+		bool finded = false;
+		for (int j = 0; j < points->Count; j++) {
+			if (InTheArea(points[j], i, Coords)) {
+				finded = true;
+				break;
+			}
+		}
+		if (!finded) {
+			return false;
+		}
+	}
+	return true;
+}
+
+List<Evrika::EMath::geoPoint^>^ Evrika::EMath::FilterCoords(List<geoPoint^>^ Coords)
+{
+	List<int>^ intrs = gcnew List<int>;
+	for (int i = 0; i < Coords->Count; i++) {
+		List<PointLatLng>^ points = DivideCircle(Coords[i]->get_pointLatLng(), Coords[i]->get_r(), 360);
+		int counter = 0;
+		for (int j = 0; j < Coords->Count; j++) {
+			if (j == i) {
+				counter++;
+				continue;
+			}
+			bool finded = false;
+			for (int k = 0; k < points->Count; k++) {
+				if (InTheArea(points[k], j, Coords)) {
+					finded = true;
+					break;
+				}
+			}
+			if (finded) {
+				counter++;
+			}
+		}
+		intrs->Add(counter);
+	}
+	int min = 1000;
+	for (int i = 0; i < intrs->Count; i++) {
+		if (intrs[i] < min) {
+			min = intrs[i];
+		}
+	}
+	List<geoPoint^>^ NewCoords = gcnew List<geoPoint^>;
+	for (int i = 0; i < intrs->Count; i++) {
+		if (intrs[i] != min) {
+			NewCoords->Add(Coords[i]);
+		}
+	}
+	return NewCoords;
+}
+
 List<PointLatLng>^ Evrika::EMath::DivideCircle(PointLatLng center, double radius_m, int segments)
 {
 	//int segments = 360;
@@ -409,6 +467,15 @@ List<PointLatLng>^ Evrika::EMath::SixthAttempt(List<geoPoint^>^ Coords)
 			cnt++;
 		}
 	}
+
+	if (max_mass != Coords->Count - 1) {
+		List<geoPoint^>^ Coords2 = FilterCoords(Coords);
+		if (Coords2->Count > 0)
+			return SixthAttempt(Coords2);
+		else
+			return nullptr;
+	}
+
 	for (int k = 0; k < pointsww->Count; k++) {
 		if (pointsww[k]->Weight() == max_mass && pointsww[k]->Weight() != 0) {
 			points->Add(pointsww[k]->Point());

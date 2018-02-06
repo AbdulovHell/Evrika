@@ -130,7 +130,7 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 				}
 				else {
 #ifdef _DEBUG
-					mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "D: Отправлено");
+					mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "D: Отправлено, ожидает " + (tl->Count - 1).ToString());
 #endif
 					if (!sem->WaitOne(5000)) {
 						mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "Превышен предел ожидания ответа от ретранслятора");
@@ -147,6 +147,8 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 			}
 			tl->RemoveAt(0);
 		}
+		if (tl->Count > 10) Clear();
+		if (mainform::my_handle != nullptr) mainform::my_handle->Invoke(gcnew Action<int>(mainform::my_handle, &mainform::UpdateTaskCounter), tl->Count);
 		fg->Unlock();
 		System::Threading::Thread::Sleep(10);
 	}
@@ -154,8 +156,25 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 
 void Evrika::Tasks::TaskProvider::Clear()
 {
-	fg->TrySwoosh();
-	fg->Lock();
-	tl->Clear();
-	fg->Unlock();
+	Dictionary<int, int> types;
+#ifdef _DEBUG
+	int counter = 0;
+#endif
+	for (int i = 0; i < tl->Count; i++) {
+		if (!types.ContainsKey((int)tl[i]->GetType())) {
+			types.Add((int)tl[i]->GetType(), 1);
+		}
+		else {
+			types[(int)tl[i]->GetType()]++;
+			if (types[(int)tl[i]->GetType()] > 5) {
+				tl->RemoveAt(i--);
+#ifdef _DEBUG
+				counter++;
+#endif
+			}
+		}
+	}
+#ifdef _DEBUG
+	mainform::my_handle->Invoke(gcnew Action<String^>(mainform::my_handle, &mainform::WriteLog), "D: Выполнена очистка, удалено " + counter.ToString());
+#endif
 }

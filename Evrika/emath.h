@@ -266,6 +266,10 @@ namespace Evrika {
 		int RangeRandInt(int min, int max);
 		//рандомное число с плавающей точкой
 		double RangeRandDouble(double min, double max);
+		//не работает, устарело
+		bool isIntersects(List<geoPoint^>^ Coords,int index);
+		//
+		List<geoPoint^>^ FilterCoords(List<geoPoint^>^ Coords);
 		//деление окружности на равноудаленные точки
 		List<PointLatLng>^ DivideCircle(PointLatLng center, double radius_km, int segments);
 		//алгоритм нахождения области пересечения на основе общих дуг окружностей

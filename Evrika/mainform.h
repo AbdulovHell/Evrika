@@ -189,6 +189,7 @@ namespace Evrika {
 	private: System::Windows::Forms::CheckBox^  TMMEnable;
 	private: System::Windows::Forms::CheckBox^  WakeUpTagsRepeatChk;
 	private: System::Windows::Forms::Button^  button10;
+private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel7;
 
 
 
@@ -225,6 +226,7 @@ namespace Evrika {
 		void UpdateRepeatersList();
 		void UpdateEventList();
 		void ParseDeviceBuffer(cli::array<wchar_t>^ rbuf);
+		void UpdateTaskCounter(int tsks);
 
 		static mainform^ my_handle;
 		//MyPosition^ myPos;
@@ -362,6 +364,7 @@ namespace Evrika {
 				 this->toolStripStatusLabel5 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
 				 this->toolStripStatusLabel6 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
 				 this->CurrentActionLbl = (gcnew System::Windows::Forms::ToolStripStatusLabel());
+				 this->toolStripStatusLabel7 = (gcnew System::Windows::Forms::ToolStripStatusLabel());
 				 this->menuStrip1 = (gcnew System::Windows::Forms::MenuStrip());
 				 this->ôàéëToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 				 this->savemap = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -612,10 +615,10 @@ namespace Evrika {
 				 this->proglog->Size = System::Drawing::Size(482, 130);
 				 this->proglog->TabIndex = 13;
 				 this->proglog->Text = L"Ñòàðò...";
-				 this->statusStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(10) {
+				 this->statusStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(11) {
 					 this->ImageIndication, this->whatCOM,
-						 this->toolStripStatusLabel1, this->get_device_progress, this->toolStripStatusLabel2, this->toolStripStatusLabel3, this->toolStripStatusLabel4,
-						 this->toolStripStatusLabel5, this->toolStripStatusLabel6, this->CurrentActionLbl
+						 this->toolStripStatusLabel1, this->get_device_progress, this->toolStripStatusLabel7, this->toolStripStatusLabel2, this->toolStripStatusLabel3,
+						 this->toolStripStatusLabel4, this->toolStripStatusLabel5, this->toolStripStatusLabel6, this->CurrentActionLbl
 				 });
 				 this->statusStrip1->Location = System::Drawing::Point(0, 735);
 				 this->statusStrip1->Name = L"statusStrip1";
@@ -656,6 +659,9 @@ namespace Evrika {
 				 this->CurrentActionLbl->Name = L"CurrentActionLbl";
 				 this->CurrentActionLbl->Size = System::Drawing::Size(10, 17);
 				 this->CurrentActionLbl->Text = L" ";
+				 this->toolStripStatusLabel7->Name = L"toolStripStatusLabel7";
+				 this->toolStripStatusLabel7->Size = System::Drawing::Size(13, 17);
+				 this->toolStripStatusLabel7->Text = L"0";
 				 this->menuStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(4) {
 					 this->ôàéëToolStripMenuItem,
 						 this->ïîäêëþ÷åíèåToolStripMenuItem, this->êýøToolStripMenuItem, this->settings_menu
