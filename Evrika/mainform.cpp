@@ -8,10 +8,11 @@
 #include "emath.h"
 #include "misc.h"
 #include "settings.h"
-#include "TaskProvider.h"
+
 #include "loading_page.h"
 #include "mapform.h"
 #include "mainform.h"
+#include "TaskProvider.h"
 
 using namespace System;
 using namespace System::Windows::Forms;
@@ -156,13 +157,15 @@ Evrika::mainform::mainform(void)
 	RadioTagUpdateEnabledSemaphore = gcnew Semaphore(0, 3);
 	RadioTagUpdateParam = gcnew Semaphore(0, 3);
 	DataAutoUpdateThrdSemaphore = gcnew Semaphore(0, 3);
-	WakeUpRepeatFG = gcnew Floodgate(false);
+	//WakeUpRepeatFG = gcnew Floodgate(false);
+	//WakeUpRepeatMut = gcnew Mutex();
 	listBox1->Items->Clear();
 	mrkrOvrl = mapform->mrkrOvrl;
 	areaOvrl = mapform->areaOvrl;
 	myPosOvrl = mapform->myPosOvrl;
-	Tasks::TaskProvider::TaskProvider();
-	TaskProceedThrd = gcnew Thread(gcnew ThreadStart(Tasks::TaskProvider::ProceedTasks));
+	taskProvider = gcnew Evrika::Tasks::TaskProvider(this);
+	//taskProvider->TaskProvider(this);
+	TaskProceedThrd = gcnew Thread(gcnew ThreadStart(taskProvider, &TaskProvider::ProceedTasks));
 	TaskProceedThrd->Start();
 	ourPort = gcnew String("");
 	eGPS = false;
@@ -315,7 +318,7 @@ void Evrika::mainform::ParamRequest()
 	//int attempts = 0;
 	//do {
 	//	Commands::Class_0x0A::GetRelayState(addr);
-	Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetRelayState, addr, NULL));
+	taskProvider->Add(gcnew Task(Tasks::TaskType::GetRelayState, addr, NULL));
 	//	attempts++;
 	//	if (attempts > 10) break;
 	//} while (!ParamReciver->WaitOne(1500));
@@ -323,7 +326,7 @@ void Evrika::mainform::ParamRequest()
 	//attempts = 0;
 	//do {
 	//	Commands::Class_0x0A::GetVoltage(addr);
-	Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetVoltage, addr, NULL));
+	taskProvider->Add(gcnew Task(Tasks::TaskType::GetVoltage, addr, NULL));
 	//	attempts++;
 	//	if (attempts > 10) break;
 	//} while (!ParamReciver->WaitOne(1500));
@@ -331,7 +334,7 @@ void Evrika::mainform::ParamRequest()
 	//attempts = 0;
 	//do {
 	//	Commands::Class_0x0B::GetGPSPowerState(addr);
-	Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetGPSPowerState, addr, NULL));
+	taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSPowerState, addr, NULL));
 	//	attempts++;
 	//	if (attempts > 10) break;
 	//} while (!ParamReciver->WaitOne(1500));
@@ -339,7 +342,7 @@ void Evrika::mainform::ParamRequest()
 	//attempts = 0;
 	//do {
 	//	Commands::Class_0x0B::GetGPSStatus(addr);
-	Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetGPSStatus, addr, NULL));
+	taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSStatus, addr, NULL));
 	//	attempts++;
 	//	if (attempts > 10) break;
 	//} while (!ParamReciver->WaitOne(1500));
@@ -347,7 +350,7 @@ void Evrika::mainform::ParamRequest()
 	//attempts = 0;
 	//do {
 	//	Commands::Class_0x0B::GetGPSUsingAntenna(addr);
-	Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetGPSUsingAntenna, addr, NULL));
+	taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSUsingAntenna, addr, NULL));
 	//	attempts++;
 	//	if (attempts > 10) break;
 	//} while (!ParamReciver->WaitOne(1500));
@@ -356,7 +359,7 @@ void Evrika::mainform::ParamRequest()
 	//if (SelectedDevice->IfKnownPos()) {
 	//	do {
 	//		Commands::Class_0x0B::GetGPSPosition(addr);
-	Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetGPSPosition, addr, NULL));
+	taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSPosition, addr, NULL));
 	//		attempts++;
 	//		if (attempts > 10) break;
 	//	} while (!ParamReciver->WaitOne(1500));
@@ -391,7 +394,7 @@ void Evrika::mainform::GetTagParam()
 		}
 
 		//Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
-		Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
+		taskProvider->Add(gcnew Task(Tasks::TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
 		//CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "...";
 		try {
 			Invoke(gcnew Action<String^>(this, &mainform::SetCurrentActionLblText), gcnew String("Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "..."));
@@ -480,14 +483,14 @@ void Evrika::mainform::DataUpdateThread()
 			//проверяем наличие координат
 			if (SelectedDevice->IfKnownPos()) {//есть
 											   //обновляем
-				Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetGPSPosition, SelectedDevice->GetAddr(), NULL));
+				taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSPosition, SelectedDevice->GetAddr(), NULL));
 				Invoke(gcnew Action<String^>(this, &mainform::SelectedRepeaterInfoLblSet), "Lat:" + SelectedDevice->Lat.ToString() + " Lon:" + SelectedDevice->Lon.ToString());
 				update = true;
 			}
 			else {//нету
 				  //пробуем включить питание gps
 				Invoke(gcnew Action<bool>(this, &mainform::ChangeGPSOnOffState), true);
-				Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetGPSStatus, SelectedDevice->GetAddr(), NULL));
+				taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSStatus, SelectedDevice->GetAddr(), NULL));
 				Invoke(gcnew Action<String^>(this, &mainform::SelectedRepeaterInfoLblSet), "Координат нет. Ожидание...");
 			}
 			//выбрана ли метка
@@ -495,12 +498,12 @@ void Evrika::mainform::DataUpdateThread()
 			if (!(PrevSelectedTagIndex < 0 || PrevSelectedTagIndex >= SelectedDevice->RadioTags->Count)) {
 				Invoke(gcnew Action<bool>(this, &mainform::AutoUpdateTagState), false);
 				Invoke(gcnew Action<String^>(this, &mainform::SetTextTagAndRepInfoBox), SelectedDevice->IdInHex() + "+" + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex());
-				Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
+				taskProvider->Add(gcnew Task(Tasks::TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
 
 				if (TMMEnable->Checked)
 					Invoke(gcnew Action<String^>(this, &mainform::SelectedTagDistanceText), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance().ToString() + " m.");
 				else
-					Invoke(gcnew Action<String^>(this, &mainform::SelectedTagDistanceText), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance(1.8, 26).ToString() + " m.");
+					Invoke(gcnew Action<String^>(this, &mainform::SelectedTagDistanceText), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance(N, 26).ToString() + " m.");
 				wRad = true;
 			}
 			if (update)
@@ -544,7 +547,13 @@ void Evrika::mainform::UpdatePosAndDist(bool withRadius)
 	marker->ToolTipText = SelectedDevice->IdInHex();
 	myPosOvrl->Markers->Add(marker);
 	if (withRadius) {
-		EMath::geoPoint^ temp = gcnew EMath::geoPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance());
+		double r = 0;
+		if (TMMEnable->Checked)
+			r = SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance();
+		else
+			r = SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance(N, 26);
+
+		EMath::geoPoint^ temp = gcnew EMath::geoPoint(SelectedDevice->Lat, SelectedDevice->Lon, r);
 		GMapPolygon ^circ = gcnew GMapPolygon(EMath::SortPoints(temp->CreateCircle()), "circ");
 		circ->Fill = gcnew SolidBrush(Color::FromArgb(10, Color::Green));
 		circ->Stroke = gcnew Pen(Color::Green, 1);
@@ -554,16 +563,18 @@ void Evrika::mainform::UpdatePosAndDist(bool withRadius)
 
 void Evrika::mainform::RepeatWakeUp()
 {
-	while (1) {
-		WakeUpRepeatFG->TrySwoosh();
+	while (WakeUpRepeatWork) {
+		//WakeUpRepeatFG->TrySwoosh();
+		//WakeUpRepeatMut->WaitOne();
 		{
 			if (SelectedDevice != nullptr) {
 				Invoke(gcnew Action(this, &mainform::StopAutoUpdate));
-				TaskProvider::Add(gcnew Task(TaskType::WakeUp, SelectedDevice->GetAddr(), 2000));
+				taskProvider->Add(gcnew Task(TaskType::WakeUp, SelectedDevice->GetAddr(), 2000));
 				Invoke(gcnew Action<String^>(this, &mainform::SetCurrentActionLblText), gcnew String("Поиск радиометок через " + SelectedDevice->IdInHex() + "..."));
 			}
 			Sleep(5000);
 		}
+		//WakeUpRepeatMut->ReleaseMutex();
 	}
 }
 
@@ -829,13 +840,13 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			break;
 		case 0x01:	//ответ на запрос локального адреса
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint32_t addr = ToInt32FromBuf(rbuf, 10);
 			List<Repeater^>^ rep = gcnew List<Repeater^>;
 			rep->Add(gcnew Repeater(addr, true));
 			//Devices->Add(gcnew Repeater(addr, true));
 			//Commands::Class_0x0A::GetVoltage(rep[0]->GetAddr());
-			TaskProvider::Add(gcnew Task(TaskType::GetVoltage, rep[0]->GetAddr(), NULL));
+			taskProvider->Add(gcnew Task(TaskType::GetVoltage, rep[0]->GetAddr(), NULL));
 			Events->Add(gcnew Event(rep[0], Event::EventCode::DEV_CONNECTED));
 			UpdateRepeatersBase(rep);
 			UpdateRepeatersList();
@@ -844,7 +855,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x02:	//ответ на запрос напряжений
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint32_t addr = ToInt32FromBuf(rbuf, 2);
 			float vbatt = GetFloatFromBuf(rbuf, 10);
 			float charger = GetFloatFromBuf(rbuf, 14);
@@ -875,7 +886,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x88:	//ответ на запрос о состоянии реле
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint32_t addr = ToInt32FromBuf(rbuf, 2);
 			uint8_t state = (uint8_t)rbuf[10];
 			for (int i = 0; i < Devices->Count; i++)
@@ -886,7 +897,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		}
 		break;
 		case 0x89:	//ответ на управление реле
-			TaskProvider::Go();
+			taskProvider->Go();
 			break;
 		default:
 			WriteLog("ParseBuffer error: Unknown message ID in class 0x0A");
@@ -896,7 +907,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 	case 0x0B:	//GPS
 		switch (rbuf[MESSAGE_ID]) {
 		case 0x01:	//ответ на управление питанием GPS
-			TaskProvider::Go();
+			taskProvider->Go();
 			if (GPSOnOff->Checked)
 				WriteLog("GPS включен");
 			else
@@ -904,7 +915,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			break;
 		case 0x02:	//ответ на запрос состояния питания GPS
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			bool state = (bool)rbuf[10];
 			GPSOnOff->Checked = (bool)state;
 			//ParamReciver->Release();
@@ -966,7 +977,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x03:	//ответ на запрос статуса GPS
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			//0 - nofix, 1 - standart, 2 - Diff., 3 - Estimate
 			uint8_t type = (uint8_t)rbuf[10];
 			switch (type) {
@@ -994,7 +1005,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x04:	//ответ на запрос данных GPS
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint8_t hh = (uint8_t)rbuf[10];
 			uint8_t mm = (uint8_t)rbuf[11];
 			uint8_t ss = (uint8_t)rbuf[12];
@@ -1063,12 +1074,12 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x05:	//ответ на переключение антенны
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 		}
 		break;
 		case 0x06:	//ответ на запрос исп. антенны
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			bool isExternal = rbuf[10];
 			GPSAntenna->Checked = isExternal;
 			//ParamReciver->Release();
@@ -1083,14 +1094,14 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		switch (rbuf[MESSAGE_ID]) {	//message ID
 		case 0x01:	//ответ на запуск цикла пробуждения меток
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint8_t count = (uint8_t)rbuf[10];
 			if (count > 0) {
 				CurrentActionLbl->Text = "Найдено радиометок: " + count.ToString() + ". Запрос параметров...";
 				PrevCountFindedRadioTags = count;
 				Sleep(200);
 				//Commands::Class_0x0C::GetRadioTagsParam(SelectedDevice->GetAddr(), count);
-				Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetRadioTagsParam, SelectedDevice->GetAddr(), count));
+				taskProvider->Add(gcnew Task(Tasks::TaskType::GetRadioTagsParam, SelectedDevice->GetAddr(), count));
 			}
 			else
 				CurrentActionLbl->Text = "Найдено радиометок: " + count.ToString() + ".";
@@ -1153,13 +1164,13 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x02:	//ответ на запрос параметров радиометок
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint16_t len = rbuf[9] + (rbuf[8] << 8);
 			int devices = len / 10;	//количество устройств в буфере
 			if (PrevCountFindedRadioTags != devices) {
 				Sleep(100);
 				//Commands::Class_0x0C::GetRadioTagsParam(SelectedDevice->GetAddr(), PrevCountFindedRadioTags);
-				Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetRadioTagsParam, SelectedDevice->GetAddr(), PrevCountFindedRadioTags));
+				taskProvider->Add(gcnew Task(Tasks::TaskType::GetRadioTagsParam, SelectedDevice->GetAddr(), PrevCountFindedRadioTags));
 				return;
 			}
 			List<RadioTag^>^ tempdev = gcnew List<RadioTag^>;
@@ -1254,16 +1265,16 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x05:
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			CurrentActionLbl->Text += " Получение параметров...";
 			Sleep(100);
 			//Commands::Class_0x0C::GetRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
-			Tasks::TaskProvider::Add(gcnew Task(Tasks::TaskType::GetRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
+			taskProvider->Add(gcnew Task(Tasks::TaskType::GetRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
 		}
 		break;
 		case 0x06:	//базовая информация о метке
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			//парсинг буфера в список у-в
 			uint32_t addr = ToInt32FromBuf(rbuf, 10);
 			int8_t rssi = (int8_t)rbuf[14];
@@ -1275,7 +1286,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			uint8_t bitrate = (uint8_t)rbuf[26];
 
 			if (first) last_time = time;
-			if (time > last_time * 100+1000) {	//выброс
+			if (time > last_time * 100 + 1000) {	//выброс
 				time = last_time;
 			}
 			last_time = time;
@@ -1408,7 +1419,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x07: //ответ на сброс СС1101 к перв. уст.
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 		}
 		break;
 		default:
@@ -1420,13 +1431,13 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		switch (rbuf[MESSAGE_ID]) {
 		case 0x01:	//ответ на запуск поиска ретрансл.
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			uint8_t count = (uint8_t)rbuf[10];
 			if (count > 0) {
 				CurrentActionLbl->Text = "Найдено ретрансляторов: " + count.ToString() + ". Запрос параметров...";
 				PrevCountFindedRepeaters = count;
 				//Commands::Class_0x0D::GetRepeatersParam(NULL, count);
-				TaskProvider::Add(gcnew Task(TaskType::GetRepeatersParam, NULL, count));
+				taskProvider->Add(gcnew Task(TaskType::GetRepeatersParam, NULL, count));
 			}
 			else
 				CurrentActionLbl->Text = "Найдено ретрансляторов: " + count.ToString() + ".";
@@ -1434,13 +1445,13 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x02:	//ответ на запрос параметров ретрансл.
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 			int len = (rbuf[8] << 8) + rbuf[9];
 			int devices = len / 8;	//количество устройств в буфере
 			if (PrevCountFindedRepeaters != devices) {
 				Sleep(100);
 				//Commands::Class_0x0D::GetRepeatersParam(NULL, PrevCountFindedRepeaters);
-				TaskProvider::Add(gcnew Task(TaskType::GetRepeatersParam, NULL, PrevCountFindedRepeaters));
+				taskProvider->Add(gcnew Task(TaskType::GetRepeatersParam, NULL, PrevCountFindedRepeaters));
 				return;
 			}
 			List<Repeater^>^ tempdev = gcnew List<Repeater^>;
@@ -1466,7 +1477,7 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 		break;
 		case 0x99:	//ответ на глобальный сброс всех ретрансл.
 		{
-			TaskProvider::Go();
+			taskProvider->Go();
 		}
 		break;
 		default:
@@ -1764,7 +1775,7 @@ System::Void Evrika::mainform::button11_Click(System::Object ^ sender, System::E
 			serialPort1->Open();
 		//ConstructCMD(serialPort1, CMDtype::GETGPS);
 		//Commands::Class_0x0B::GetGPSPosition(NULL);
-		TaskProvider::Add(gcnew Task(TaskType::GetGPSPosition, NULL, NULL));
+		taskProvider->Add(gcnew Task(TaskType::GetGPSPosition, NULL, NULL));
 	}
 	catch (IO::IOException ^ioexception) {
 		proglog->AppendText("\r\n" + ioexception->Message);
@@ -1780,7 +1791,7 @@ System::Void Evrika::mainform::checkBox3_CheckedChanged(System::Object ^ sender,
 		//myPos->bFirstRead = true;
 		//ConstructCMD(serialPort1, eGPS);
 		//Commands::Class_0x0B::SetGPSPowerState(NULL, eGPS);
-		TaskProvider::Add(gcnew Task(TaskType::SetGPSPowerState, NULL, eGPS));
+		taskProvider->Add(gcnew Task(TaskType::SetGPSPowerState, NULL, eGPS));
 	}
 	catch (IO::IOException ^ioexception) {
 		proglog->AppendText("\r\n" + ioexception->Message);
@@ -1813,7 +1824,7 @@ System::Void Evrika::mainform::sys_task_Tick(System::Object ^ sender, System::Ev
 				if (serialPort1->IsOpen)
 					//ConstructCMD(serialPort1, CMDtype::GETGPS);
 					//Commands::Class_0x0B::GetGPSPosition(NULL);
-					TaskProvider::Add(gcnew Task(TaskType::GetGPSPosition, NULL, NULL));
+					taskProvider->Add(gcnew Task(TaskType::GetGPSPosition, NULL, NULL));
 			}
 			catch (IO::IOException ^ioexception) {
 				proglog->AppendText("\r\n" + ioexception->Message + " in sys_task_Tick gpsknownpos.");
@@ -1836,7 +1847,7 @@ System::Void Evrika::mainform::button10_Click(System::Object ^ sender, System::E
 			serialPort1->Open();
 		//ConstructCMD(serialPort1, CMDtype::RESET);
 		//Commands::Class_0x0C::ResetCC1101(NULL);
-		TaskProvider::Add(gcnew Task(TaskType::ResetCC1101, NULL, NULL));
+		taskProvider->Add(gcnew Task(TaskType::ResetCC1101, NULL, NULL));
 	}
 	catch (IO::IOException ^ioexception) {
 		textBox1->AppendText("\r\n" + ioexception->Message);
@@ -1866,7 +1877,7 @@ System::Void Evrika::mainform::RelayStatCheckBox_CheckedChanged(System::Object ^
 {
 	if (SelectedDevice == nullptr) return;
 	//Commands::Class_0x0A::SetRelayState(SelectedDevice->GetAddr(), RelayStatCheckBox->Checked);
-	TaskProvider::Add(gcnew Task(TaskType::SetRelayState, SelectedDevice->GetAddr(), RelayStatCheckBox->Checked));
+	taskProvider->Add(gcnew Task(TaskType::SetRelayState, SelectedDevice->GetAddr(), RelayStatCheckBox->Checked));
 }
 //сброс настроек выбранного ретранслятора
 System::Void Evrika::mainform::ResetRepeaterBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1875,7 +1886,7 @@ System::Void Evrika::mainform::ResetRepeaterBtn_Click(System::Object ^ sender, S
 	AutoUpdateAndAddPointChk->Checked = false;
 	AutoUpdateTagChk->Checked = false;
 	//Commands::Class_0x0A::ProgrammReset(SelectedDevice->GetAddr());
-	TaskProvider::Add(gcnew Task(TaskType::ProgrammReset, SelectedDevice->GetAddr(), NULL));
+	taskProvider->Add(gcnew Task(TaskType::ProgrammReset, SelectedDevice->GetAddr(), NULL));
 }
 //запуск поиска ретрансляторов
 System::Void Evrika::mainform::button12_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1883,7 +1894,7 @@ System::Void Evrika::mainform::button12_Click(System::Object ^ sender, System::E
 	//Commands::Class_0x0D::StartSearchRepeaters(NULL);
 	AutoUpdateAndAddPointChk->Checked = false;
 	AutoUpdateTagChk->Checked = false;
-	TaskProvider::Add(gcnew Task(TaskType::StartSearchRepeaters, NULL, NULL));
+	taskProvider->Add(gcnew Task(TaskType::StartSearchRepeaters, NULL, NULL));
 	CurrentActionLbl->Text = "Поиск ретрансляторов...";
 }
 //общий сброс настроек ретрансляторов
@@ -1892,21 +1903,21 @@ System::Void Evrika::mainform::ResetRepeatersBtn_Click(System::Object ^ sender, 
 	AutoUpdateAndAddPointChk->Checked = false;
 	AutoUpdateTagChk->Checked = false;
 	//Commands::Class_0x0D::GlobalResetRepeaters(NULL);
-	TaskProvider::Add(gcnew Task(TaskType::GlobalResetRepeaters, NULL, NULL));
+	taskProvider->Add(gcnew Task(TaskType::GlobalResetRepeaters, NULL, NULL));
 }
 //переключение питания GPS
 System::Void Evrika::mainform::GPSOnOff_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	//Commands::Class_0x0B::SetGPSPowerState(SelectedDevice->GetAddr(), GPSOnOff->Checked);
-	TaskProvider::Add(gcnew Task(TaskType::SetGPSPowerState, SelectedDevice->GetAddr(), GPSOnOff->Checked));
+	taskProvider->Add(gcnew Task(TaskType::SetGPSPowerState, SelectedDevice->GetAddr(), GPSOnOff->Checked));
 }
 //переключение антенны GPS
 System::Void Evrika::mainform::GPSAntenna_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (SelectedDevice == nullptr) return;
 	//Commands::Class_0x0B::ToggleGPSAntenna(SelectedDevice->GetAddr(), GPSAntenna->Checked);
-	TaskProvider::Add(gcnew Task(TaskType::ToggleGPSAntenna, SelectedDevice->GetAddr(), GPSAntenna->Checked));
+	taskProvider->Add(gcnew Task(TaskType::ToggleGPSAntenna, SelectedDevice->GetAddr(), GPSAntenna->Checked));
 }
 //запуск поиска радиометок
 System::Void Evrika::mainform::WakeUpRadioTagBtn_Click(System::Object ^ sender, System::EventArgs ^ e)
@@ -1915,7 +1926,7 @@ System::Void Evrika::mainform::WakeUpRadioTagBtn_Click(System::Object ^ sender, 
 	AutoUpdateAndAddPointChk->Checked = false;
 	AutoUpdateTagChk->Checked = false;
 	//Commands::Class_0x0C::WakeUp(SelectedDevice->GetAddr(), 2000);
-	TaskProvider::Add(gcnew Task(TaskType::WakeUp, SelectedDevice->GetAddr(), 2000));
+	taskProvider->Add(gcnew Task(TaskType::WakeUp, SelectedDevice->GetAddr(), 2000));
 	CurrentActionLbl->Text = "Поиск радиометок через " + SelectedDevice->IdInHex() + "...";
 }
 //обновление информации при выборе метки из таблицы
@@ -1930,7 +1941,7 @@ System::Void Evrika::mainform::RadioTagsGrid_SelectionChanged(System::Object ^ s
 	PrevSelectedTagIndex = row;
 	RadioTagParamBox->Text = SelectedDevice->RadioTags[row]->IdInHex();
 	//Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[row]->GetAddr());
-	TaskProvider::Add(gcnew Task(TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[row]->GetAddr()));
+	taskProvider->Add(gcnew Task(TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[row]->GetAddr()));
 	CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[row]->IdInHex() + "...";
 }
 //сброс настроей метки и ретранслятора
@@ -1940,7 +1951,7 @@ System::Void Evrika::mainform::TagAndRepeaterResetBtn_Click(System::Object ^ sen
 	AutoUpdateAndAddPointChk->Checked = false;
 	AutoUpdateTagChk->Checked = false;
 	//Commands::Class_0x0C::ResetCC1101(SelectedDevice->GetAddr());
-	TaskProvider::Add(gcnew Task(TaskType::ResetCC1101, SelectedDevice->GetAddr(), NULL));
+	taskProvider->Add(gcnew Task(TaskType::ResetCC1101, SelectedDevice->GetAddr(), NULL));
 	CurrentActionLbl->Text = "Сброс настроек метки и ретранслятора";
 }
 //ручной запрос параметров о метке
@@ -1950,7 +1961,7 @@ System::Void Evrika::mainform::UpdateTagBtn_Click(System::Object ^ sender, Syste
 	int row = RadioTagsGrid->SelectedCells[0]->RowIndex;
 	if ((row < 0) || (SelectedDevice->RadioTags->Count == 0) || (row > SelectedDevice->RadioTags->Count)) return;
 	//Commands::Class_0x0C::RequestRadioTagParam(SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr());
-	TaskProvider::Add(gcnew Task(TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
+	taskProvider->Add(gcnew Task(TaskType::RequestRadioTagParam, SelectedDevice->GetAddr(), SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetAddr()));
 	CurrentActionLbl->Text = "Запрос параметров " + SelectedDevice->RadioTags[PrevSelectedTagIndex]->IdInHex() + "...";
 }
 //цикличное обновление данных о метке
@@ -2017,7 +2028,7 @@ System::Void Evrika::mainform::DrawPointBtn_Click(System::Object ^ sender, Syste
 	if (TMMEnable->Checked)
 		AddNewPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance());
 	else
-		AddNewPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance(1.8, 26));
+		AddNewPoint(SelectedDevice->Lat, SelectedDevice->Lon, SelectedDevice->RadioTags[PrevSelectedTagIndex]->GetDistance(N, 26));
 }
 //очистка графика
 System::Void Evrika::mainform::button7_Click_1(System::Object ^ sender, System::EventArgs ^ e)
@@ -2078,14 +2089,14 @@ System::Void Evrika::mainform::ScaleLbl_Click(System::Object ^ sender, System::E
 System::Void Evrika::mainform::WakeUpTagsRepeatChk_CheckedChanged(System::Object ^ sender, System::EventArgs ^ e)
 {
 	if (WakeUpTagsRepeatChk->Checked) {
-		if (WakeUpRepeatThrd == nullptr) {
+		WakeUpRepeatWork = true;
+		if (WakeUpRepeatThrd == nullptr || ((WakeUpRepeatThrd != nullptr) && !WakeUpRepeatThrd->IsAlive)) {
 			WakeUpRepeatThrd = gcnew Thread(gcnew ThreadStart(this, &mainform::RepeatWakeUp));
 			WakeUpRepeatThrd->Start();
 		}
-		WakeUpRepeatFG->Unlock();
 	}
 	else {
-		WakeUpRepeatFG->Lock();
+		WakeUpRepeatWork = false;
 	}
 }
 

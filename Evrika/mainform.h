@@ -16,6 +16,7 @@ namespace Evrika {
 	using namespace GMap::NET::WindowsForms::Markers;
 	using namespace std;
 	using namespace System::Threading;
+	//using namespace Evrika::Tasks;
 
 	ref class mainform;
 	ref class mapform;
@@ -26,7 +27,11 @@ namespace Evrika {
 	ref class Event;
 	ref class Repeater;
 	ref class RadioTag;
-	ref class Floodgate;
+	//ref class Floodgate;
+	namespace Tasks {
+		ref class TaskProvider;
+	}
+
 	/// <summary>
 	/// Сводка для mainform
 	/// </summary>
@@ -230,6 +235,8 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel7;
 
 		static mainform^ my_handle;
 		//MyPosition^ myPos;
+		static double N=2.472;
+		
 	private:
 		void ParseToPoint(cli::array<wchar_t>^ buf);
 		void WriteToComStat(String^ str);
@@ -260,6 +267,7 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel7;
 		bool eGPS;
 		Filters::KalmanFilter^ mid_cycles;
 		Filters::KalmanFilter^ ftime;
+		Evrika::Tasks::TaskProvider^ taskProvider;
 
 		cli::array<GMarkerGoogle^> ^markers;
 		//long lCoordsCount;
@@ -275,7 +283,8 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel7;
 		Semaphore ^sEnumCom;
 		Semaphore^ sPointReciver;
 		Semaphore^ ParamReciver;
-		Floodgate^ WakeUpRepeatFG;
+		//Floodgate^ WakeUpRepeatFG;
+		//Mutex^ WakeUpRepeatMut;
 		GMapOverlay ^areaOvrl;
 		GMapOverlay^ myPosOvrl;
 		double MIN_RSSI = -100.0;
@@ -286,6 +295,7 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabel7;
 		bool my_pos_accepted = false;
 		bool device_get = false;
 		bool DoExport = false;
+		bool WakeUpRepeatWork = false;
 		cli::array<double>^ collection0;
 		cli::array<double>^ collection1;
 		cli::array<double>^ collection2;

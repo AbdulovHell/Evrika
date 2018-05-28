@@ -19,13 +19,13 @@ namespace Evrika {
 	float GetFloatFromBuf(cli::array<wchar_t>^, size_t offset);
 	uint32_t ToInt32FromBuf(cli::array<wchar_t>^, size_t offset);
 
-	public ref class Floodgate {
-		System::Threading::Semaphore^ sem;
+	/*public ref class Floodgate {
+		System::Threading::Mutex^ mut;
 		bool work;
 
 	public:
 		Floodgate(bool init_state) {
-			sem = gcnew System::Threading::Semaphore(0, 1);
+			mut = gcnew System::Threading::Mutex();
 			work = init_state;
 		}
 
@@ -33,7 +33,7 @@ namespace Evrika {
 			if (work) {
 				return false;
 			}
-			return sem->WaitOne();
+			return mut->WaitOne();
 		}
 
 		void Lock() {
@@ -43,14 +43,14 @@ namespace Evrika {
 		void Unlock() {
 			work = true;
 			try {
-				sem->Release();
+				mut->ReleaseMutex();
 			}catch(...){}
 		}
 
 		bool State() {
 			return work;
 		}
-	};
+	};*/
 
 	public ref class Device {
 		uint32_t Addr;
@@ -154,8 +154,8 @@ namespace Evrika {
 		}
 		//сохраняет последнюю расчитанную дистанцию временным методом
 		void SaveDist(double m) {
-			if (m > 2000)
-				distance_t = 2000.0;
+			if (m > 1000)
+				distance_t = 1000.0;
 			else
 				distance_t = m;
 		}
@@ -168,7 +168,7 @@ namespace Evrika {
 			//если все плохо, то амплитудным
 			else
 			{
-				return ConvertToMeters(adaptive_rssi, 1.8, 26) * ScaleCoef;
+				return ConvertToMeters(adaptive_rssi, 2.472, 26) * ScaleCoef;
 			}
 		}
 		double GetDistance(double n, double SignalLvlAt1m) {

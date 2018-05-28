@@ -41,18 +41,22 @@ namespace Evrika {
 			TaskType GetType();
 		};
 
-		static ref class TaskProvider {
-			static Semaphore^ sem;
-			static Floodgate^ fg;
-			static List<Task^>^ tl;
-			static bool working = false;
+		ref class TaskProvider {
+			Semaphore^ sem;
+			//static Floodgate^ fg;
+			Semaphore^ sync;
+			List<Task^>^ tl;
+			bool working = false;
+
+			mainform^ hndl;
+
 		public:
-			TaskProvider();
-			static void Go();
-			static void Add(Task^ tsk);
-			static int Count();
-			static void ProceedTasks();
-			static void Clear();
+			TaskProvider(mainform^ hndl);
+			void Go();
+			void Add(Task^ tsk);
+			int Count();
+			void ProceedTasks();
+			void Clear();
 		};
 	}
 }

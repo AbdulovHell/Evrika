@@ -94,11 +94,13 @@ Evrika::Tasks::TaskType Evrika::Tasks::Task::GetType()
 	return tt;
 }
 
-Evrika::Tasks::TaskProvider::TaskProvider()
+Evrika::Tasks::TaskProvider::TaskProvider(mainform^ hndl)
 {
 	tl = gcnew List<Task^>;
 	sem = gcnew Semaphore(0, 3);
-	fg = gcnew Floodgate(true);
+	this->hndl = hndl;
+	//fg = gcnew Floodgate(true);
+	sync = gcnew Semaphore(0, 5);
 }
 
 void Evrika::Tasks::TaskProvider::Go()
@@ -121,8 +123,10 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 	if (working) return;
 	working = true;
 	while (1) {
-		fg->TrySwoosh();
-		fg->Lock();
+		//fg->TrySwoosh();
+		//fg->Lock();
+		//mut->WaitOne();
+		//sync->WaitOne();
 		if (tl->Count) {
 			try {
 				if (!tl[0]->Work()) {
@@ -148,8 +152,13 @@ void Evrika::Tasks::TaskProvider::ProceedTasks()
 			tl->RemoveAt(0);
 		}
 		if (tl->Count > 10) Clear();
-		if (mainform::my_handle != nullptr) mainform::my_handle->Invoke(gcnew Action<int>(mainform::my_handle, &mainform::UpdateTaskCounter), tl->Count);
-		fg->Unlock();
+		//mainform::my_handle
+		//if (true)
+		if (hndl->Created)
+			hndl->Invoke(gcnew Action<int>(hndl, &mainform::UpdateTaskCounter), tl->Count);
+		//fg->Unlock();
+		//mut->ReleaseMutex();
+		//sync->Release();
 		System::Threading::Thread::Sleep(10);
 	}
 }
