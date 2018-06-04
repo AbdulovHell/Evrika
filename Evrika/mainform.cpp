@@ -211,6 +211,34 @@ Evrika::mainform::mainform(void)
 	SetWindowPos((HWND)this->Handle.ToInt32(), HWND_TOP, NULL, NULL, NULL, NULL, SWP_NOSIZE | SWP_NOMOVE);
 }
 
+void Evrika::mainform::TryRecalcN()
+{
+	RecalcNChk->Enabled = true;
+	if (RecalcNChk->Checked && SelectedDevice->IfKnownPos()) {
+		if (LocalDevice->IfKnownPos()) {
+			const double A = -26;
+			double RSSi = SelectedDevice->GetSignalLvl();
+			double d = Evrika::EMath::geoPoint::GetDistanceToPointFrom(gcnew PointLatLng(SelectedDevice->Lat, SelectedDevice->Lon), gcnew PointLatLng(LocalDevice->Lat, LocalDevice->Lon));
+			double N = 10 * Math::Log10(d);
+			N = (RSSi - A) / (-N);
+
+			CoefNLbl->Text = "Коэф. среды N=" + N.ToString("F3");
+		}
+		else {
+			if (LocalDevice != nullptr)
+				taskProvider->Add(gcnew Task(TaskType::SetGPSPowerState, LocalDevice->GetAddr(), TRUE));
+		}
+	}
+}
+
+void Evrika::mainform::SetDefaultN()
+{
+	RecalcNChk->Checked = false;
+	RecalcNChk->Enabled = false;
+	N = 2.472;
+	CoefNLbl->Text = "Коэф. среды N=" + N.ToString("F3");
+}
+
 void Evrika::mainform::ParseToPoint(cli::array<wchar_t>^ buf)
 {
 	int dist = 0;
@@ -448,6 +476,13 @@ void Evrika::mainform::UpdateRepeatersBase(List<Repeater^>^ newrep)
 		Devices->Add(newrep[i]);
 		newrep->RemoveAt(i);
 	}
+	//обновление указателя на локальный блок
+	for (int i = 0; i < Devices->Count; i++) {
+		if (Devices[i]->isLocal) {
+			LocalDevice = Devices[i];
+			break;
+		}
+	}
 }
 //обновление значения бара дистанции и цвета
 void Evrika::mainform::UpdateDistanceBar(double rssi)
@@ -492,6 +527,12 @@ void Evrika::mainform::DataUpdateThread()
 				Invoke(gcnew Action<bool>(this, &mainform::ChangeGPSOnOffState), true);
 				taskProvider->Add(gcnew Task(Tasks::TaskType::GetGPSStatus, SelectedDevice->GetAddr(), NULL));
 				Invoke(gcnew Action<String^>(this, &mainform::SelectedRepeaterInfoLblSet), "Координат нет. Ожидание...");
+			}
+			if (!SelectedDevice->isLocal) {
+				Invoke(gcnew Action(this, &mainform::TryRecalcN));
+			}
+			else {
+				Invoke(gcnew Action(this, &mainform::SetDefaultN));
 			}
 			//выбрана ли метка
 			Sleep(100);
@@ -848,6 +889,8 @@ void Evrika::mainform::ParseDeviceBuffer(cli::array<wchar_t>^ rbuf)
 			//Commands::Class_0x0A::GetVoltage(rep[0]->GetAddr());
 			taskProvider->Add(gcnew Task(TaskType::GetVoltage, rep[0]->GetAddr(), NULL));
 			Events->Add(gcnew Event(rep[0], Event::EventCode::DEV_CONNECTED));
+			for (int i = 0; i < Devices->Count; i++)
+				Devices[i]->isLocal = false;
 			UpdateRepeatersBase(rep);
 			UpdateRepeatersList();
 			UpdateEventList();
